@@ -76,8 +76,7 @@ what-if/
 ├── app.json                   # Expo configuration
 ├── tsconfig.json             # TypeScript configuration
 ├── babel.config.js           # Babel configuration
-├── metro.config.js           # Metro bundler config
-└── webpack.config.js         # Webpack config for web
+└── metro.config.js           # Metro bundler config (native + web)
 ```
 
 ## 🛠️ Tech Stack
@@ -87,7 +86,7 @@ what-if/
 - **Storage**: AsyncStorage for persistent data
 - **Icons**: Expo Vector Icons (Feather)
 - **Fonts**: Expo Font with custom Barrio typeface
-- **Web Support**: Expo Web & Webpack
+- **Web Support**: Expo Web (Metro)
 - **Development**: Hot reloading, TypeScript checking
 
 ## 🎨 App Screens

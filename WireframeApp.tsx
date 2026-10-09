@@ -7,7 +7,7 @@
  *   ActiveContextProvider     — loads conversation contexts, exposes the active one
  *   RootNavigator             — fonts, first-launch logic, the stack
  *
- * Pre-refactor monolithic version preserved at WireframeApp.tsx.pre-refactor.bak.
+ * Pre-refactor monolithic version preserved at git tag pre-refactor-2026-04-29.
  */
 
 import React from 'react';

@@ -41,15 +41,6 @@ export type PromptFilter = {
 };
 
 export const PromptRepo = {
-  async findByAgeGroup(ageGroup: AgeGroupId): Promise<Prompt[]> {
-    const db = await getDb();
-    const rows = await db.getAllAsync<PromptRow>(
-      'SELECT * FROM prompts WHERE age_group = ? AND is_active = 1 ORDER BY id',
-      ageGroup
-    );
-    return rows.map(fromRow);
-  },
-
   async findFiltered(filter: PromptFilter): Promise<Prompt[]> {
     const db = await getDb();
     const where: string[] = ['is_active = 1'];
