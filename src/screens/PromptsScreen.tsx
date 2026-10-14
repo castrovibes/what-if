@@ -8,10 +8,10 @@ import { styles } from '../styles/sharedStyles';
 import { ageGroups, findAgeGroup, AgeGroupId } from '../data/ageGroups';
 import { usePromptCountsByAge } from '../hooks/usePromptsForAge';
 import { LiminalSpaceChips } from '../components/LiminalSpaceChips';
-import { HomeStackParamList } from '../navigation/types';
+import { PromptsStackParamList } from '../navigation/types';
 
-export const HomeScreen = () => {
-  const navigation = useNavigation<NavigationProp<HomeStackParamList>>();
+export const PromptsScreen = () => {
+  const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
   const { colors } = useTheme();
   const [selectedAge, setSelectedAge] = useState<AgeGroupId | null>(null);
   const [currentPromptIndex] = useState(0);

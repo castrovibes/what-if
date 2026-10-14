@@ -11,6 +11,7 @@ npm-debug.*
 web-build/
 .claude
 .cleanup-backup-2026-10-09
+.prompts-rename-backup-2026-10-13
 
 docs
 

@@ -6,11 +6,11 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { styles } from '../styles/sharedStyles';
 import { ModuleRepo, Module } from '../db/repositories/modules';
-import { HomeStackParamList } from '../navigation/types';
+import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
 export const ModulesScreen = () => {
-  const navigation = useNavigation<NavigationProp<HomeStackParamList>>();
+  const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
   const { colors } = useTheme();
   const [modules, setModules] = useState<Module[]>([]);
 

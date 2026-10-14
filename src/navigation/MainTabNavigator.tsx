@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MainTabParamList } from './types';
-import { HomeStackNavigator } from './HomeStackNavigator';
+import { PromptsStackNavigator } from './PromptsStackNavigator';
 import { CommunityScreen } from '../screens/CommunityScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -67,7 +67,7 @@ export const MainTabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Prompts" component={HomeStackNavigator} />
+      <Tab.Screen name="Prompts" component={PromptsStackNavigator} />
       <Tab.Screen name="Community" component={CommunityStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileStackNavigator} />
       <Tab.Screen name="Settings" component={SettingsStackNavigator} />

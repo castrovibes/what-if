@@ -8,14 +8,14 @@ import { useTheme } from '../theme/ThemeProvider';
 import { styles } from '../styles/sharedStyles';
 import { ReflectionRepo, Reflection } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
-import { HomeStackParamList } from '../navigation/types';
+import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
 export const ProfileScreen = () => {
   const { colors, isDark } = useTheme();
   const { activeContext } = useActiveContext();
-  // ProfileScreen is its own stack but we deep-link into HomeStack screens, which works because the navigator is shared in MainTab
-  const navigation = useNavigation<NavigationProp<HomeStackParamList>>();
+  // ProfileScreen is its own stack but we deep-link into PromptsStack screens, which works because the navigator is shared in MainTab
+  const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
   const [contentFilter, setContentFilter] = useState('vetted');
   const [reflections, setReflections] = useState<Reflection[]>([]);
 

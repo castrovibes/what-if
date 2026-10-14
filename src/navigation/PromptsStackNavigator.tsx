@@ -1,7 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { HomeStackParamList } from './types';
-import { HomeScreen } from '../screens/HomeScreen';
+import { PromptsStackParamList } from './types';
+import { PromptsScreen } from '../screens/PromptsScreen';
 import { PromptScreen } from '../screens/PromptScreen';
 import { ModulesScreen } from '../screens/ModulesScreen';
 import { ModuleDetailScreen } from '../screens/ModuleDetailScreen';
@@ -10,12 +10,12 @@ import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
 
-const Stack = createStackNavigator<HomeStackParamList>();
+const Stack = createStackNavigator<PromptsStackParamList>();
 
-export const HomeStackNavigator = () => {
+export const PromptsStackNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen name="PromptsMain" component={PromptsScreen} />
       <Stack.Screen name="Prompt" component={PromptScreen} />
       <Stack.Screen name="Modules" component={ModulesScreen} />
       <Stack.Screen name="ModuleDetail" component={ModuleDetailScreen} />

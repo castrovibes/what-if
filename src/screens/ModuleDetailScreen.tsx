@@ -9,12 +9,12 @@ import { ModuleRepo, Module, ModuleStep } from '../db/repositories/modules';
 import { PromptRepo } from '../db/repositories/prompts';
 import { Prompt } from '../db/types';
 import { useActiveContext } from '../providers/ActiveContextProvider';
-import { HomeStackParamList } from '../navigation/types';
+import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
 export const ModuleDetailScreen = () => {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<HomeStackParamList, 'ModuleDetail'>>();
+  const route = useRoute<RouteProp<PromptsStackParamList, 'ModuleDetail'>>();
   const { colors } = useTheme();
   const { activeContext } = useActiveContext();
   const moduleId = route.params.moduleId;

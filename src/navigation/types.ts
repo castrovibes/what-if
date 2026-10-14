@@ -18,8 +18,8 @@ export type MainTabParamList = {
   Loading: undefined;
 };
 
-export type HomeStackParamList = {
-  HomeMain: undefined;
+export type PromptsStackParamList = {
+  PromptsMain: undefined;
   Prompt: { ageGroup: string; liminalSpace?: string };
   Reflection: { promptId: string };
   Modules: undefined;

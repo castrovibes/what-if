@@ -32,7 +32,7 @@ import { WorldBuildingCarousel } from '../components/WorldBuildingCarousel';
 import { ReflectionRepo } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { applyTokens } from '../data/personalizationTokens';
-import { HomeStackParamList } from '../navigation/types';
+import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
 const DRAWER_MS = 400;
@@ -96,7 +96,7 @@ const slideBackBehindCard = (values: { currentHeight: number }) => {
 
 export const PromptScreen = () => {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<HomeStackParamList, 'Prompt'>>();
+  const route = useRoute<RouteProp<PromptsStackParamList, 'Prompt'>>();
   const { colors } = useTheme();
   const { activeContext } = useActiveContext();
   const selectedAge = (route.params?.ageGroup ?? '3-5') as AgeGroupId;
