@@ -10,7 +10,7 @@ import { usePromptCountsByAge } from '../hooks/usePromptsForAge';
 import { LiminalSpaceChips } from '../components/LiminalSpaceChips';
 import { PromptsStackParamList } from '../navigation/types';
 
-export const PromptsScreen = () => {
+export const AgePickerScreen = () => {
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
   const { colors } = useTheme();
   const [selectedAge, setSelectedAge] = useState<AgeGroupId | null>(null);
