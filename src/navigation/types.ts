@@ -9,7 +9,7 @@ export type OnboardingStackParamList = {
 };
 
 export type MainTabParamList = {
-  Home: undefined;
+  Prompts: undefined;
   Community: undefined;
   Profile: undefined;
   Settings: undefined;

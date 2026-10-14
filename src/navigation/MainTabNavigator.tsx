@@ -47,9 +47,9 @@ export const MainTabNavigator = () => {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof Feather.glyphMap = 'home';
+          let iconName: keyof typeof Feather.glyphMap = 'message-circle';
 
-          if (route.name === 'Home') iconName = 'home';
+          if (route.name === 'Prompts') iconName = 'message-circle';
           else if (route.name === 'Community') iconName = 'users';
           else if (route.name === 'Profile') iconName = 'user';
           else if (route.name === 'Settings') iconName = 'settings';
@@ -67,7 +67,7 @@ export const MainTabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeStackNavigator} />
+      <Tab.Screen name="Prompts" component={HomeStackNavigator} />
       <Tab.Screen name="Community" component={CommunityStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileStackNavigator} />
       <Tab.Screen name="Settings" component={SettingsStackNavigator} />
