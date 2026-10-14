@@ -9,6 +9,10 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
+.claude
+.cleanup-backup-2026-10-09
+
+docs
 
 # Local Flutter SDK clone (not part of this app)
 flutter/
