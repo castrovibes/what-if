@@ -28,7 +28,14 @@ const GROUP_META: Record<TipKind, { label: string; icon: keyof typeof Feather.gl
   safety_note: { label: "If you're concerned", icon: 'shield',        color: '#49297e' },
 };
 
-export const ExpandableTipsPanel = ({ promptId }: { promptId: string }) => {
+export const ExpandableTipsPanel = ({
+  promptId,
+  headerless = false,
+}: {
+  promptId: string;
+  /** Render just the tip groups, always expanded, for hosts that supply their own title. */
+  headerless?: boolean;
+}) => {
   const { tips, total, loading } = useTipsForPrompt(promptId);
   const [expanded, setExpanded] = useState(false);
   const { colors } = useTheme();
@@ -39,6 +46,33 @@ export const ExpandableTipsPanel = ({ promptId }: { promptId: string }) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(prev => !prev);
   };
+
+  const groups = GROUP_ORDER.map(kind => {
+    const items = tips[kind];
+    if (items.length === 0) return null;
+    const meta = GROUP_META[kind];
+    return (
+      <View key={kind} style={localStyles.group}>
+        <Text style={[localStyles.groupHeader, { color: colors.textSecondary }]}>
+          {meta.label.toUpperCase()}
+        </Text>
+        <View style={sharedStyles.tipsBoxList}>
+          {items.map(tip => (
+            <View key={tip.id} style={sharedStyles.tipsBoxRow}>
+              <Feather name={meta.icon} size={14} color={meta.color} />
+              <Text style={[sharedStyles.tipsBoxItem, { color: colors.textSecondary, flex: 1 }]}>
+                {tip.body}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  });
+
+  if (headerless) {
+    return <View style={localStyles.headerlessContent}>{groups}</View>;
+  }
 
   return (
     <View style={[sharedStyles.tipsBox, { backgroundColor: colors.tipsBoxBg, borderColor: colors.tipsBoxBorder }]}>
@@ -58,32 +92,7 @@ export const ExpandableTipsPanel = ({ promptId }: { promptId: string }) => {
         </View>
       </TouchableOpacity>
 
-      {expanded && (
-        <View style={localStyles.expandedContent}>
-          {GROUP_ORDER.map(kind => {
-            const items = tips[kind];
-            if (items.length === 0) return null;
-            const meta = GROUP_META[kind];
-            return (
-              <View key={kind} style={localStyles.group}>
-                <Text style={[localStyles.groupHeader, { color: colors.textSecondary }]}>
-                  {meta.label.toUpperCase()}
-                </Text>
-                <View style={sharedStyles.tipsBoxList}>
-                  {items.map(tip => (
-                    <View key={tip.id} style={sharedStyles.tipsBoxRow}>
-                      <Feather name={meta.icon} size={14} color={meta.color} />
-                      <Text style={[sharedStyles.tipsBoxItem, { color: colors.textSecondary, flex: 1 }]}>
-                        {tip.body}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
+      {expanded && <View style={localStyles.expandedContent}>{groups}</View>}
     </View>
   );
 };
@@ -107,6 +116,10 @@ const localStyles = StyleSheet.create({
   expandedContent: {
     marginTop: Spacing.md,
     gap: Spacing.md,
+  },
+  headerlessContent: {
+    gap: Spacing.lg,
+    paddingBottom: Spacing.sm,
   },
   group: {
     gap: Spacing.sm,
