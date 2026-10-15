@@ -12,10 +12,19 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-gesture-handler';
-import { ThemeProvider } from './src/theme/ThemeProvider';
+import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 import { DbProvider } from './src/providers/DbProvider';
 import { ActiveContextProvider } from './src/providers/ActiveContextProvider';
 import { RootNavigator } from './src/app/RootNavigator';
+
+/**
+ * Status bar that follows the app's theme (which can override the device setting),
+ * so it never shows dark text on a dark background or vice versa.
+ */
+const ThemedStatusBar = () => {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+};
 
 /**
  * Root application component
@@ -37,10 +46,8 @@ export default function App() {
               <RootNavigator />
             </ActiveContextProvider>
           </DbProvider>
+          <ThemedStatusBar />
         </ThemeProvider>
-
-        {/* Status bar with automatic styling (light/dark) based on device theme */}
-        <StatusBar style="auto" />
       </NavigationContainer>
     </SafeAreaProvider>
   );
