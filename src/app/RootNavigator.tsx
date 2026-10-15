@@ -17,8 +17,6 @@ export const RootNavigator = () => {
     async function loadFonts() {
       try {
         await Font.loadAsync({
-          'Barrio-Regular': require('../../assets/fonts/Barrio-Regular.ttf'),
-          'RoadRage-Regular': require('../../assets/fonts/RoadRage-Regular.ttf'),
           'Inter-Medium': require('../../assets/fonts/Inter-Medium.ttf'),
           'Inter-SemiBold': require('../../assets/fonts/Inter-SemiBold.ttf'),
         });

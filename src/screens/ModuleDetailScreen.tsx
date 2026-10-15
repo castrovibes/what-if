@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
-import { styles } from '../styles/sharedStyles';
 import { ModuleRepo, Module, ModuleStep } from '../db/repositories/modules';
 import { PromptRepo } from '../db/repositories/prompts';
 import { Prompt } from '../db/types';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
+import { findAgeGroup } from '../data/ageGroups';
+import { Screen, ScreenHeader, ScreenScroll, Card, Dot } from '../ui/components';
+import { useSurface, PINK } from '../ui/surface';
 
 export const ModuleDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<PromptsStackParamList, 'ModuleDetail'>>();
   const { colors } = useTheme();
+  const surface = useSurface();
   const { activeContext } = useActiveContext();
   const moduleId = route.params.moduleId;
 
@@ -50,36 +52,61 @@ export const ModuleDetailScreen = () => {
   if (!module) return null;
 
   const completedCount = steps.filter(s => completed.has(s.promptId)).length;
+  const accent = module.coverColor ?? findAgeGroup(module.ageGroup)?.bgColor ?? surface.accent;
+  const ageDot = findAgeGroup(module.ageGroup)?.bgColor ?? accent;
+  const progress = steps.length > 0 ? completedCount / steps.length : 0;
 
   return (
-    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonRow}>
-          <Feather name="chevron-left" size={20} color="#e10086" />
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-
-        <View style={[localStyles.cover, { backgroundColor: module.coverColor ?? '#49297e' }]}>
-          <Text style={localStyles.coverTitle}>{module.title.toUpperCase()}</Text>
-          <Text style={localStyles.coverDescription}>{module.description}</Text>
-          <Text style={localStyles.coverProgress}>
-            {completedCount} of {steps.length} complete
-          </Text>
-        </View>
+    <Screen>
+      <ScreenHeader title="Conversation Series" onBack={() => navigation.goBack()} />
+      <ScreenScroll>
+        <Card accent={accent}>
+          <View>
+            {module.ageGroup && (
+              <View style={localStyles.meta}>
+                <Dot color={ageDot} />
+                <Text style={[localStyles.metaText, { color: colors.textSecondary }]}>
+                  Ages {module.ageGroup}
+                </Text>
+              </View>
+            )}
+            <Text style={[localStyles.coverTitle, { color: colors.textPrimary }]}>{module.title}</Text>
+            <Text style={[localStyles.coverDescription, { color: colors.textSecondary }]}>
+              {module.description}
+            </Text>
+            <View style={[localStyles.progressTrack, { backgroundColor: surface.border }]}>
+              <View
+                style={[
+                  localStyles.progressFill,
+                  { backgroundColor: PINK, width: `${Math.round(progress * 100)}%` },
+                ]}
+              />
+            </View>
+            <Text style={[localStyles.coverProgress, { color: colors.textSecondary }]}>
+              {completedCount} of {steps.length} complete
+            </Text>
+          </View>
+        </Card>
 
         {steps.map(s => {
           const done = completed.has(s.promptId);
           return (
-            <View key={s.promptId} style={[localStyles.stepCard, { backgroundColor: colors.cardBg }]}>
+            <Card key={s.promptId}>
               <View style={localStyles.stepHeader}>
-                <Text style={[localStyles.stepNumber, { color: colors.textSecondary }]}>
-                  STEP {s.stepNumber}
-                </Text>
-                <TouchableOpacity onPress={() => toggleStep(s.promptId)}>
+                <View style={[localStyles.stepPill, { borderColor: surface.border }]}>
+                  <Text style={[localStyles.stepNumber, { color: colors.textSecondary }]}>
+                    STEP {s.stepNumber}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => toggleStep(s.promptId)}
+                  hitSlop={8}
+                  accessibilityLabel={done ? 'Step complete' : 'Mark step complete'}
+                >
                   <Feather
                     name={done ? 'check-circle' : 'circle'}
                     size={22}
-                    color={done ? '#00db96' : colors.iconInactive}
+                    color={done ? PINK : colors.iconInactive}
                   />
                 </TouchableOpacity>
               </View>
@@ -96,78 +123,90 @@ export const ModuleDetailScreen = () => {
                   After: {s.outroText}
                 </Text>
               )}
-            </View>
+            </Card>
           );
         })}
-      </ScrollView>
-    </SafeAreaView>
+      </ScreenScroll>
+    </Screen>
   );
 };
 
 const localStyles = StyleSheet.create({
-  cover: {
-    borderRadius: 16,
-    padding: Spacing.lg,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
+  meta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: Spacing.sm,
+  },
+  metaText: {
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
   },
   coverTitle: {
     fontSize: Typography.title1,
-    fontFamily: 'Barrio-Regular',
-    color: '#49297e',
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+    lineHeight: Math.round(Typography.title1 * 1.25),
     marginBottom: Spacing.sm,
   },
   coverDescription: {
     fontSize: Typography.body,
     fontFamily: 'Inter-Medium',
-    color: '#49297e',
     lineHeight: 22,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: Spacing.sm,
+  },
+  progressFill: {
+    height: 6,
+    borderRadius: 3,
   },
   coverProgress: {
-    fontSize: Typography.caption,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
-    color: '#49297e',
-    letterSpacing: 1,
-  },
-  stepCard: {
-    borderRadius: 12,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
   },
   stepHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  stepPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
   },
   stepNumber: {
-    fontSize: Typography.caption,
+    fontSize: 10,
     fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
-    letterSpacing: 1.4,
+    letterSpacing: 1,
   },
   stepIntro: {
     fontSize: Typography.subheadline,
     fontFamily: 'Inter-Medium',
     fontStyle: 'italic',
+    lineHeight: 21,
     marginBottom: Spacing.sm,
   },
   stepPrompt: {
-    fontSize: Typography.body,
-    fontFamily: 'Inter-Medium',
-    lineHeight: 22,
+    fontSize: Typography.title3,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+    lineHeight: Math.round(Typography.title3 * 1.3),
     marginBottom: Spacing.sm,
   },
   stepOutro: {
     fontSize: Typography.subheadline,
     fontFamily: 'Inter-Medium',
     fontStyle: 'italic',
+    lineHeight: 21,
   },
 });

@@ -1,18 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
-import { styles } from '../styles/sharedStyles';
 import { ReflectionRepo, Reflection } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
+import {
+  Screen,
+  ScreenHeader,
+  ScreenScroll,
+  Card,
+  SectionLabel,
+  ListRow,
+  Dot,
+  Button,
+} from '../ui/components';
+import { useSurface, PINK } from '../ui/surface';
+
+const STATS = [
+  { value: '24', label: 'Prompts Explored', color: '#90dcff' },
+  { value: '8', label: 'Days Active', color: '#00db96' },
+  { value: '4', label: 'Age Groups Used', color: '#e10086' },
+  { value: '2', label: 'Prompts Submitted', color: '#fdfb76' },
+];
 
 export const ProfileScreen = () => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const surface = useSurface();
   const { activeContext } = useActiveContext();
   // ProfileScreen is its own stack but we deep-link into PromptsStack screens, which works because the navigator is shared in MainTab
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
@@ -24,166 +40,299 @@ export const ProfileScreen = () => {
   }, [activeContext.id]);
 
   return (
-    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.bg }]} edges={['top']}>
-      <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Your conversation journey
-        </Text>
-      </View>
+    <Screen>
+      <ScreenHeader title="Profile" subtitle="Your conversation journey" />
 
-      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
-        <View style={styles.profileHeaderCard}>
-          <View style={styles.profileInfo}>
-            <View style={[styles.profileAvatar, { backgroundColor: '#49297e' }]}>
-              <Feather name="user" size={32} color="#fff" />
+      <ScreenScroll>
+        <Card>
+          <View style={local.profileRow}>
+            <View style={[local.profileAvatar, { backgroundColor: surface.accent }]}>
+              <Feather name="user" size={28} color="#fff" />
             </View>
-            <View>
-              <Text style={styles.profileName}>WELCOME BACK!</Text>
-              <Text style={styles.profileRole}>Parent & Educator</Text>
+            <View style={local.flex}>
+              <Text style={[local.profileName, { color: colors.textPrimary }]}>Welcome back!</Text>
+              <Text style={[local.profileRole, { color: colors.textSecondary }]}>Parent & Educator</Text>
             </View>
           </View>
-          <TouchableOpacity style={[styles.editProfileButton, { backgroundColor: isDark ? '#2a2a2a' : '#fff' }]}>
-            <Text style={styles.editProfileButtonText}>Edit Profile</Text>
+          <TouchableOpacity
+            style={[local.editButton, { borderColor: surface.accent }]}
+            activeOpacity={0.85}
+          >
+            <Text style={[local.editButtonText, { color: surface.accent }]}>Edit Profile</Text>
           </TouchableOpacity>
+        </Card>
+
+        <SectionLabel>Your Activity</SectionLabel>
+        <View style={local.statsGrid}>
+          {STATS.map(s => (
+            <Card key={s.label} style={local.statTile}>
+              <View style={local.statTop}>
+                <Text style={[local.statValue, { color: surface.accent }]}>{s.value}</Text>
+                <Dot color={s.color} />
+              </View>
+              <Text style={[local.statLabel, { color: colors.textSecondary }]}>{s.label}</Text>
+            </Card>
+          ))}
         </View>
 
-        <View style={[styles.statsCard, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.statsTitle, { color: colors.textPrimary }]}>Your Activity</Text>
-          <View style={styles.statsGrid}>
-            <View style={[styles.statItem, { backgroundColor: '#90dcff' }]}>
-              <Text style={styles.statValue}>24</Text>
-              <Text style={styles.statLabel}>Prompts Explored</Text>
-            </View>
-            <View style={[styles.statItem, { backgroundColor: '#00db96' }]}>
-              <Text style={styles.statValue}>8</Text>
-              <Text style={styles.statLabel}>Days Active</Text>
-            </View>
-            <View style={[styles.statItem, { backgroundColor: '#e10086' }]}>
-              <Text style={[styles.statValue, { color: '#fff' }]}>4</Text>
-              <Text style={[styles.statLabel, { color: '#fff' }]}>Age Groups Used</Text>
-            </View>
-            <View style={[styles.statItem, { backgroundColor: '#fdfb76' }]}>
-              <Text style={[styles.statValue, { color: '#49297e' }]}>2</Text>
-              <Text style={[styles.statLabel, { color: '#49297e' }]}>Prompts Submitted</Text>
-            </View>
+        <Card>
+          <View style={local.filterHeader}>
+            <Feather name="shield" size={20} color={surface.accent} />
+            <Text style={[local.cardTitle, { color: colors.textPrimary }]}>Quality & safety</Text>
           </View>
-        </View>
-
-        <View
-          style={[
-            styles.contentFilterCard,
-            { backgroundColor: colors.cardBg, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.contentFilterHeader}>
-            <Feather name="shield" size={20} color="#49297e" />
-            <Text style={[styles.contentFilterTitle, { color: colors.textPrimary }]}>QUALITY & SAFETY</Text>
-          </View>
-          <Text style={[styles.contentFilterDescription, { color: colors.textSecondary }]}>
+          <Text style={[local.cardText, { color: colors.textSecondary }]}>
             Control what user-created content appears in your feed
           </Text>
 
-          <TouchableOpacity style={styles.radioOption} onPress={() => setContentFilter('all')}>
-            <View style={styles.radioButton}>
-              {contentFilter === 'all' && <View style={styles.radioButtonInner} />}
-            </View>
-            <View style={styles.radioContent}>
-              <Text style={[styles.radioLabel, { color: colors.textPrimary }]}>
-                Display All User Created Content
-              </Text>
-              <Text style={[styles.radioDescription, { color: colors.textSecondary }]}>
-                Show all community prompts without filtering
-              </Text>
-            </View>
-          </TouchableOpacity>
+          <RadioOption
+            selected={contentFilter === 'all'}
+            onPress={() => setContentFilter('all')}
+            label="Display All User Created Content"
+            description="Show all community prompts without filtering"
+          />
+          <View style={[local.divider, { backgroundColor: surface.border }]} />
+          <RadioOption
+            selected={contentFilter === 'vetted'}
+            onPress={() => setContentFilter('vetted')}
+            label="Display User Created Content After Vetting"
+            description="Only show prompts reviewed by our moderation team"
+            badge="Recommended"
+          />
+          <View style={[local.divider, { backgroundColor: surface.border }]} />
+          <RadioOption
+            selected={contentFilter === 'friends'}
+            onPress={() => setContentFilter('friends')}
+            label="Display Only User Created Content from Friends"
+            description="Most restrictive - only see prompts from your connections"
+          />
+        </Card>
 
-          <View style={[styles.radioDivider, { backgroundColor: colors.border }]} />
-
-          <TouchableOpacity style={styles.radioOption} onPress={() => setContentFilter('vetted')}>
-            <View style={styles.radioButton}>
-              {contentFilter === 'vetted' && <View style={styles.radioButtonInner} />}
-            </View>
-            <View style={styles.radioContent}>
-              <View style={styles.radioLabelRow}>
-                <Text style={[styles.radioLabel, { color: colors.textPrimary }]}>
-                  Display User Created Content After Vetting
-                </Text>
-                <View style={styles.recommendedBadge}>
-                  <Text style={styles.recommendedBadgeText}>Recommended</Text>
-                </View>
-              </View>
-              <Text style={[styles.radioDescription, { color: colors.textSecondary }]}>
-                Only show prompts reviewed by our moderation team
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={[styles.radioDivider, { backgroundColor: colors.border }]} />
-
-          <TouchableOpacity style={styles.radioOption} onPress={() => setContentFilter('friends')}>
-            <View style={styles.radioButton}>
-              {contentFilter === 'friends' && <View style={styles.radioButtonInner} />}
-            </View>
-            <View style={styles.radioContent}>
-              <Text style={[styles.radioLabel, { color: colors.textPrimary }]}>
-                Display Only User Created Content from Friends
-              </Text>
-              <Text style={[styles.radioDescription, { color: colors.textSecondary }]}>
-                Most restrictive - only see prompts from your connections
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.statsCard, { backgroundColor: colors.cardBg, flexDirection: 'row', alignItems: 'center', gap: 12 }]}
-          onPress={() => (navigation as any).navigate('Personalization')}
-        >
-          <Feather name="edit-2" size={20} color="#e10086" />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.statsTitle, { color: colors.textPrimary, marginBottom: 2 }]}>Personalize prompts</Text>
-            <Text style={{ color: colors.textSecondary, fontFamily: 'Inter-Medium', fontSize: Typography.subheadline }}>
-              Name, location, interests — for {activeContext.label}
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-        </TouchableOpacity>
+        <Card padded={false}>
+          <ListRow
+            icon="edit-2"
+            iconColor={PINK}
+            label="Personalize prompts"
+            detail={`Name, location, interests — for ${activeContext.label}`}
+            onPress={() => (navigation as any).navigate('Personalization')}
+            last
+          />
+        </Card>
 
         {reflections.length > 0 && (
-          <View style={[styles.statsCard, { backgroundColor: colors.cardBg }]}>
-            <Text style={[styles.statsTitle, { color: colors.textPrimary }]}>Recent Reflections</Text>
-            {reflections.map(r => (
-              <View
-                key={r.id}
-                style={{
-                  paddingVertical: 12,
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: colors.border,
-                }}
-              >
-                <Text style={{ color: colors.textSecondary, fontFamily: 'Inter-Medium', fontSize: Typography.caption, marginBottom: 4 }}>
-                  {new Date(r.createdAt).toLocaleDateString()} {r.rating ? `• Rating ${r.rating}/5` : ''}
-                </Text>
-                {r.note && (
-                  <Text style={{ color: colors.textPrimary, fontFamily: 'Inter-Medium', fontSize: Typography.subheadline, lineHeight: 20 }}>
-                    {r.note}
+          <>
+            <SectionLabel>Recent Reflections</SectionLabel>
+            <Card padded={false}>
+              {reflections.map((r, i) => (
+                <View
+                  key={r.id}
+                  style={[
+                    local.reflection,
+                    i < reflections.length - 1 && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: surface.border,
+                    },
+                  ]}
+                >
+                  <Text style={[local.reflectionMeta, { color: colors.textSecondary }]}>
+                    {new Date(r.createdAt).toLocaleDateString()} {r.rating ? `• Rating ${r.rating}/5` : ''}
                   </Text>
-                )}
-              </View>
-            ))}
-          </View>
+                  {r.note && (
+                    <Text style={[local.reflectionNote, { color: colors.textPrimary }]}>{r.note}</Text>
+                  )}
+                </View>
+              ))}
+            </Card>
+          </>
         )}
 
-        <LinearGradient colors={['#49297e', '#3a1d66']} style={styles.upgradeCard}>
-          <Text style={styles.upgradeTitle}>UPGRADE TO PROFESSIONAL</Text>
-          <Text style={styles.upgradeDescription}>
+        <Card>
+          <View style={local.filterHeader}>
+            <Feather name="briefcase" size={20} color={surface.accent} />
+            <Text style={[local.cardTitle, { color: surface.accent }]}>Upgrade to Professional</Text>
+          </View>
+          <Text style={[local.cardText, { color: colors.textSecondary }]}>
             Access case management, analytics, and specialized prompt libraries
           </Text>
-          <TouchableOpacity style={styles.upgradeButton}>
-            <Text style={styles.upgradeButtonText}>Learn More</Text>
-          </TouchableOpacity>
-        </LinearGradient>
-      </ScrollView>
-    </SafeAreaView>
+          <Button label="Learn More" variant="secondary" />
+        </Card>
+      </ScreenScroll>
+    </Screen>
   );
 };
+
+/** Radio option row with a pink selection ring and an optional small badge. */
+const RadioOption = ({
+  selected,
+  onPress,
+  label,
+  description,
+  badge,
+}: {
+  selected: boolean;
+  onPress: () => void;
+  label: string;
+  description: string;
+  badge?: string;
+}) => {
+  const { colors } = useTheme();
+  const surface = useSurface();
+  return (
+    <TouchableOpacity style={local.radioOption} onPress={onPress} activeOpacity={0.7}>
+      <View style={[local.radioOuter, { borderColor: selected ? PINK : surface.border }]}>
+        {selected && <View style={local.radioInner} />}
+      </View>
+      <View style={local.flex}>
+        <Text style={[local.radioLabel, { color: colors.textPrimary }]}>{label}</Text>
+        {badge && (
+          <View style={[local.badge, { borderColor: surface.accent }]}>
+            <Text style={[local.badgeText, { color: surface.accent }]}>{badge}</Text>
+          </View>
+        )}
+        <Text style={[local.radioDescription, { color: colors.textSecondary }]}>{description}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const local = StyleSheet.create({
+  flex: { flex: 1 },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  profileAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileName: {
+    fontSize: Typography.title3,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+  },
+  profileRole: {
+    marginTop: 2,
+    fontSize: Typography.subheadline,
+    fontFamily: 'Inter-Medium',
+  },
+  editButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  editButtonText: {
+    fontSize: Typography.subheadline,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: Spacing.md,
+  },
+  statTile: {
+    width: '47.5%',
+    padding: Spacing.md,
+  },
+  statTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statValue: {
+    fontSize: Typography.title2,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+  },
+  statLabel: {
+    marginTop: 4,
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-Medium',
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  cardTitle: {
+    fontSize: Typography.title3,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+  },
+  cardText: {
+    fontSize: Typography.subheadline,
+    fontFamily: 'Inter-Medium',
+    lineHeight: 21,
+    marginBottom: Spacing.md,
+  },
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  radioInner: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: PINK,
+  },
+  radioLabel: {
+    fontSize: Typography.callout,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+    lineHeight: 21,
+  },
+  radioDescription: {
+    marginTop: 2,
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-Medium',
+    lineHeight: 18,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: Typography.caption,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+  },
+  reflection: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 14,
+  },
+  reflectionMeta: {
+    fontSize: Typography.caption,
+    fontFamily: 'Inter-Medium',
+    marginBottom: 4,
+  },
+  reflectionNote: {
+    fontSize: Typography.subheadline,
+    fontFamily: 'Inter-Medium',
+    lineHeight: 20,
+  },
+});

@@ -1,16 +1,42 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { styles } from '../styles/sharedStyles';
+import { View, Text, StyleSheet } from 'react-native';
+import * as Font from 'expo-font';
+import { useTheme } from '../theme/ThemeProvider';
+import { useSurface } from '../ui/surface';
+import { Typography, Spacing } from '../utils/deviceHelpers';
 
-export const LoadingScreen = () => (
-  <LinearGradient colors={['#f8f4ff', '#ece6f4', '#fce0f0']} style={styles.loadingGradient}>
-    <SafeAreaView style={styles.loadingContainer} edges={['top', 'bottom']}>
-      <View style={styles.loadingQuestionMark}>
-        <Text style={styles.loadingQuestionMarkText}>?</Text>
-      </View>
-      <Text style={styles.loadingTitle}>WHAT COULD YOU DO?</Text>
-    </SafeAreaView>
-  </LinearGradient>
-);
+// Shown before fonts and providers are ready, so it only relies on ThemeProvider and
+// falls back to the system font until Inter has loaded.
+export const LoadingScreen = () => {
+  const { colors } = useTheme();
+  const surface = useSurface();
+  const fontFamily = Font.isLoaded('Inter-SemiBold') ? 'Inter-SemiBold' : undefined;
+
+  return (
+    <View style={[local.container, { backgroundColor: surface.screen }]}>
+      <Text style={[local.mark, { color: surface.accent, fontFamily }]}>?</Text>
+      <Text style={[local.title, { color: colors.textPrimary, fontFamily }]}>What Could You Do?</Text>
+    </View>
+  );
+};
+
+const local = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
+  mark: {
+    fontSize: 96,
+    lineHeight: 110,
+    fontWeight: '700',
+    opacity: 0.15,
+    marginBottom: Spacing.sm,
+  },
+  title: {
+    fontSize: Typography.title2,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+});

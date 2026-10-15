@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
-import { styles } from '../styles/sharedStyles';
+import { useSurface, PINK } from '../ui/surface';
+import { Screen, ScreenHeader, ScreenScroll, Card, ListRow } from '../ui/components';
 import { PreReleaseBanner } from '../components/PreReleaseBanner';
 import { ResourceRepo, Resource } from '../db/repositories/faq';
 import { Typography, Spacing } from '../utils/deviceHelpers';
@@ -41,6 +41,7 @@ const SIGNALS: Array<{ id: Signal; label: string; description: string; icon: key
 export const ImConcernedScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const surface = useSurface();
   const [signal, setSignal] = useState<Signal | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
 
@@ -49,65 +50,53 @@ export const ImConcernedScreen = () => {
   }, [signal]);
 
   return (
-    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonRow}>
-          <Feather name="chevron-left" size={20} color="#e10086" />
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
+    <Screen>
+      <ScreenHeader
+        title="I'm concerned"
+        subtitle="What's coming up for you right now? We'll point you to relevant resources."
+        onBack={() => navigation.goBack()}
+      />
 
+      <ScreenScroll>
         <PreReleaseBanner />
 
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>I'M CONCERNED</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          What's coming up for you right now? We'll point you to relevant resources.
-        </Text>
-
         {!signal ? (
-          SIGNALS.map(s => (
-            <TouchableOpacity
-              key={s.id}
-              style={[
-                localStyles.signalCard,
-                { backgroundColor: colors.cardBg, borderColor: colors.border },
-              ]}
-              onPress={() => setSignal(s.id)}
-            >
-              <Feather name={s.icon} size={22} color="#49297e" />
-              <View style={{ flex: 1 }}>
-                <Text style={[localStyles.signalLabel, { color: colors.textPrimary }]}>
-                  {s.label}
-                </Text>
-                <Text style={[localStyles.signalDescription, { color: colors.textSecondary }]}>
-                  {s.description}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-          ))
+          <Card padded={false}>
+            {SIGNALS.map((s, i) => (
+              <ListRow
+                key={s.id}
+                icon={s.icon}
+                iconColor={surface.accent}
+                label={s.label}
+                detail={s.description}
+                onPress={() => setSignal(s.id)}
+                last={i === SIGNALS.length - 1}
+              />
+            ))}
+          </Card>
         ) : (
           <>
-            <TouchableOpacity onPress={() => setSignal(null)} style={localStyles.changeRow}>
-              <Feather name="rotate-ccw" size={14} color="#e10086" />
-              <Text style={[localStyles.changeText]}>Change what's coming up</Text>
+            <TouchableOpacity
+              onPress={() => setSignal(null)}
+              style={localStyles.changeRow}
+              hitSlop={8}
+            >
+              <Feather name="rotate-ccw" size={14} color={PINK} />
+              <Text style={localStyles.changeText}>Change what's coming up</Text>
             </TouchableOpacity>
 
             {resources.length === 0 ? (
-              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+              <Text style={[localStyles.emptyText, { color: colors.textSecondary }]}>
                 No resources tagged yet — see the full resource library.
               </Text>
             ) : (
               resources.map(r => (
-                <TouchableOpacity
+                <Card
                   key={r.id}
-                  style={[
-                    localStyles.resourceCard,
-                    { backgroundColor: colors.cardBg, borderColor: colors.border },
-                  ]}
-                  onPress={() => r.url && Linking.openURL(r.url).catch(() => {})}
-                  disabled={!r.url}
+                  onPress={r.url ? () => Linking.openURL(r.url!).catch(() => {}) : undefined}
+                  style={localStyles.resourceCard}
                 >
-                  <Text style={[localStyles.resourceKind, { color: colors.textSecondary }]}>
+                  <Text style={[localStyles.resourceKind, { color: surface.accent }]}>
                     {r.kind.toUpperCase()} • {r.region}
                   </Text>
                   <Text style={[localStyles.resourceTitle, { color: colors.textPrimary }]}>
@@ -118,71 +107,52 @@ export const ImConcernedScreen = () => {
                       {r.description}
                     </Text>
                   )}
-                </TouchableOpacity>
+                </Card>
               ))
             )}
           </>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </ScreenScroll>
+    </Screen>
   );
 };
 
 const localStyles = StyleSheet.create({
-  signalCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderRadius: 12,
-    marginTop: Spacing.md,
-  },
-  signalLabel: {
-    fontSize: Typography.body,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  signalDescription: {
-    fontSize: Typography.caption,
-    fontFamily: 'Inter-Medium',
-    lineHeight: 16,
-  },
   changeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: 6,
-    marginVertical: Spacing.md,
+    paddingVertical: Spacing.xs,
   },
   changeText: {
-    color: '#e10086',
+    color: PINK,
     fontSize: Typography.subheadline,
     fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
   },
+  emptyText: {
+    fontSize: Typography.subheadline,
+    fontFamily: 'Inter-Medium',
+    lineHeight: 21,
+  },
   resourceCard: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
+    gap: 4,
   },
   resourceKind: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
     letterSpacing: 1.2,
-    marginBottom: 4,
   },
   resourceTitle: {
     fontSize: Typography.body,
     fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
-    marginBottom: 4,
   },
   resourceDescription: {
     fontSize: Typography.subheadline,
     fontFamily: 'Inter-Medium',
-    lineHeight: 20,
+    lineHeight: 21,
   },
 });

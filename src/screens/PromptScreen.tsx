@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  Pressable,
   Alert,
   useWindowDimensions,
 } from 'react-native';
@@ -21,7 +20,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { ageGroups, findAgeGroup, AgeGroupId } from '../data/ageGroups';
@@ -32,7 +30,7 @@ import { usePersonalization } from '../hooks/usePersonalization';
 import { useLiminalSpaces } from '../hooks/useLiminalSpaces';
 import { useCategories } from '../hooks/useCategories';
 import { useTipsForPrompt } from '../hooks/useTipsForPrompt';
-import { ExpandableTipsPanel } from '../components/ExpandableTipsPanel';
+import { DiscussionTips } from '../components/DiscussionTips';
 import { WorldBuildingCarousel } from '../components/WorldBuildingCarousel';
 import { ReflectionRepo } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
@@ -40,15 +38,12 @@ import { Category, Prompt, PromptSource } from '../db/types';
 import { applyTokens } from '../data/personalizationTokens';
 import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
-import { cardShadow } from '../styles/shadows';
-
-const PURPLE = '#49297e';
-const PURPLE_ON_DARK = '#a78bdb';
-const PINK = '#e10086';
+import { useSurface, PINK, CARD_RADIUS } from '../ui/surface';
+import { Screen, ScreenHeader, Pill, Dot, BottomSheet, SheetOption } from '../ui/components';
 
 const DRAWER_MS = 400;
 const CARD_MARGIN_BOTTOM = 24;
-const CARD_CORNER_RADIUS = 20;
+const CARD_CORNER_RADIUS = CARD_RADIUS;
 const DRAWER_TUCK = CARD_MARGIN_BOTTOM + CARD_CORNER_RADIUS;
 const DRAWER_DARKEN = 0.5625;
 
@@ -58,23 +53,6 @@ const SWIPE_MS = 320;
 // swipe the top card flies off and each card below slides up into the slot above.
 const UNDER_CARD = { translateY: 6, rotate: -1.5 };
 const BOTTOM_CARD = { translateY: 12, rotate: 2 };
-
-// Surfaces for this screen. Dark mode uses lighter cards on a darker backdrop with
-// heavier shadows, so the card stack reads clearly.
-const darkCardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 10 },
-  shadowOpacity: 0.6,
-  shadowRadius: 20,
-  elevation: 12,
-};
-
-const useSurface = () => {
-  const { colors, isDark } = useTheme();
-  return isDark
-    ? { screen: '#0b0b0d', card: '#2b2b31', underCard: '#24242a', border: '#3d3d45', shadow: darkCardShadow }
-    : { screen: colors.bgSubtle, card: colors.cardBg, underCard: colors.cardBg, border: colors.border, shadow: cardShadow };
-};
 
 const SOURCE_LABEL: Record<PromptSource, string> = {
   official: 'What If Originals',
@@ -141,10 +119,10 @@ export const PromptScreen = () => {
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
   const route = useRoute<RouteProp<PromptsStackParamList, 'PromptsMain'>>();
   const { activeContext } = useActiveContext();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const surface = useSurface();
   const { width: windowWidth } = useWindowDimensions();
-  const accent = isDark ? PURPLE_ON_DARK : PURPLE;
+  const accent = surface.accent;
 
   const [selectedAge, setSelectedAge] = useState<AgeGroupId>(
     (route.params?.ageGroup ?? activeContext.ageGroupDefault ?? '3-5') as AgeGroupId,
@@ -346,23 +324,23 @@ export const PromptScreen = () => {
   };
 
   return (
-    <SafeAreaView style={[localStyles.screen, { backgroundColor: surface.screen }]} edges={['top']}>
-      <View style={localStyles.header}>
-        <Text style={[localStyles.title, { color: accent }]}>What If</Text>
-        <TouchableOpacity onPress={() => setSheet('more')} hitSlop={8} accessibilityLabel="More">
-          <Feather name="menu" size={22} color={accent} />
-        </TouchableOpacity>
-      </View>
+    <Screen>
+      <ScreenHeader
+        title="What If"
+        rightIcon="menu"
+        rightLabel="More"
+        onRightPress={() => setSheet('more')}
+      />
 
       <View style={localStyles.filterRow}>
-        <FilterPill
+        <Pill
+          dropdown
           onPress={() => setSheet('age')}
-          leading={
-            <View style={[localStyles.ageDot, { backgroundColor: currentAgeGroup?.bgColor }]} />
-          }
+          leading={<Dot color={currentAgeGroup?.bgColor} />}
           label={currentAgeGroup?.label.replace('-', ' – ') ?? ''}
         />
-        <FilterPill
+        <Pill
+          dropdown
           onPress={() => setSheet('situation')}
           leading={
             <Feather
@@ -426,7 +404,7 @@ export const PromptScreen = () => {
             key={g.id}
             label={g.label}
             selected={g.id === selectedAge}
-            leading={<View style={[localStyles.ageDot, { backgroundColor: g.bgColor }]} />}
+            leading={<Dot color={g.bgColor} />}
             onPress={() => {
               setSelectedAge(g.id);
               setSheet(null);
@@ -467,7 +445,7 @@ export const PromptScreen = () => {
 
       <BottomSheet visible={sheet === 'discussion'} title="Discussion tips" onClose={() => setSheet(null)}>
         <ScrollView style={localStyles.discussionScroll}>
-          <ExpandableTipsPanel promptId={promptId} headerless />
+          <DiscussionTips promptId={promptId} />
         </ScrollView>
       </BottomSheet>
 
@@ -491,7 +469,7 @@ export const PromptScreen = () => {
           }}
         />
       </BottomSheet>
-    </SafeAreaView>
+    </Screen>
   );
 };
 
@@ -573,88 +551,6 @@ const PromptCardContent = ({
   );
 };
 
-const FilterPill = ({
-  label,
-  leading,
-  onPress,
-}: {
-  label: string;
-  leading: ReactNode;
-  onPress: () => void;
-}) => {
-  const { colors } = useTheme();
-  const surface = useSurface();
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={[localStyles.filterPill, { backgroundColor: surface.card, borderColor: surface.border }]}
-    >
-      {leading}
-      <Text style={[localStyles.filterPillText, { color: colors.textPrimary }]}>{label}</Text>
-      <Feather name="chevron-down" size={14} color={colors.iconDefault} />
-    </TouchableOpacity>
-  );
-};
-
-const BottomSheet = ({
-  visible,
-  title,
-  onClose,
-  children,
-}: {
-  visible: boolean;
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-}) => {
-  const { colors } = useTheme();
-  const surface = useSurface();
-  const insets = useSafeAreaInsets();
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={localStyles.sheetBackdrop} onPress={onClose} />
-      <View
-        style={[
-          localStyles.sheet,
-          { backgroundColor: surface.card, paddingBottom: insets.bottom + Spacing.md },
-        ]}
-      >
-        <View style={[localStyles.sheetHandle, { backgroundColor: surface.border }]} />
-        <Text style={[localStyles.sheetTitle, { color: colors.textPrimary }]}>{title}</Text>
-        {children}
-      </View>
-    </Modal>
-  );
-};
-
-const SheetOption = ({
-  label,
-  leading,
-  selected,
-  onPress,
-}: {
-  label: string;
-  leading: ReactNode;
-  selected: boolean;
-  onPress: () => void;
-}) => {
-  const { colors } = useTheme();
-  const surface = useSurface();
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[localStyles.sheetOption, { borderBottomColor: surface.border }]}
-    >
-      {leading}
-      <Text style={[localStyles.sheetOptionText, { color: colors.textPrimary }]}>{label}</Text>
-      {selected && <Feather name="check" size={18} color={PINK} />}
-    </TouchableOpacity>
-  );
-};
-
-// Not currently shown: the redesign skips straight to the next prompt.
-// Kept so reflection can be brought back (e.g. from a menu) without rewriting it.
 /* ============ Reflection modal (Deliverable #5) ============ */
 
 const ReflectionModal = ({
@@ -784,46 +680,11 @@ const ReflectionModal = ({
 };
 
 const localStyles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.md,
-  },
-  title: {
-    fontSize: Typography.title2,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
-  },
   filterRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
-  },
-  filterPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  filterPillText: {
-    fontSize: Typography.footnote,
-    fontFamily: 'Inter-Medium',
-    fontWeight: '500',
-  },
-  ageDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
   },
   emptyState: {
     flex: 1,
@@ -963,41 +824,6 @@ const localStyles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
   },
-  sheetBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  },
-  sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-  },
-  sheetHandle: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    marginBottom: Spacing.md,
-  },
-  sheetTitle: {
-    fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
-    marginBottom: Spacing.sm,
-  },
-  sheetOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  sheetOptionText: {
-    flex: 1,
-    fontSize: Typography.body,
-    fontFamily: 'Inter-Medium',
-  },
   discussionScroll: {
     maxHeight: 420,
   },
@@ -1016,7 +842,7 @@ const localStyles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: Typography.title2,
-    fontFamily: 'Barrio-Regular',
+    fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
     marginBottom: Spacing.sm,
   },

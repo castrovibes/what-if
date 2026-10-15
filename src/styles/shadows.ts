@@ -5,11 +5,3 @@ export const cardShadow = {
   shadowRadius: 8,
   elevation: 3,
 };
-
-export const subtleShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.05,
-  shadowRadius: 4,
-  elevation: 1,
-};
