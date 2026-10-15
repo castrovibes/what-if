@@ -9,10 +9,13 @@ import {
   Modal,
   TextInput,
   Alert,
+  Pressable,
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
   Easing,
+  FadeInDown,
+  FadeOutUp,
   interpolate,
   runOnJS,
   useAnimatedStyle,
@@ -33,13 +36,12 @@ import { useTipsForPrompt } from '../hooks/useTipsForPrompt';
 import { DiscussionTips } from '../components/DiscussionTips';
 import { WorldBuildingCarousel } from '../components/WorldBuildingCarousel';
 import { ReflectionRepo } from '../db/repositories/reflections';
-import { useActiveContext } from '../providers/ActiveContextProvider';
 import { Category, Prompt, PromptSource } from '../db/types';
 import { applyTokens } from '../data/personalizationTokens';
 import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK, CARD_RADIUS } from '../ui/surface';
-import { Screen, ScreenHeader, Pill, Dot, BottomSheet, SheetOption } from '../ui/components';
+import { Screen, ScreenHeader, Pill, Dot, Button, BottomSheet, SheetOption } from '../ui/components';
 
 const DRAWER_MS = 400;
 const CARD_MARGIN_BOTTOM = 24;
@@ -113,20 +115,27 @@ const slideBackBehindCard = (values: { currentHeight: number }) => {
   };
 };
 
-type Sheet = 'age' | 'situation' | 'discussion' | 'more' | null;
+const restingTransform = (offset: { translateY: number; rotate: number }) => ({
+  transform: [{ translateY: offset.translateY }, { rotate: `${offset.rotate}deg` }],
+});
+
+type Sheet = 'situation' | 'discussion' | 'more' | null;
 
 export const PromptScreen = () => {
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
   const route = useRoute<RouteProp<PromptsStackParamList, 'PromptsMain'>>();
-  const { activeContext } = useActiveContext();
   const { colors } = useTheme();
   const surface = useSurface();
   const { width: windowWidth } = useWindowDimensions();
   const accent = surface.accent;
 
-  const [selectedAge, setSelectedAge] = useState<AgeGroupId>(
-    (route.params?.ageGroup ?? activeContext.ageGroupDefault ?? '3-5') as AgeGroupId,
+  // No age group until the user starts a session (each app launch starts fresh), unless
+  // one was passed in when navigating here.
+  const [selectedAge, setSelectedAge] = useState<AgeGroupId | null>(
+    (route.params?.ageGroup as AgeGroupId | undefined) ?? null,
   );
+  const sessionStarted = selectedAge !== null;
+  const [ageMenuOpen, setAgeMenuOpen] = useState(false);
   const [liminalSpace, setLiminalSpace] = useState<string | null>(
     route.params?.liminalSpace ?? null,
   );
@@ -136,7 +145,7 @@ export const PromptScreen = () => {
   const [showTwists, setShowTwists] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
 
-  const { prompts, loading } = usePromptsForAge(selectedAge, {
+  const { prompts, loading } = usePromptsForAge(selectedAge ?? '3-5', {
     liminalSpace: liminalSpace ?? undefined,
   });
   const { isFavorited, toggle: toggleFavorite } = useFavorites();
@@ -238,7 +247,47 @@ export const PromptScreen = () => {
     );
   };
 
+  const handleSelectAge = (id: AgeGroupId) => {
+    setSelectedAge(id);
+    setAgeMenuOpen(false);
+  };
+
+  const stackCardStyle = {
+    backgroundColor: surface.underCard,
+    borderColor: surface.border,
+    ...surface.shadow,
+  };
+
   const renderBody = () => {
+    if (!sessionStarted) {
+      // Title card shown until an age group is picked.
+      return (
+        <ScrollView
+          style={localStyles.scroll}
+          contentContainerStyle={localStyles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={localStyles.deck}>
+            <View style={[localStyles.stackCard, stackCardStyle, restingTransform(BOTTOM_CARD)]} />
+            <View style={[localStyles.stackCard, stackCardStyle, restingTransform(UNDER_CARD)]} />
+            <View
+              style={[
+                localStyles.card,
+                localStyles.titleCard,
+                { backgroundColor: surface.card, borderColor: surface.border, ...surface.shadow },
+              ]}
+            >
+              <Text style={[localStyles.titleMark, { color: accent }]}>?</Text>
+              <Text style={[localStyles.titleText, { color: accent }]}>What Could You Do?</Text>
+              <Text style={[localStyles.titleSubtitle, { color: colors.textSecondary }]}>
+                Start a session and choose who you're talking with to get your first prompt.
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      );
+    }
+
     if (loading || !currentPrompt) {
       return (
         <View style={localStyles.emptyState}>
@@ -252,12 +301,6 @@ export const PromptScreen = () => {
         </View>
       );
     }
-
-    const stackCardStyle = {
-      backgroundColor: surface.underCard,
-      borderColor: surface.border,
-      ...surface.shadow,
-    };
 
     return (
       <ScrollView
@@ -332,30 +375,75 @@ export const PromptScreen = () => {
         onRightPress={() => setSheet('more')}
       />
 
-      <View style={localStyles.filterRow}>
-        <Pill
-          dropdown
-          onPress={() => setSheet('age')}
-          leading={<Dot color={currentAgeGroup?.bgColor} />}
-          label={currentAgeGroup?.label.replace('-', ' – ') ?? ''}
-        />
-        <Pill
-          dropdown
-          onPress={() => setSheet('situation')}
-          leading={
-            <Feather
-              name={(currentSpace?.icon as keyof typeof Feather.glyphMap) ?? 'globe'}
-              size={14}
-              color={colors.iconDefault}
-            />
-          }
-          label={currentSpace?.name ?? 'Anywhere'}
-        />
+      <View style={localStyles.filterArea}>
+        <View style={localStyles.filterRow}>
+          <Pill
+            dropdown
+            onPress={() => setAgeMenuOpen(o => !o)}
+            leading={currentAgeGroup ? <Dot color={currentAgeGroup.bgColor} /> : undefined}
+            icon={currentAgeGroup ? undefined : 'users'}
+            label={currentAgeGroup?.label.replace('-', ' – ') ?? 'Age group'}
+          />
+          <Pill
+            dropdown
+            onPress={() => setSheet('situation')}
+            leading={
+              <Feather
+                name={(currentSpace?.icon as keyof typeof Feather.glyphMap) ?? 'globe'}
+                size={14}
+                color={colors.iconDefault}
+              />
+            }
+            label={currentSpace?.name ?? 'Anywhere'}
+          />
+        </View>
+
+        {/* Age picker that drops down from the age pill, over the card */}
+        {ageMenuOpen && (
+          <Animated.View
+            entering={FadeInDown.duration(180)}
+            exiting={FadeOutUp.duration(120)}
+            style={[
+              localStyles.ageMenu,
+              { backgroundColor: surface.card, borderColor: surface.border, ...surface.shadow },
+            ]}
+          >
+            <Text style={[localStyles.ageMenuTitle, { color: colors.textSecondary }]}>
+              WHO ARE YOU TALKING WITH?
+            </Text>
+            {ageGroups.map((g, i) => (
+              <TouchableOpacity
+                key={g.id}
+                onPress={() => handleSelectAge(g.id)}
+                style={[
+                  localStyles.ageOption,
+                  i < ageGroups.length - 1 && {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: surface.border,
+                  },
+                ]}
+                accessibilityLabel={`Ages ${g.label}`}
+              >
+                <Dot color={g.bgColor} size={12} />
+                <Text style={[localStyles.ageOptionText, { color: colors.textPrimary }]}>
+                  {g.label.replace('-', ' – ')}
+                </Text>
+                {g.id === selectedAge && <Feather name="check" size={18} color={PINK} />}
+              </TouchableOpacity>
+            ))}
+          </Animated.View>
+        )}
       </View>
 
       {renderBody()}
 
-      {currentPrompt && !loading && (
+      {!sessionStarted && (
+        <View style={localStyles.startRow}>
+          <Button label="Start a session" icon="play" onPress={() => setAgeMenuOpen(true)} />
+        </View>
+      )}
+
+      {sessionStarted && currentPrompt && !loading && (
         <View style={localStyles.actionRow}>
           <TouchableOpacity
             onPress={handleSkip}
@@ -397,21 +485,6 @@ export const PromptScreen = () => {
           </TouchableOpacity>
         </View>
       )}
-
-      <BottomSheet visible={sheet === 'age'} title="Age group" onClose={() => setSheet(null)}>
-        {ageGroups.map(g => (
-          <SheetOption
-            key={g.id}
-            label={g.label}
-            selected={g.id === selectedAge}
-            leading={<Dot color={g.bgColor} />}
-            onPress={() => {
-              setSelectedAge(g.id);
-              setSheet(null);
-            }}
-          />
-        ))}
-      </BottomSheet>
 
       <BottomSheet visible={sheet === 'situation'} title="Right now we're…" onClose={() => setSheet(null)}>
         <SheetOption
@@ -469,6 +542,15 @@ export const PromptScreen = () => {
           }}
         />
       </BottomSheet>
+
+      {/* Tap outside the age picker to close it; sits under the pills and menu */}
+      {ageMenuOpen && (
+        <Pressable
+          style={[StyleSheet.absoluteFill, localStyles.menuBackdrop]}
+          onPress={() => setAgeMenuOpen(false)}
+          accessibilityLabel="Close age picker"
+        />
+      )}
     </Screen>
   );
 };
@@ -680,6 +762,75 @@ const ReflectionModal = ({
 };
 
 const localStyles = StyleSheet.create({
+  filterArea: {
+    // Above the backdrop and the card so the age picker can drop down over them
+    zIndex: 10,
+    elevation: 10,
+  },
+  ageMenu: {
+    position: 'absolute',
+    top: 40,
+    left: Spacing.lg,
+    width: 270,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingTop: Spacing.sm,
+  },
+  ageMenuTitle: {
+    fontSize: Typography.caption,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.xs,
+  },
+  ageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 14,
+  },
+  ageOptionText: {
+    flex: 1,
+    fontSize: Typography.body,
+    fontFamily: 'Inter-Medium',
+  },
+  menuBackdrop: {
+    zIndex: 9,
+    elevation: 9,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+  },
+  titleCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleMark: {
+    fontSize: 72,
+    lineHeight: 84,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+    opacity: 0.15,
+  },
+  titleText: {
+    fontSize: Typography.title1,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  titleSubtitle: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.subheadline,
+    fontFamily: 'Inter-Medium',
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  startRow: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    minHeight: 108,
+    justifyContent: 'center',
+  },
   filterRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
