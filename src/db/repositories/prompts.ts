@@ -62,16 +62,4 @@ export const PromptRepo = {
     );
     return rows.map(fromRow);
   },
-
-  async countsByAgeGroup(): Promise<Record<AgeGroupId, number>> {
-    const db = await getDb();
-    const rows = await db.getAllAsync<{ age_group: string; n: number }>(
-      'SELECT age_group, COUNT(*) AS n FROM prompts WHERE is_active = 1 GROUP BY age_group'
-    );
-    const result: Record<AgeGroupId, number> = { '3-5': 0, '6-8': 0, '9-12': 0, '13-15': 0 };
-    for (const r of rows) {
-      if (r.age_group in result) result[r.age_group as AgeGroupId] = r.n;
-    }
-    return result;
-  },
 };

@@ -39,19 +39,3 @@ export function usePromptsForAge(
 
   return { prompts, loading, error };
 }
-
-export function usePromptCountsByAge(): Record<AgeGroupId, number> | null {
-  const [counts, setCounts] = useState<Record<AgeGroupId, number> | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    PromptRepo.countsByAgeGroup().then(c => {
-      if (!cancelled) setCounts(c);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return counts;
-}

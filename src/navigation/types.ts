@@ -19,8 +19,7 @@ export type MainTabParamList = {
 };
 
 export type PromptsStackParamList = {
-  PromptsMain: undefined;
-  Prompt: { ageGroup: string; liminalSpace?: string };
+  PromptsMain: { ageGroup?: string; liminalSpace?: string } | undefined;
   Reflection: { promptId: string };
   Modules: undefined;
   ModuleDetail: { moduleId: string };

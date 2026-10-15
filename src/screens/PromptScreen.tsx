@@ -22,7 +22,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { ageGroups, findAgeGroup, AgeGroupId } from '../data/ageGroups';
 import { usePromptsForAge } from '../hooks/usePromptsForAge';
@@ -35,6 +35,7 @@ import { useTipsForPrompt } from '../hooks/useTipsForPrompt';
 import { ExpandableTipsPanel } from '../components/ExpandableTipsPanel';
 import { WorldBuildingCarousel } from '../components/WorldBuildingCarousel';
 import { ReflectionRepo } from '../db/repositories/reflections';
+import { useActiveContext } from '../providers/ActiveContextProvider';
 import { Category, Prompt, PromptSource } from '../db/types';
 import { applyTokens } from '../data/personalizationTokens';
 import { PromptsStackParamList } from '../navigation/types';
@@ -134,18 +135,19 @@ const slideBackBehindCard = (values: { currentHeight: number }) => {
   };
 };
 
-type Sheet = 'age' | 'situation' | 'discussion' | null;
+type Sheet = 'age' | 'situation' | 'discussion' | 'more' | null;
 
 export const PromptScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute<RouteProp<PromptsStackParamList, 'Prompt'>>();
+  const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
+  const route = useRoute<RouteProp<PromptsStackParamList, 'PromptsMain'>>();
+  const { activeContext } = useActiveContext();
   const { colors, isDark } = useTheme();
   const surface = useSurface();
   const { width: windowWidth } = useWindowDimensions();
   const accent = isDark ? PURPLE_ON_DARK : PURPLE;
 
   const [selectedAge, setSelectedAge] = useState<AgeGroupId>(
-    (route.params?.ageGroup ?? '3-5') as AgeGroupId,
+    (route.params?.ageGroup ?? activeContext.ageGroupDefault ?? '3-5') as AgeGroupId,
   );
   const [liminalSpace, setLiminalSpace] = useState<string | null>(
     route.params?.liminalSpace ?? null,
@@ -347,8 +349,8 @@ export const PromptScreen = () => {
     <SafeAreaView style={[localStyles.screen, { backgroundColor: surface.screen }]} edges={['top']}>
       <View style={localStyles.header}>
         <Text style={[localStyles.title, { color: accent }]}>What If</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Back">
-          <Feather name="corner-down-left" size={22} color={accent} />
+        <TouchableOpacity onPress={() => setSheet('more')} hitSlop={8} accessibilityLabel="More">
+          <Feather name="menu" size={22} color={accent} />
         </TouchableOpacity>
       </View>
 
@@ -467,6 +469,27 @@ export const PromptScreen = () => {
         <ScrollView style={localStyles.discussionScroll}>
           <ExpandableTipsPanel promptId={promptId} headerless />
         </ScrollView>
+      </BottomSheet>
+
+      <BottomSheet visible={sheet === 'more'} title="More ways to talk" onClose={() => setSheet(null)}>
+        <SheetOption
+          label="Series"
+          selected={false}
+          leading={<Feather name="book-open" size={16} color={colors.iconDefault} />}
+          onPress={() => {
+            setSheet(null);
+            navigation.navigate('Modules');
+          }}
+        />
+        <SheetOption
+          label="Mad Libs"
+          selected={false}
+          leading={<Feather name="edit-3" size={16} color={colors.iconDefault} />}
+          onPress={() => {
+            setSheet(null);
+            navigation.navigate('MadLibs');
+          }}
+        />
       </BottomSheet>
     </SafeAreaView>
   );
