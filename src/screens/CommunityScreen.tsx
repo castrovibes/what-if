@@ -65,7 +65,7 @@ export const CommunityScreen = () => {
             </View>
           </View>
           <Text style={[styles.postContent, { color: colors.textPrimary }]}>
-            What if you found a lost wallet with money in it? What could you do?
+            What if you found a lost wallet with money in it?
           </Text>
           <View style={[styles.postActions, { borderTopColor: colors.border }]}>
             <TouchableOpacity style={styles.postAction}>
@@ -99,7 +99,7 @@ export const CommunityScreen = () => {
             </View>
           </View>
           <Text style={[styles.postContent, { color: colors.textPrimary }]}>
-            What if you noticed a classmate was always alone at lunch? What could you do?
+            What if you noticed a classmate was always alone at lunch?
           </Text>
           <View style={[styles.postActions, { borderTopColor: colors.border }]}>
             <TouchableOpacity style={styles.postAction}>

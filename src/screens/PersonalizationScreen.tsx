@@ -52,7 +52,7 @@ export const PersonalizationScreen = () => {
           <Text style={[localStyles.previewLabel, { color: colors.textSecondary }]}>PREVIEW</Text>
           <Text style={[localStyles.previewText, { color: colors.textPrimary }]}>
             What if {data.name?.trim() || 'a friend'} was struggling with{' '}
-            {data.interest?.trim() || 'something they love'} in {data.location?.trim() || 'your town'}? What could you do?
+            {data.interest?.trim() || 'something they love'} in {data.location?.trim() || 'your town'}?
           </Text>
         </View>
       </ScrollView>
