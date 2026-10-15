@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -18,6 +19,17 @@ export const WelcomeScreen = () => {
   return (
     <LinearGradient colors={[g0, g1, g2]} style={local.fill}>
       <SafeAreaView style={local.fill} edges={['top', 'bottom']}>
+        {/* Only when replayed from Settings; on first launch Welcome is the root. */}
+        {navigation.canGoBack() && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={10}
+            accessibilityLabel="Back"
+            style={local.back}
+          >
+            <Feather name="chevron-left" size={26} color={surface.accent} />
+          </TouchableOpacity>
+        )}
         <View style={local.content}>
           <Text style={[local.mark, { color: surface.accent }]}>?</Text>
           <Text style={[local.title, { color: surface.accent }]}>What Could You Do?</Text>
@@ -41,6 +53,11 @@ export const WelcomeScreen = () => {
 const local = StyleSheet.create({
   fill: {
     flex: 1,
+  },
+  back: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
   },
   content: {
     flex: 1,

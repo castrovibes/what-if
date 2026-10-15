@@ -8,9 +8,9 @@ import { Typography, Spacing } from '../utils/deviceHelpers';
 
 const STEPS = [
   {
-    title: 'Choose an Age Group',
+    title: 'Pick an Age Group',
     description:
-      "Select the age range that best matches the child you're talking with. Prompts are designed to be developmentally appropriate.",
+      "Tap the age pill at the top of the Prompts screen and choose the range that best matches the child you're talking with. Prompts are designed to be developmentally appropriate.",
   },
   {
     title: 'Read the Prompt Together',

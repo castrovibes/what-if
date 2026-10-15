@@ -11,6 +11,8 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
 import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
+import { WelcomeScreen } from '../screens/WelcomeScreen';
+import { HowToUseScreen } from '../screens/HowToUseScreen';
 import { useTheme } from '../theme/ThemeProvider';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -37,6 +39,11 @@ const SettingsStackNavigator = () => (
     <SettingsStack.Screen name="FAQ" component={FAQScreen} />
     <SettingsStack.Screen name="ImConcerned" component={ImConcernedScreen} />
     <SettingsStack.Screen name="Personalization" component={PersonalizationScreen} />
+    {/* "View Welcome Guide" replays onboarding; finishing it returns to Settings. */}
+    <SettingsStack.Screen name="Welcome" component={WelcomeScreen} />
+    <SettingsStack.Screen name="HowToUse">
+      {({ navigation }) => <HowToUseScreen onComplete={() => navigation.popToTop()} />}
+    </SettingsStack.Screen>
   </SettingsStack.Navigator>
 );
 
