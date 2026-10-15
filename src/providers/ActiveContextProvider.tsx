@@ -2,6 +2,7 @@ import React, { createContext, ReactNode, useContext, useEffect, useState } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ContextRepo } from '../db/repositories/contexts';
 import { Context as ConversationContext } from '../db/types';
+import { AgeGroupId } from '../data/ageGroups';
 import { LoadingScreen } from '../screens/LoadingScreen';
 
 const ACTIVE_CONTEXT_KEY = 'activeContextId';
@@ -10,6 +11,8 @@ type ActiveContextValue = {
   activeContext: ConversationContext;
   contexts: ConversationContext[];
   switchContext: (id: string) => Promise<void>;
+  /** Preferred age range for the active context; null means "ask each session". */
+  setPreferredAgeGroup: (ageGroup: AgeGroupId | null) => Promise<void>;
 };
 
 const ActiveContextCtx = createContext<ActiveContextValue | null>(null);
@@ -48,12 +51,20 @@ export const ActiveContextProvider = ({ children }: { children: ReactNode }) => 
     setActiveId(id);
   };
 
+  const setPreferredAgeGroup = async (ageGroup: AgeGroupId | null) => {
+    if (!activeId) return;
+    await ContextRepo.setAgeGroupDefault(activeId, ageGroup);
+    setContexts(prev =>
+      prev ? prev.map(c => (c.id === activeId ? { ...c, ageGroupDefault: ageGroup } : c)) : prev,
+    );
+  };
+
   if (!contexts || !activeId) return <LoadingScreen />;
   const activeContext = contexts.find(c => c.id === activeId);
   if (!activeContext) return <LoadingScreen />;
 
   return (
-    <ActiveContextCtx.Provider value={{ activeContext, contexts, switchContext }}>
+    <ActiveContextCtx.Provider value={{ activeContext, contexts, switchContext, setPreferredAgeGroup }}>
       {children}
     </ActiveContextCtx.Provider>
   );

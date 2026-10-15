@@ -67,8 +67,19 @@ After running `npm start`, you'll see options in the terminal:
 
 ```
 what-if/
-├── App.tsx                     # Application entry point
-├── WireframeApp.tsx           # Main app component with all screens
+├── App.tsx                     # Application entry point + app-wide providers
+├── src/
+│   ├── app/                   # RootNavigator
+│   ├── navigation/            # Stack/tab navigators
+│   ├── screens/               # App screens
+│   ├── components/            # Reusable UI components
+│   ├── db/                    # SQLite schema, migrations, repositories
+│   ├── hooks/                 # Data and UI hooks
+│   ├── providers/             # DB and active-context providers
+│   ├── theme/                 # Theme provider and themes
+│   ├── data/                  # Static config (age groups, feature flags)
+│   ├── styles/                # Shared styles
+│   └── utils/                 # Helpers
 ├── assets/
 │   └── fonts/
 │       └── Barrio-Regular.ttf # Custom display font
@@ -76,8 +87,7 @@ what-if/
 ├── app.json                   # Expo configuration
 ├── tsconfig.json             # TypeScript configuration
 ├── babel.config.js           # Babel configuration
-├── metro.config.js           # Metro bundler config
-└── webpack.config.js         # Webpack config for web
+└── metro.config.js           # Metro bundler config (native + web)
 ```
 
 ## 🛠️ Tech Stack
@@ -87,7 +97,7 @@ what-if/
 - **Storage**: AsyncStorage for persistent data
 - **Icons**: Expo Vector Icons (Feather)
 - **Fonts**: Expo Font with custom Barrio typeface
-- **Web Support**: Expo Web & Webpack
+- **Web Support**: Expo Web (Metro)
 - **Development**: Hot reloading, TypeScript checking
 
 ## 🎨 App Screens
@@ -106,7 +116,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ### Development Guidelines
 
 - The app supports hot reloading - changes appear automatically
-- Edit `WireframeApp.tsx` to modify app screens and logic
+- Screens live in `src/screens/`; navigation is wired up in `src/app/RootNavigator.tsx` and `src/navigation/`
 - Styles use React Native's StyleSheet API
 - Follow TypeScript best practices
 - Test on multiple platforms before submitting PRs

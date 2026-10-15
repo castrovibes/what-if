@@ -4,13 +4,15 @@ import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MainTabParamList } from './types';
-import { HomeStackNavigator } from './HomeStackNavigator';
+import { PromptsStackNavigator } from './PromptsStackNavigator';
 import { CommunityScreen } from '../screens/CommunityScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
 import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
+import { WelcomeScreen } from '../screens/WelcomeScreen';
+import { HowToUseScreen } from '../screens/HowToUseScreen';
 import { useTheme } from '../theme/ThemeProvider';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -37,6 +39,11 @@ const SettingsStackNavigator = () => (
     <SettingsStack.Screen name="FAQ" component={FAQScreen} />
     <SettingsStack.Screen name="ImConcerned" component={ImConcernedScreen} />
     <SettingsStack.Screen name="Personalization" component={PersonalizationScreen} />
+    {/* "View Welcome Guide" replays onboarding; finishing it returns to Settings. */}
+    <SettingsStack.Screen name="Welcome" component={WelcomeScreen} />
+    <SettingsStack.Screen name="HowToUse">
+      {({ navigation }) => <HowToUseScreen onComplete={() => navigation.popToTop()} />}
+    </SettingsStack.Screen>
   </SettingsStack.Navigator>
 );
 
@@ -47,9 +54,9 @@ export const MainTabNavigator = () => {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof Feather.glyphMap = 'home';
+          let iconName: keyof typeof Feather.glyphMap = 'message-circle';
 
-          if (route.name === 'Home') iconName = 'home';
+          if (route.name === 'Prompts') iconName = 'message-circle';
           else if (route.name === 'Community') iconName = 'users';
           else if (route.name === 'Profile') iconName = 'user';
           else if (route.name === 'Settings') iconName = 'settings';
@@ -67,7 +74,7 @@ export const MainTabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeStackNavigator} />
+      <Tab.Screen name="Prompts" component={PromptsStackNavigator} />
       <Tab.Screen name="Community" component={CommunityStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileStackNavigator} />
       <Tab.Screen name="Settings" component={SettingsStackNavigator} />

@@ -1,13 +1,12 @@
 import React from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
-import { styles } from '../styles/sharedStyles';
 import { usePersonalizationEditor } from '../hooks/usePersonalization';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
+import { Screen, ScreenHeader, ScreenScroll, Card, SectionLabel } from '../ui/components';
+import { useSurface } from '../ui/surface';
 
 export const PersonalizationScreen = () => {
   const navigation = useNavigation();
@@ -18,45 +17,45 @@ export const PersonalizationScreen = () => {
   if (!loaded) return null;
 
   return (
-    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonRow}>
-          <Feather name="chevron-left" size={20} color="#e10086" />
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>PERSONALIZE</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Tailor prompts for {activeContext.label}. Fields are optional — anything you leave blank uses a neutral fallback.
-        </Text>
+    <Screen>
+      <ScreenHeader
+        title="Personalize"
+        onBack={() => navigation.goBack()}
+        subtitle={`Tailor prompts for ${activeContext.label}. Fields are optional — anything you leave blank uses a neutral fallback.`}
+      />
 
-        <Field
-          label="Name"
-          placeholder="e.g. Maya"
-          value={data.name ?? ''}
-          onChange={v => update('name', v)}
-        />
-        <Field
-          label="Location"
-          placeholder="e.g. Boulder"
-          value={data.location ?? ''}
-          onChange={v => update('location', v)}
-        />
-        <Field
-          label="Interest"
-          placeholder="e.g. soccer"
-          value={data.interest ?? ''}
-          onChange={v => update('interest', v)}
-        />
+      <ScreenScroll>
+        <Card>
+          <Field
+            label="Name"
+            placeholder="e.g. Maya"
+            value={data.name ?? ''}
+            onChange={v => update('name', v)}
+          />
+          <Field
+            label="Location"
+            placeholder="e.g. Boulder"
+            value={data.location ?? ''}
+            onChange={v => update('location', v)}
+          />
+          <Field
+            label="Interest"
+            placeholder="e.g. soccer"
+            value={data.interest ?? ''}
+            onChange={v => update('interest', v)}
+            last
+          />
+        </Card>
 
-        <View style={[localStyles.previewCard, { backgroundColor: colors.tipsBg }]}>
-          <Text style={[localStyles.previewLabel, { color: colors.textSecondary }]}>PREVIEW</Text>
-          <Text style={[localStyles.previewText, { color: colors.textPrimary }]}>
+        <SectionLabel>Preview</SectionLabel>
+        <Card>
+          <Text style={[local.previewText, { color: colors.textPrimary }]}>
             What if {data.name?.trim() || 'a friend'} was struggling with{' '}
-            {data.interest?.trim() || 'something they love'} in {data.location?.trim() || 'your town'}? What could you do?
+            {data.interest?.trim() || 'something they love'} in {data.location?.trim() || 'your town'}?
           </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </Card>
+      </ScreenScroll>
+    </Screen>
   );
 };
 
@@ -65,22 +64,23 @@ const Field = ({
   placeholder,
   value,
   onChange,
+  last = false,
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
+  last?: boolean;
 }) => {
   const { colors } = useTheme();
+  const surface = useSurface();
   return (
-    <View style={localStyles.field}>
-      <Text style={[localStyles.fieldLabel, { color: colors.textSecondary }]}>
-        {label.toUpperCase()}
-      </Text>
+    <View style={!last && local.field}>
+      <Text style={[local.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
       <TextInput
         style={[
-          localStyles.fieldInput,
-          { color: colors.textPrimary, backgroundColor: colors.bgMuted, borderColor: colors.border },
+          local.fieldInput,
+          { color: colors.textPrimary, backgroundColor: surface.card, borderColor: surface.border },
         ]}
         placeholder={placeholder}
         placeholderTextColor={colors.iconInactive}
@@ -91,13 +91,12 @@ const Field = ({
   );
 };
 
-const localStyles = StyleSheet.create({
-  field: { marginTop: Spacing.lg },
+const local = StyleSheet.create({
+  field: { marginBottom: Spacing.md },
   fieldLabel: {
-    fontSize: Typography.caption,
+    fontSize: Typography.footnote,
     fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
-    letterSpacing: 1.4,
     marginBottom: 6,
   },
   fieldInput: {
@@ -108,21 +107,10 @@ const localStyles = StyleSheet.create({
     fontSize: Typography.body,
     fontFamily: 'Inter-Medium',
   },
-  previewCard: {
-    marginTop: Spacing.xl,
-    padding: Spacing.lg,
-    borderRadius: 12,
-  },
-  previewLabel: {
-    fontSize: Typography.caption,
+  previewText: {
+    fontSize: Typography.title3,
     fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
-    letterSpacing: 1.4,
-    marginBottom: Spacing.sm,
-  },
-  previewText: {
-    fontSize: Typography.body,
-    fontFamily: 'Inter-Medium',
-    lineHeight: 22,
+    lineHeight: 28,
   },
 });

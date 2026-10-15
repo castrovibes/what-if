@@ -6,6 +6,8 @@ import { migration_0004_personalization_tokens } from './0004_personalization_to
 import { migration_0005_seed_modules } from './0005_seed_modules';
 import { migration_0006_madlibs } from './0006_madlibs';
 import { migration_0007_faq_and_resources } from './0007_faq_and_resources';
+import { migration_0008_trim_placeholder_question } from './0008_trim_placeholder_question';
+import { migration_0009_trim_madlibs_question } from './0009_trim_madlibs_question';
 
 export type Migration = {
   name: string;
@@ -20,4 +22,6 @@ export const migrations: Migration[] = [
   migration_0005_seed_modules,
   migration_0006_madlibs,
   migration_0007_faq_and_resources,
+  migration_0008_trim_placeholder_question,
+  migration_0009_trim_madlibs_question,
 ];

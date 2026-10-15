@@ -9,6 +9,15 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
+.claude
+.cleanup-backup-2026-10-09
+.prompts-rename-backup-2026-10-13
+.prompt-card-redesign-backup-2026-10-13
+.prompt-home-backup-2026-10-14
+.screen-restyle-backup-2026-10-14
+.start-session-backup-2026-10-14
+
+docs
 
 # Local Flutter SDK clone (not part of this app)
 flutter/

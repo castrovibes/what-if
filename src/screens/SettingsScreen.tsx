@@ -1,17 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Switch, Platform, ActionSheetIOS, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, Platform, ActionSheetIOS, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../theme/ThemeProvider';
-import { styles } from '../styles/sharedStyles';
-import { Spacing } from '../utils/deviceHelpers';
+import { Typography, Spacing } from '../utils/deviceHelpers';
+import { useSurface, PINK } from '../ui/surface';
+import {
+  Screen,
+  ScreenHeader,
+  ScreenScroll,
+  Card,
+  SectionLabel,
+  ListRow,
+  Button,
+  Dot,
+  BottomSheet,
+  SheetOption,
+} from '../ui/components';
+import { useActiveContext } from '../providers/ActiveContextProvider';
+import { ageGroups, findAgeGroup } from '../data/ageGroups';
 
 export const SettingsScreen = () => {
   const navigation = useNavigation();
+  const { activeContext, setPreferredAgeGroup } = useActiveContext();
+  const preferredAge = findAgeGroup(activeContext.ageGroupDefault);
+  const [ageSheetOpen, setAgeSheetOpen] = useState(false);
   const { isDark, colors, toggleDarkMode } = useTheme();
+  const surface = useSurface();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [ttsEnabled, setTtsEnabled] = useState(true);
 
@@ -70,211 +86,185 @@ export const SettingsScreen = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.bg }]} edges={['top']}>
-      <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Customize your experience
-        </Text>
-      </View>
+    <Screen>
+      <ScreenHeader title="Settings" subtitle="Customize your experience" />
 
-      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
-        <View style={styles.settingsSection}>
-          <Text style={styles.settingsSectionTitle}>ACCOUNT</Text>
-          <View style={[styles.settingsCard, { backgroundColor: colors.cardBg }]}>
-            <TouchableOpacity style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="user" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>Edit Profile</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-            <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="mail" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>
-                  Email Preferences
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-            <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="lock" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>
-                  Privacy & Security
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-          </View>
-        </View>
+      <ScreenScroll>
+        <SectionLabel>Account</SectionLabel>
+        <Card padded={false}>
+          <ListRow icon="user" label="Edit Profile" onPress={() => {}} />
+          <ListRow icon="mail" label="Email Preferences" onPress={() => {}} />
+          <ListRow icon="lock" label="Privacy & Security" onPress={() => {}} last />
+        </Card>
 
-        <View style={styles.settingsSection}>
-          <Text style={styles.settingsSectionTitle}>PREFERENCES</Text>
-          <View style={[styles.settingsCard, { backgroundColor: colors.cardBg }]}>
-            <View style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="bell" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>Notifications</Text>
-              </View>
+        <SectionLabel>Preferences</SectionLabel>
+        <Card padded={false}>
+          <ListRow
+            icon="users"
+            label="Preferred age range"
+            detail={
+              preferredAge
+                ? preferredAge.label.replace('-', ' – ')
+                : 'Ask each session'
+            }
+            onPress={() => setAgeSheetOpen(true)}
+          />
+          <ListRow
+            icon="bell"
+            label="Notifications"
+            right={
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
-                trackColor={{ false: colors.switchTrackFalse, true: '#e10086' }}
+                trackColor={{ false: colors.switchTrackFalse, true: PINK }}
                 thumbColor="#fff"
               />
-            </View>
-            <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="volume-2" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>Text-to-Speech</Text>
-              </View>
+            }
+          />
+          <ListRow
+            icon="volume-2"
+            label="Text-to-Speech"
+            right={
               <Switch
                 value={ttsEnabled}
                 onValueChange={setTtsEnabled}
-                trackColor={{ false: colors.switchTrackFalse, true: '#49297e' }}
+                trackColor={{ false: colors.switchTrackFalse, true: PINK }}
                 thumbColor="#fff"
               />
-            </View>
-            <View style={styles.settingsDivider} />
-            <View style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="moon" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>Dark Mode</Text>
-              </View>
+            }
+          />
+          <ListRow
+            icon="moon"
+            label="Dark Mode"
+            right={
               <Switch
                 value={isDark}
                 onValueChange={toggleDarkMode}
-                trackColor={{ false: colors.switchTrackFalse, true: '#49297e' }}
+                trackColor={{ false: colors.switchTrackFalse, true: PINK }}
                 thumbColor="#fff"
               />
-            </View>
-            <View style={styles.settingsDivider} />
-            <TouchableOpacity style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="globe" size={20} color={colors.iconDefault} />
-                <View>
-                  <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>Language</Text>
-                  <Text style={[styles.settingsItemSubtext, { color: colors.textSecondary }]}>English</Text>
-                </View>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-          </View>
-        </View>
+            }
+          />
+          <ListRow icon="globe" label="Language" detail="English" onPress={() => {}} last />
+        </Card>
 
-        <View style={styles.settingsSection}>
-          <Text style={styles.settingsSectionTitle}>SUPPORT & INFO</Text>
-          <View style={[styles.settingsCard, { backgroundColor: colors.cardBg }]}>
-            <TouchableOpacity
-              style={styles.settingsItem}
-              onPress={() => (navigation as any).navigate('Welcome')}
-            >
-              <View style={styles.settingsItemLeft}>
-                <Feather name="book-open" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>
-                  View Welcome Guide
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-            <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.settingsItem}
-              onPress={() => (navigation as any).navigate('FAQ')}
-            >
-              <View style={styles.settingsItemLeft}>
-                <Feather name="help-circle" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>Help & FAQ</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-            <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.settingsItem}
-              onPress={() => (navigation as any).navigate('ImConcerned')}
-            >
-              <View style={styles.settingsItemLeft}>
-                <Feather name="life-buoy" size={20} color="#49297e" />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>I'm concerned</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-            <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="mail" size={20} color={colors.iconDefault} />
-                <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>Contact Support</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-            <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity style={styles.settingsItem}>
-              <View style={styles.settingsItemLeft}>
-                <Feather name="file-text" size={20} color={colors.iconDefault} />
-                <View>
-                  <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>About</Text>
-                  <Text style={[styles.settingsItemSubtext, { color: colors.textSecondary }]}>
-                    Version 1.0.0
-                  </Text>
-                </View>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <SectionLabel>Support & Info</SectionLabel>
+        <Card padded={false}>
+          <ListRow
+            icon="book-open"
+            label="View Welcome Guide"
+            onPress={() => (navigation as any).navigate('Welcome')}
+          />
+          <ListRow
+            icon="help-circle"
+            label="Help & FAQ"
+            onPress={() => (navigation as any).navigate('FAQ')}
+          />
+          <ListRow
+            icon="life-buoy"
+            iconColor={surface.accent}
+            label="I'm concerned"
+            onPress={() => (navigation as any).navigate('ImConcerned')}
+          />
+          <ListRow icon="mail" label="Contact Support" onPress={() => {}} />
+          <ListRow icon="file-text" label="About" detail="Version 1.0.0" onPress={() => {}} last />
+        </Card>
 
-        <LinearGradient colors={['#49297e', '#3a1d66']} style={styles.upgradeCard}>
-          <Text style={styles.upgradeTitle}>GO PROFESSIONAL</Text>
-          <Text style={styles.upgradeDescription}>
+        <Card accent={surface.accent} style={localStyles.upgradeCard}>
+          <View style={localStyles.upgradeTitleRow}>
+            <Feather name="award" size={20} color={surface.accent} />
+            <Text style={[localStyles.upgradeTitle, { color: surface.accent }]}>Go Professional</Text>
+          </View>
+          <Text style={[localStyles.upgradeDescription, { color: colors.textSecondary }]}>
             Unlock advanced features for educators and therapists
           </Text>
-          <TouchableOpacity style={styles.upgradeButton}>
-            <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+          <Button label="Upgrade Now" onPress={() => {}} />
+        </Card>
 
-        <View style={[styles.settingsCard, { backgroundColor: colors.cardBg }]}>
-          <TouchableOpacity style={styles.settingsItem} onPress={showLogOutActionSheet}>
-            <View style={styles.settingsItemLeft}>
-              <Feather name="log-out" size={20} color={colors.iconDefault} />
-              <Text style={[styles.settingsItemText, { color: colors.textPrimary }]}>Log Out</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={colors.iconInactive} />
-          </TouchableOpacity>
-          <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-          <TouchableOpacity style={styles.settingsItem} onPress={showDeleteAccountActionSheet}>
-            <View style={styles.settingsItemLeft}>
-              <Feather name="trash-2" size={20} color="#dc2626" />
-              <Text style={[styles.settingsItemText, { color: '#dc2626' }]}>Delete Account</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color="#fca5a5" />
-          </TouchableOpacity>
-        </View>
+        <Card padded={false}>
+          <ListRow icon="log-out" label="Log Out" onPress={showLogOutActionSheet} />
+          <ListRow
+            icon="trash-2"
+            label="Delete Account"
+            onPress={showDeleteAccountActionSheet}
+            destructive
+            last
+          />
+        </Card>
 
-        <View style={[styles.settingsCard, { backgroundColor: colors.cardBg, marginTop: Spacing.lg }]}>
-          <TouchableOpacity
-            style={styles.settingsItem}
+        <Card padded={false} style={localStyles.devCard}>
+          <ListRow
+            icon="refresh-cw"
+            iconColor={DEV_AMBER}
+            label="Replay First Launch (Dev)"
+            detail="Shows the welcome flow on next launch. Theme & data preserved."
+            chevron={false}
             onPress={async () => {
               await AsyncStorage.removeItem('hasLaunchedBefore');
               Alert.alert('Reset Complete', 'Restart the app to see the welcome screen.');
             }}
-          >
-            <View style={styles.settingsItemLeft}>
-              <Feather name="refresh-cw" size={20} color="#ca8a04" />
-              <View>
-                <Text style={[styles.settingsItemText, { color: '#ca8a04' }]}>Replay First Launch (Dev)</Text>
-                <Text style={[styles.settingsItemSubtext, { color: colors.textSecondary }]}>
-                  Shows the welcome flow on next launch. Theme & data preserved.
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            last
+          />
+        </Card>
+      </ScreenScroll>
+      <BottomSheet
+        visible={ageSheetOpen}
+        title="Preferred age range"
+        onClose={() => setAgeSheetOpen(false)}
+      >
+        <SheetOption
+          label="Ask each session"
+          selected={!preferredAge}
+          leading={<Feather name="help-circle" size={16} color={colors.iconDefault} />}
+          onPress={() => {
+            setPreferredAgeGroup(null);
+            setAgeSheetOpen(false);
+          }}
+        />
+        {ageGroups.map(g => (
+          <SheetOption
+            key={g.id}
+            label={g.label.replace('-', ' – ')}
+            selected={g.id === preferredAge?.id}
+            leading={<Dot color={g.bgColor} />}
+            onPress={() => {
+              setPreferredAgeGroup(g.id);
+              setAgeSheetOpen(false);
+            }}
+          />
+        ))}
+      </BottomSheet>
+    </Screen>
   );
 };
+
+/** Amber used to flag developer-only tools. */
+const DEV_AMBER = '#ca8a04';
+
+const localStyles = StyleSheet.create({
+  upgradeCard: {
+    gap: Spacing.sm,
+  },
+  upgradeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  upgradeTitle: {
+    fontSize: Typography.title3,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+  },
+  upgradeDescription: {
+    fontSize: Typography.subheadline,
+    fontFamily: 'Inter-Medium',
+    lineHeight: 21,
+    marginBottom: Spacing.sm,
+  },
+  devCard: {
+    marginTop: Spacing.md,
+    borderStyle: 'dashed',
+    borderColor: DEV_AMBER,
+    borderWidth: 1,
+  },
+});

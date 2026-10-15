@@ -12,13 +12,26 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-gesture-handler';
-import WireframeApp from './WireframeApp';
+import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
+import { DbProvider } from './src/providers/DbProvider';
+import { ActiveContextProvider } from './src/providers/ActiveContextProvider';
+import { RootNavigator } from './src/app/RootNavigator';
+
+/**
+ * Status bar that follows the app's theme (which can override the device setting),
+ * so it never shows dark text on a dark background or vice versa.
+ */
+const ThemedStatusBar = () => {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+};
 
 /**
  * Root application component
  *
- * Wraps the app with NavigationContainer for React Navigation and
- * SafeAreaProvider for proper handling of notches, home indicators, etc.
+ * Wraps the app with SafeAreaProvider (notches, home indicators, etc.),
+ * NavigationContainer for React Navigation, and the app-wide theme,
+ * database, and active-context providers around the RootNavigator.
  *
  * @returns {JSX.Element} The root application component
  */
@@ -26,11 +39,15 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        {/* Main application component containing all screens and navigation */}
-        <WireframeApp />
-
-        {/* Status bar with automatic styling (light/dark) based on device theme */}
-        <StatusBar style="auto" />
+        {/* App-wide providers (order matters: inner providers depend on outer ones) */}
+        <ThemeProvider>
+          <DbProvider>
+            <ActiveContextProvider>
+              <RootNavigator />
+            </ActiveContextProvider>
+          </DbProvider>
+          <ThemedStatusBar />
+        </ThemeProvider>
       </NavigationContainer>
     </SafeAreaProvider>
   );

@@ -44,9 +44,17 @@ This phrasing is intentional. It encourages brainstorming over judgment, creativ
 ## Design System
 
 ### Typography
-- **Barrio** (Google Fonts, cursive) — Major headings only, all caps, attention-grabbing
-- **Road Rage** (Google Fonts, cursive) — All body text, buttons, labels, descriptions, navigation
-- This pairing creates a bold, street-art / graffiti aesthetic with strong visual personality
+- **Inter** for everything (bundled in `assets/fonts/`):
+  - `Inter-SemiBold` — screen titles (accent purple, title case — not all caps), card titles, prompt text, buttons
+  - `Inter-Medium` — body text, labels, descriptions, navigation
+- Barrio and Road Rage are no longer used or loaded (the font files remain in `assets/fonts/`).
+
+### Visual language (set by the prompt card screen)
+- Soft gray screen background (light) / near-black (dark); content sits on white rounded cards (radius 20, hairline border, soft shadow). Dark mode uses lighter raised cards and heavier shadows for contrast.
+- Hot pink for primary actions and active/selected states; deep purple (lightened in dark mode) for titles, icons and outlines.
+- Age-group colors are accents only — a dot, small pill or thin stripe — never full card backgrounds.
+- Filters are pills; secondary choices open bottom sheets.
+- Build screens from the shared kit: `src/ui/surface.ts` (`useSurface()` tokens) and `src/ui/components.tsx` (Screen, ScreenHeader, Card, ListRow, Pill, Button, BottomSheet, …).
 
 ### Color Palette (5 colors)
 | Color | Hex | RGB | Usage |
@@ -207,12 +215,13 @@ Cross-platform (React Native) was chosen because:
 ## Development Guidelines
 
 ### When Building UI
-- Always use Barrio for headings (uppercase) and Road Rage for everything else
-- Use the 5-color palette via inline styles (not Tailwind arbitrary values — they don't compile in all contexts)
-- Age group buttons must show their distinct assigned colors
-- Deep purple (`#49297e`) for borders and structural elements
+- Use Inter for all text (see Typography); no Barrio or Road Rage
+- Start from the shared kit in `src/ui/` and `useSurface()` for backgrounds, cards, borders and shadows, rather than raw theme colors
+- Age groups keep their distinct assigned colors, shown as accents (dot, pill, stripe)
+- Deep purple (`#49297e`, or `surface.accent`) for titles, icons and outlines
 - Hot pink (`#e10086`) for primary CTAs and active states
-- Welcome screen uses soft gradient background (indigo-50 → purple-50 → pink-50), NOT the full color palette gradient
+- Check every screen in both light and dark mode
+- Welcome screen uses a soft gradient background, NOT the full color palette gradient
 
 ### When Working with Prompts
 - Every prompt follows the format: "What if [scenario]? What are all the things you can think of that you could do?"
@@ -230,6 +239,5 @@ Cross-platform (React Native) was chosen because:
 ### Code Style
 - React functional components with hooks
 - Single-file components preferred for prototyping
-- Tailwind CSS for utility styling (use core classes only, not arbitrary values)
-- Inline styles for custom colors from the palette
-- lucide-react for icons
+- React Native `StyleSheet` for styling; colors from `useSurface()` / `useTheme()` applied inline
+- Feather icons from `@expo/vector-icons`

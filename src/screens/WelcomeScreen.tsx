@@ -1,49 +1,100 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
-import { styles } from '../styles/sharedStyles';
+import { useSurface } from '../ui/surface';
+import { Button } from '../ui/components';
+import { Typography, Spacing } from '../utils/deviceHelpers';
 import { OnboardingStackParamList } from '../navigation/types';
-
-const wiBackground = require('../../assets/images/wi-background.png');
 
 export const WelcomeScreen = () => {
   const navigation = useNavigation<NavigationProp<OnboardingStackParamList>>();
   const { colors } = useTheme();
+  const surface = useSurface();
+  const [g0, g1, g2] = colors.gradientStops;
 
   return (
-    <ImageBackground source={wiBackground} style={styles.welcomeContainer} resizeMode="cover">
-      <SafeAreaView
-        style={[styles.welcomeOverlay, { backgroundColor: colors.bgOverlay }]}
-        edges={['top', 'bottom']}
-      >
-        <View style={styles.welcomeContent}>
-          <Text style={[styles.welcomeTitle, { color: colors.textPrimary }]}>WHAT COULD YOU DO?</Text>
-          <Text style={[styles.welcomeSubtitle, { color: colors.textSecondary }]}>
+    <LinearGradient colors={[g0, g1, g2]} style={local.fill}>
+      <SafeAreaView style={local.fill} edges={['top', 'bottom']}>
+        {/* Only when replayed from Settings; on first launch Welcome is the root. */}
+        {navigation.canGoBack() && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={10}
+            accessibilityLabel="Back"
+            style={local.back}
+          >
+            <Feather name="chevron-left" size={26} color={surface.accent} />
+          </TouchableOpacity>
+        )}
+        <View style={local.content}>
+          <Text style={[local.mark, { color: surface.accent }]}>?</Text>
+          <Text style={[local.title, { color: surface.accent }]}>What Could You Do?</Text>
+          <Text style={[local.subtitle, { color: colors.textSecondary }]}>
             Foster meaningful conversations with children through age-appropriate prompts that spark
             critical thinking and ethical reasoning
           </Text>
         </View>
 
-        <View style={styles.welcomeButtonContainer}>
-          <TouchableOpacity
-            style={styles.getStartedButton}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('HowToUse')}
-          >
-            <Text style={styles.getStartedButtonText}>Get Started</Text>
-            <Feather name="chevron-right" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.welcomeFooter}>
-          <Text style={[styles.welcomeFooterText, { color: colors.textSecondary }]}>
+        <View style={local.actions}>
+          <Button label="Get Started" onPress={() => navigation.navigate('HowToUse')} />
+          <Text style={[local.footer, { color: colors.textSecondary }]}>
             For Parents, Educators & Therapists
           </Text>
         </View>
       </SafeAreaView>
-    </ImageBackground>
+    </LinearGradient>
   );
 };
+
+const local = StyleSheet.create({
+  fill: {
+    flex: 1,
+  },
+  back: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
+  mark: {
+    fontSize: 96,
+    lineHeight: 110,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+    opacity: 0.15,
+    marginBottom: Spacing.sm,
+  },
+  title: {
+    fontSize: Typography.largeTitle,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  subtitle: {
+    fontSize: Typography.body,
+    fontFamily: 'Inter-Medium',
+    lineHeight: 24,
+    textAlign: 'center',
+    maxWidth: 400,
+  },
+  actions: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  footer: {
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
+  },
+});

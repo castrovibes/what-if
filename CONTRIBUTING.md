@@ -82,16 +82,9 @@ Feature suggestions are welcome! Please:
 
 ## Adding New Prompts
 
-To add prompts for age groups, edit the `prompts` object in `WireframeApp.tsx`:
+Prompts are stored in the app's SQLite database and seeded by migrations in `src/db/migrations/`. The current seed data is placeholder content (flagged `is_placeholder = 1`); the real prompt library comes from the content team.
 
-```typescript
-const prompts: { [key: string]: string[] } = {
-  '3-5': [
-    "Your new prompt here...",
-  ],
-  // ... other age groups
-};
-```
+To add or replace prompts, write a new numbered migration (e.g. `0008_*.ts`) and register it in `src/db/migrations/index.ts`. Don't edit existing migrations — they have already run on installed devices. Prompts are read through `src/db/repositories/prompts.ts`.
 
 ### Prompt Guidelines
 
@@ -104,8 +97,8 @@ const prompts: { [key: string]: string[] } = {
 ## Project Conventions
 
 ### File Organization
-- Keep all screens in `WireframeApp.tsx` for now
-- Extract reusable components if needed
+- One screen per file in `src/screens/`
+- Put reusable components in `src/components/`
 - Place assets in `assets/` directory
 
 ### State Management

@@ -41,15 +41,6 @@ export type PromptFilter = {
 };
 
 export const PromptRepo = {
-  async findByAgeGroup(ageGroup: AgeGroupId): Promise<Prompt[]> {
-    const db = await getDb();
-    const rows = await db.getAllAsync<PromptRow>(
-      'SELECT * FROM prompts WHERE age_group = ? AND is_active = 1 ORDER BY id',
-      ageGroup
-    );
-    return rows.map(fromRow);
-  },
-
   async findFiltered(filter: PromptFilter): Promise<Prompt[]> {
     const db = await getDb();
     const where: string[] = ['is_active = 1'];
@@ -70,17 +61,5 @@ export const PromptRepo = {
       ...params
     );
     return rows.map(fromRow);
-  },
-
-  async countsByAgeGroup(): Promise<Record<AgeGroupId, number>> {
-    const db = await getDb();
-    const rows = await db.getAllAsync<{ age_group: string; n: number }>(
-      'SELECT age_group, COUNT(*) AS n FROM prompts WHERE is_active = 1 GROUP BY age_group'
-    );
-    const result: Record<AgeGroupId, number> = { '3-5': 0, '6-8': 0, '9-12': 0, '13-15': 0 };
-    for (const r of rows) {
-      if (r.age_group in result) result[r.age_group as AgeGroupId] = r.n;
-    }
-    return result;
   },
 };

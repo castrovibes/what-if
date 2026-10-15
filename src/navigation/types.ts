@@ -9,7 +9,7 @@ export type OnboardingStackParamList = {
 };
 
 export type MainTabParamList = {
-  Home: undefined;
+  Prompts: undefined;
   Community: undefined;
   Profile: undefined;
   Settings: undefined;
@@ -18,9 +18,8 @@ export type MainTabParamList = {
   Loading: undefined;
 };
 
-export type HomeStackParamList = {
-  HomeMain: undefined;
-  Prompt: { ageGroup: string; liminalSpace?: string };
+export type PromptsStackParamList = {
+  PromptsMain: { ageGroup?: string; liminalSpace?: string } | undefined;
   Reflection: { promptId: string };
   Modules: undefined;
   ModuleDetail: { moduleId: string };

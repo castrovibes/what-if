@@ -1,25 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
-import { styles } from '../styles/sharedStyles';
 import { MadLibsRepo, MadLibsTemplate, applyTemplate } from '../db/repositories/madLibs';
 import { FeatureFlags } from '../data/featureFlags';
 import { Typography, Spacing } from '../utils/deviceHelpers';
+import { findAgeGroup } from '../data/ageGroups';
+import {
+  Screen,
+  ScreenHeader,
+  ScreenScroll,
+  Card,
+  SectionLabel,
+  Pill,
+  Dot,
+  Button,
+} from '../ui/components';
+import { useSurface } from '../ui/surface';
+
+/** Dot + "Ages 3-5" meta line, matching the prompt screen's age pill. */
+const AgeMeta = ({ ageGroup }: { ageGroup: string }) => {
+  const { colors } = useTheme();
+  const surface = useSurface();
+  return (
+    <View style={localStyles.meta}>
+      <Dot color={findAgeGroup(ageGroup)?.bgColor ?? surface.accent} />
+      <Text style={[localStyles.metaText, { color: colors.textSecondary }]}>Ages {ageGroup}</Text>
+    </View>
+  );
+};
 
 export const MadLibsScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const surface = useSurface();
   const [templates, setTemplates] = useState<MadLibsTemplate[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [fills, setFills] = useState<string[]>([]);
@@ -36,23 +51,23 @@ export const MadLibsScreen = () => {
 
   if (!FeatureFlags.isPremium) {
     return (
-      <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.bg }]} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonRow}>
-            <Feather name="chevron-left" size={20} color="#e10086" />
-            <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>MAD LIBS BUILDER</Text>
-          <View style={[localStyles.paywall, { backgroundColor: '#49297e' }]}>
-            <Feather name="lock" size={32} color="#fdfb76" />
-            <Text style={localStyles.paywallTitle}>PREMIUM FEATURE</Text>
-            <Text style={localStyles.paywallText}>
+      <Screen>
+        <ScreenHeader title="Mad Libs Builder" onBack={() => navigation.goBack()} />
+        <ScreenScroll>
+          <Card style={localStyles.paywall}>
+            <View style={[localStyles.lockBadge, { borderColor: surface.border }]}>
+              <Feather name="lock" size={26} color={surface.accent} />
+            </View>
+            <Text style={[localStyles.paywallTitle, { color: colors.textPrimary }]}>
+              Premium feature
+            </Text>
+            <Text style={[localStyles.paywallText, { color: colors.textSecondary }]}>
               The Mad Libs builder lets you craft custom prompts from age-appropriate templates.
               Available with Premium.
             </Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+          </Card>
+        </ScreenScroll>
+      </Screen>
     );
   }
 
@@ -66,200 +81,169 @@ export const MadLibsScreen = () => {
     setFills([]);
   };
 
-  return (
-    <SafeAreaView style={[styles.screenContainer, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonRow}>
-          <Feather name="chevron-left" size={20} color="#e10086" />
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>MAD LIBS BUILDER</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Pick a template, fill the slots, save it as a custom prompt.
-        </Text>
+  const setFill = (i: number, v: string) => {
+    const next = [...fills];
+    next[i] = v;
+    setFills(next);
+  };
 
+  return (
+    <Screen>
+      <ScreenHeader
+        title="Mad Libs Builder"
+        subtitle="Pick a template, fill the slots, save it as a custom prompt."
+        onBack={() => navigation.goBack()}
+      />
+      <ScreenScroll>
         {!selected ? (
           templates.map(t => (
-            <TouchableOpacity
-              key={t.id}
-              style={[localStyles.templateCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
-              onPress={() => setSelectedId(t.id)}
-            >
-              <Text style={[localStyles.ageLabel, { color: colors.textSecondary }]}>
-                AGES {t.ageGroup}
-              </Text>
+            <Card key={t.id} onPress={() => setSelectedId(t.id)}>
+              <View style={localStyles.templateHeader}>
+                <AgeMeta ageGroup={t.ageGroup} />
+                <Feather name="chevron-right" size={18} color={colors.iconInactive} />
+              </View>
               <Text style={[localStyles.templateText, { color: colors.textPrimary }]}>
                 {applyTemplate(
                   t.templateText,
                   t.slots.map(s => `___ (${s.label})`)
                 )}
               </Text>
-            </TouchableOpacity>
+            </Card>
           ))
         ) : (
-          <View>
-            <Text style={[localStyles.previewText, { color: colors.textPrimary }]}>
-              {applyTemplate(selected.templateText, fills.map(f => f || '___'))}
-            </Text>
-            {selected.slots.map((slot, i) => (
-              <View key={i} style={localStyles.slotGroup}>
-                <Text style={[localStyles.slotLabel, { color: colors.textSecondary }]}>
-                  {slot.label.toUpperCase()}
-                </Text>
-                <TextInput
-                  style={[
-                    localStyles.slotInput,
-                    {
-                      color: colors.textPrimary,
-                      backgroundColor: colors.bgMuted,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  placeholder="Type your own…"
-                  placeholderTextColor={colors.iconInactive}
-                  value={fills[i] ?? ''}
-                  onChangeText={v => {
-                    const next = [...fills];
-                    next[i] = v;
-                    setFills(next);
-                  }}
-                />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: Spacing.sm, paddingVertical: Spacing.sm }}
-                >
-                  {slot.suggestions.map(s => (
-                    <TouchableOpacity
-                      key={s}
-                      style={[
-                        localStyles.suggestionChip,
-                        { backgroundColor: colors.filterInactiveBg, borderColor: colors.border },
-                      ]}
-                      onPress={() => {
-                        const next = [...fills];
-                        next[i] = s;
-                        setFills(next);
-                      }}
-                    >
-                      <Text style={[localStyles.suggestionText, { color: colors.textSecondary }]}>
-                        {s}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            ))}
+          <>
+            <Card>
+              <AgeMeta ageGroup={selected.ageGroup} />
+              <Text style={[localStyles.previewText, { color: colors.textPrimary }]}>
+                {applyTemplate(selected.templateText, fills.map(f => f || '___'))}
+              </Text>
+            </Card>
+            {selected.slots.map((slot, i) => {
+              const value = fills[i] ?? '';
+              return (
+                <View key={i} style={localStyles.slotGroup}>
+                  <SectionLabel>{slot.label}</SectionLabel>
+                  <TextInput
+                    style={[
+                      localStyles.slotInput,
+                      {
+                        color: colors.textPrimary,
+                        backgroundColor: surface.card,
+                        borderColor: value ? surface.accent : surface.border,
+                      },
+                    ]}
+                    placeholder="Type your own…"
+                    placeholderTextColor={colors.iconInactive}
+                    value={value}
+                    onChangeText={v => setFill(i, v)}
+                  />
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={localStyles.suggestions}
+                  >
+                    {slot.suggestions.map(s => (
+                      <Pill
+                        key={s}
+                        label={s}
+                        active={value === s}
+                        onPress={() => setFill(i, s)}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              );
+            })}
             <View style={localStyles.actionRow}>
-              <TouchableOpacity
-                style={[localStyles.actionButton, { backgroundColor: colors.bgMuted }]}
-                onPress={() => setSelectedId(null)}
-              >
-                <Text style={[localStyles.actionText, { color: colors.textPrimary }]}>Pick another</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[localStyles.actionButton, { backgroundColor: '#e10086' }]}
-                onPress={handleSave}
-              >
-                <Text style={[localStyles.actionText, { color: '#fff' }]}>Save prompt</Text>
-              </TouchableOpacity>
+              <View style={localStyles.actionItem}>
+                <Button label="Pick another" variant="secondary" onPress={() => setSelectedId(null)} />
+              </View>
+              <View style={localStyles.actionItem}>
+                <Button label="Save prompt" onPress={handleSave} />
+              </View>
             </View>
-          </View>
+          </>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </ScreenScroll>
+    </Screen>
   );
 };
 
 const localStyles = StyleSheet.create({
   paywall: {
-    marginTop: Spacing.xl,
-    borderRadius: 16,
-    padding: Spacing.xl,
+    marginTop: Spacing.md,
     alignItems: 'center',
     gap: Spacing.md,
+    paddingVertical: Spacing.xl,
+  },
+  lockBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   paywallTitle: {
-    fontSize: Typography.title2,
-    fontFamily: 'Barrio-Regular',
-    color: '#fdfb76',
-    letterSpacing: 1.4,
+    fontSize: Typography.title3,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
   },
   paywallText: {
     fontSize: Typography.body,
     fontFamily: 'Inter-Medium',
-    color: '#fff',
     textAlign: 'center',
     lineHeight: 22,
   },
-  templateCard: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: Spacing.md,
-    marginTop: Spacing.md,
+  meta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  ageLabel: {
-    fontSize: Typography.caption,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
-    letterSpacing: 1.4,
-    marginBottom: 6,
+  metaText: {
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+  },
+  templateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
   },
   templateText: {
     fontSize: Typography.body,
     fontFamily: 'Inter-Medium',
-    lineHeight: 22,
+    lineHeight: 23,
   },
   previewText: {
-    fontSize: Typography.title3,
-    fontFamily: 'Inter-Medium',
-    lineHeight: 28,
-    marginTop: Spacing.lg,
-    padding: Spacing.md,
-    borderRadius: 12,
+    marginTop: Spacing.md,
+    fontSize: Typography.title2,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+    lineHeight: Math.round(Typography.title2 * 1.3),
   },
   slotGroup: {
-    marginTop: Spacing.lg,
-  },
-  slotLabel: {
-    fontSize: Typography.caption,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
-    letterSpacing: 1.4,
-    marginBottom: 6,
+    gap: Spacing.sm,
   },
   slotInput: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 14,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: Typography.body,
     fontFamily: 'Inter-Medium',
   },
-  suggestionChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  suggestionText: {
-    fontSize: Typography.subheadline,
-    fontFamily: 'Inter-Medium',
+  suggestions: {
+    gap: Spacing.sm,
+    paddingVertical: 2,
   },
   actionRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.sm,
   },
-  actionButton: {
+  actionItem: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  actionText: {
-    fontSize: Typography.body,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
 });
