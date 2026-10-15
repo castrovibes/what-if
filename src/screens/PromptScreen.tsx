@@ -36,6 +36,7 @@ import { useTipsForPrompt } from '../hooks/useTipsForPrompt';
 import { DiscussionTips } from '../components/DiscussionTips';
 import { WorldBuildingCarousel } from '../components/WorldBuildingCarousel';
 import { ReflectionRepo } from '../db/repositories/reflections';
+import { useActiveContext } from '../providers/ActiveContextProvider';
 import { Category, Prompt, PromptSource } from '../db/types';
 import { applyTokens } from '../data/personalizationTokens';
 import { PromptsStackParamList } from '../navigation/types';
@@ -129,12 +130,21 @@ export const PromptScreen = () => {
   const { width: windowWidth } = useWindowDimensions();
   const accent = surface.accent;
 
-  // No age group until the user starts a session (each app launch starts fresh), unless
-  // one was passed in when navigating here.
+  const { activeContext } = useActiveContext();
+  // Each app launch starts on the title card. The age group starts as the user's
+  // preferred range (Settings), if any; otherwise they pick one when starting.
   const [selectedAge, setSelectedAge] = useState<AgeGroupId | null>(
-    (route.params?.ageGroup as AgeGroupId | undefined) ?? null,
+    (route.params?.ageGroup as AgeGroupId | undefined) ?? activeContext.ageGroupDefault ?? null,
   );
-  const sessionStarted = selectedAge !== null;
+  const [sessionStarted, setSessionStarted] = useState(!!route.params?.ageGroup);
+
+  // A preference changed in Settings before the session starts applies right away.
+  const preferredAge = activeContext.ageGroupDefault;
+  useEffect(() => {
+    if (!sessionStarted) setSelectedAge(preferredAge);
+    // Only react to preference changes, not to the session starting.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferredAge]);
   const [ageMenuOpen, setAgeMenuOpen] = useState(false);
   const [liminalSpace, setLiminalSpace] = useState<string | null>(
     route.params?.liminalSpace ?? null,
@@ -247,9 +257,16 @@ export const PromptScreen = () => {
     );
   };
 
+  // Picking an age from the menu also starts the session if it hasn't started yet.
   const handleSelectAge = (id: AgeGroupId) => {
     setSelectedAge(id);
+    setSessionStarted(true);
     setAgeMenuOpen(false);
+  };
+
+  const handleStartSession = () => {
+    if (selectedAge) setSessionStarted(true);
+    else setAgeMenuOpen(true);
   };
 
   const stackCardStyle = {
@@ -280,7 +297,9 @@ export const PromptScreen = () => {
               <Text style={[localStyles.titleMark, { color: accent }]}>?</Text>
               <Text style={[localStyles.titleText, { color: accent }]}>What Could You Do?</Text>
               <Text style={[localStyles.titleSubtitle, { color: colors.textSecondary }]}>
-                Start a session and choose who you're talking with to get your first prompt.
+                {currentAgeGroup
+                  ? `Start a session to get your first prompt for ages ${currentAgeGroup.label.replace(' years', '').replace('-', ' – ')}.`
+                  : "Start a session and choose who you're talking with to get your first prompt."}
               </Text>
             </View>
           </View>
@@ -439,7 +458,7 @@ export const PromptScreen = () => {
 
       {!sessionStarted && (
         <View style={localStyles.startRow}>
-          <Button label="Start a session" icon="play" onPress={() => setAgeMenuOpen(true)} />
+          <Button label="Start a session" icon="play" onPress={handleStartSession} />
         </View>
       )}
 

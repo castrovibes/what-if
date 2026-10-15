@@ -14,10 +14,18 @@ import {
   SectionLabel,
   ListRow,
   Button,
+  Dot,
+  BottomSheet,
+  SheetOption,
 } from '../ui/components';
+import { useActiveContext } from '../providers/ActiveContextProvider';
+import { ageGroups, findAgeGroup } from '../data/ageGroups';
 
 export const SettingsScreen = () => {
   const navigation = useNavigation();
+  const { activeContext, setPreferredAgeGroup } = useActiveContext();
+  const preferredAge = findAgeGroup(activeContext.ageGroupDefault);
+  const [ageSheetOpen, setAgeSheetOpen] = useState(false);
   const { isDark, colors, toggleDarkMode } = useTheme();
   const surface = useSurface();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -91,6 +99,16 @@ export const SettingsScreen = () => {
 
         <SectionLabel>Preferences</SectionLabel>
         <Card padded={false}>
+          <ListRow
+            icon="users"
+            label="Preferred age range"
+            detail={
+              preferredAge
+                ? preferredAge.label.replace('-', ' – ')
+                : 'Ask each session'
+            }
+            onPress={() => setAgeSheetOpen(true)}
+          />
           <ListRow
             icon="bell"
             label="Notifications"
@@ -189,6 +207,33 @@ export const SettingsScreen = () => {
           />
         </Card>
       </ScreenScroll>
+      <BottomSheet
+        visible={ageSheetOpen}
+        title="Preferred age range"
+        onClose={() => setAgeSheetOpen(false)}
+      >
+        <SheetOption
+          label="Ask each session"
+          selected={!preferredAge}
+          leading={<Feather name="help-circle" size={16} color={colors.iconDefault} />}
+          onPress={() => {
+            setPreferredAgeGroup(null);
+            setAgeSheetOpen(false);
+          }}
+        />
+        {ageGroups.map(g => (
+          <SheetOption
+            key={g.id}
+            label={g.label.replace('-', ' – ')}
+            selected={g.id === preferredAge?.id}
+            leading={<Dot color={g.bgColor} />}
+            onPress={() => {
+              setPreferredAgeGroup(g.id);
+              setAgeSheetOpen(false);
+            }}
+          />
+        ))}
+      </BottomSheet>
     </Screen>
   );
 };

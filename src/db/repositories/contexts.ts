@@ -37,6 +37,11 @@ export const ContextRepo = {
     return row ? fromRow(row) : null;
   },
 
+  async setAgeGroupDefault(id: string, ageGroup: AgeGroupId | null): Promise<void> {
+    const db = await getDb();
+    await db.runAsync('UPDATE contexts SET age_group_default = ? WHERE id = ?', ageGroup, id);
+  },
+
   async create(input: {
     id: string;
     label: string;
