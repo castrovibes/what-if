@@ -39,6 +39,7 @@ import { DiscussionTips } from '../components/DiscussionTips';
 import { WorldBuildingCarousel } from '../components/WorldBuildingCarousel';
 import { ReflectionRepo } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
+import { ReportReason, submitPromptReport } from '../backend/reports';
 import { Category, Prompt, PromptSource } from '../db/types';
 import { applyTokens } from '../data/personalizationTokens';
 import { PromptsStackParamList } from '../navigation/types';
@@ -122,7 +123,14 @@ const restingTransform = (offset: { translateY: number; rotate: number }) => ({
   transform: [{ translateY: offset.translateY }, { rotate: `${offset.rotate}deg` }],
 });
 
-type Sheet = 'situation' | 'discussion' | 'more' | null;
+type Sheet = 'situation' | 'discussion' | 'more' | 'report' | null;
+
+const REPORT_REASONS: { reason: ReportReason; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { reason: 'inappropriate', label: 'Not appropriate', icon: 'alert-triangle' },
+  { reason: 'wrong-age', label: 'Wrong for this age group', icon: 'users' },
+  { reason: 'confusing', label: 'Confusing or unclear', icon: 'help-circle' },
+  { reason: 'other', label: 'Something else', icon: 'more-horizontal' },
+];
 
 export const PromptScreen = () => {
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
@@ -269,25 +277,29 @@ export const PromptScreen = () => {
     );
   };
 
-  // TODO: send reports somewhere once there's a backend. For now this only confirms.
-  const handleReport = () => {
-    Alert.alert(
-      'Report this prompt?',
-      'Let us know if something about this prompt seems wrong or inappropriate.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Report',
-          style: 'destructive',
-          // Reports aren't sent anywhere yet, so point beta testers to TestFlight feedback.
-          onPress: () =>
-            Alert.alert(
-              'Thanks for flagging it',
-              "Reports aren't connected yet in this beta. Please also send a note through TestFlight feedback (take a screenshot) so we can review this prompt.",
-            ),
-        },
-      ],
-    );
+  const handleReport = () => setSheet('report');
+
+  const sendReport = async (reason: ReportReason) => {
+    setSheet(null);
+    if (!currentPrompt) return;
+    try {
+      const result = await submitPromptReport(currentPrompt.id, reason);
+      if (result === 'unavailable') {
+        Alert.alert(
+          'Thanks for flagging it',
+          'Reports can’t be sent from this version yet. Please send a note through TestFlight feedback (a screenshot helps) so we can review this prompt.',
+        );
+      } else {
+        Alert.alert(
+          'Thanks for flagging it',
+          result === 'sent'
+            ? 'We’ll review this prompt.'
+            : 'Your report will be sent when you’re back online.',
+        );
+      }
+    } catch {
+      Alert.alert('Couldn’t send the report', 'Please try again, or use TestFlight feedback.');
+    }
   };
 
   // Picking an age from the menu also starts the session if it hasn't started yet.
@@ -580,6 +592,21 @@ export const PromptScreen = () => {
         <ScrollView style={localStyles.discussionScroll}>
           <DiscussionTips promptId={promptId} />
         </ScrollView>
+      </BottomSheet>
+
+      <BottomSheet
+        visible={sheet === 'report'}
+        title="What’s wrong with this prompt?"
+        onClose={() => setSheet(null)}
+      >
+        {REPORT_REASONS.map(r => (
+          <SheetOption
+            key={r.reason}
+            label={r.label}
+            leading={<Feather name={r.icon} size={16} color={colors.iconDefault} />}
+            onPress={() => sendReport(r.reason)}
+          />
+        ))}
       </BottomSheet>
 
       <BottomSheet visible={sheet === 'more'} title="More ways to talk" onClose={() => setSheet(null)}>

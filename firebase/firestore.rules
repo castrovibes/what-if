@@ -130,6 +130,27 @@ service cloud.firestore {
       }
     }
 
+    // ---------- reports/{id}: prompt reports from the flag icon ----------
+    // Anyone can file one (accounts are optional); nobody can read or change them from
+    // the app. The team reviews them in the Firebase console. No personal data.
+    match /reports/{reportId} {
+      allow create: if request.resource.data.keys().hasOnly(
+            ['promptId', 'reason', 'appVersion', 'platform', 'uid', 'createdAt'])
+        && request.resource.data.keys().hasAll(
+            ['promptId', 'reason', 'appVersion', 'platform', 'uid', 'createdAt'])
+        && request.resource.data.promptId is string
+        && request.resource.data.promptId.size() > 0
+        && request.resource.data.promptId.size() <= 100
+        && request.resource.data.reason in ['inappropriate', 'wrong-age', 'confusing', 'other']
+        && request.resource.data.appVersion is string
+        && request.resource.data.appVersion.size() <= 20
+        && request.resource.data.platform in ['ios', 'android', 'web']
+        && (request.resource.data.uid == null
+            || (signedIn() && request.resource.data.uid == request.auth.uid))
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+
     // ---------- usernames/{usernameLower}: uniqueness claims ----------
     match /usernames/{name} {
       // Signed-in users can check whether one name is taken, but can't list them.

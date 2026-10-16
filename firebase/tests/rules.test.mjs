@@ -7,6 +7,7 @@ import {
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import {
+  addDoc,
   collection,
   doc,
   getDoc,
@@ -252,5 +253,48 @@ describe('user data subcollections', () => {
     await assertFails(
       setDoc(doc(db('alice'), 'users/alice/personalization/name'), { value: 'Maya' }),
     );
+  });
+});
+
+describe('reports', () => {
+  const report = (overrides = {}) => ({
+    promptId: 'p-12',
+    reason: 'confusing',
+    appVersion: '1.0.0',
+    platform: 'ios',
+    uid: null,
+    createdAt: serverTimestamp(),
+    ...overrides,
+  });
+
+  test('anyone can file a report, signed in or not', async () => {
+    const anon = env.unauthenticatedContext().firestore();
+    await assertSucceeds(addDoc(collection(anon, 'reports'), report()));
+    const alice = db('alice');
+    await assertSucceeds(addDoc(collection(alice, 'reports'), report({ uid: 'alice' })));
+  });
+
+  test("reports can't be read, listed, changed or deleted from the app", async () => {
+    await env.withSecurityRulesDisabled(c =>
+      setDoc(doc(c.firestore(), 'reports/r1'), { promptId: 'p-1' }),
+    );
+    const alice = db('alice');
+    await assertFails(getDoc(doc(alice, 'reports/r1')));
+    await assertFails(getDocs(collection(alice, 'reports')));
+    await assertFails(updateDoc(doc(alice, 'reports/r1'), { reason: 'other' }));
+  });
+
+  test('reports must use a known reason and carry no extra data', async () => {
+    const anon = env.unauthenticatedContext().firestore();
+    await assertFails(addDoc(collection(anon, 'reports'), report({ reason: 'spam!!' })));
+    await assertFails(
+      addDoc(collection(anon, 'reports'), report({ email: 'someone@example.com' })),
+    );
+  });
+
+  test("a report can't claim to be from someone else", async () => {
+    await assertFails(addDoc(collection(db('alice'), 'reports'), report({ uid: 'bob' })));
+    const anon = env.unauthenticatedContext().firestore();
+    await assertFails(addDoc(collection(anon, 'reports'), report({ uid: 'bob' })));
   });
 });
