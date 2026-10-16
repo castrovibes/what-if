@@ -6,6 +6,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { ReflectionRepo, Reflection } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { useAuth } from '../auth/AuthProvider';
+import { useSyncVersion } from '../sync/events';
 import { PlanId } from '../auth/types';
 import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
@@ -44,9 +45,10 @@ export const ProfileScreen = () => {
   const [contentFilter, setContentFilter] = useState('vetted');
   const [reflections, setReflections] = useState<Reflection[]>([]);
 
+  const syncVersion = useSyncVersion();
   useEffect(() => {
     ReflectionRepo.listForContext(activeContext.id, 5).then(setReflections);
-  }, [activeContext.id]);
+  }, [activeContext.id, syncVersion]);
 
   return (
     <Screen>

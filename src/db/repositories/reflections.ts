@@ -1,4 +1,5 @@
 import { getDb } from '../index';
+import { SyncService } from '../../sync/syncService';
 
 export type ReflectionInput = {
   contextId: string;
@@ -50,6 +51,14 @@ export const ReflectionRepo = {
       input.rating,
       now
     );
+    await SyncService.recordSet('reflections', {
+      id,
+      contextId: input.contextId,
+      promptId: input.promptId,
+      note: input.note,
+      rating: input.rating,
+      createdAt: now,
+    });
     return {
       id,
       contextId: input.contextId,

@@ -1,4 +1,5 @@
 import { getDb } from '../index';
+import { SyncService } from '../../sync/syncService';
 
 export type Module = {
   id: string;
@@ -97,6 +98,7 @@ export const ModuleRepo = {
 
   async markComplete(contextId: string, moduleId: string, promptId: string): Promise<void> {
     const db = await getDb();
+    const completedAt = new Date().toISOString();
     await db.runAsync(
       `INSERT INTO module_progress (context_id, module_id, prompt_id, completed_at)
        VALUES (?, ?, ?, ?)
@@ -104,7 +106,8 @@ export const ModuleRepo = {
       contextId,
       moduleId,
       promptId,
-      new Date().toISOString()
+      completedAt
     );
+    await SyncService.recordSet('moduleProgress', { contextId, moduleId, promptId, completedAt });
   },
 };

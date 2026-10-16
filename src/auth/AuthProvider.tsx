@@ -4,6 +4,10 @@ import { Account, AuthService, BillingService, SignInResult } from './types';
 import { mockAuthService, mockBillingService } from './mockAuthService';
 import { firebaseAuthService } from './firebaseAuthService';
 import { authBackend } from '../backend/config';
+import { SyncService } from '../sync/syncService';
+
+// Cloud sync needs the Firebase backend; with the mock, data stays on the device.
+const syncEnabled = authBackend === 'firebase';
 
 // Accounts: Firebase (emulators in development) unless EXPO_PUBLIC_AUTH_BACKEND=mock.
 const authService: AuthService = authBackend === 'mock' ? mockAuthService : firebaseAuthService;
@@ -75,7 +79,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => sub.remove();
   }, [completeSignInLink]);
 
+  // Start or stop syncing the signed-in user's data when the account changes.
+  const accountId = account?.id ?? null;
+  useEffect(() => {
+    if (!syncEnabled) return;
+    SyncService.setUser(accountId);
+  }, [accountId]);
+
   const signOut = async () => {
+    // Push pending changes and remove the account's data from this device first.
+    if (syncEnabled) await SyncService.signOut();
     await authService.signOut();
     setAccount(null);
   };

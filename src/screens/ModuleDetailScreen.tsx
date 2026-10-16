@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSyncVersion } from '../sync/events';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -25,6 +26,7 @@ export const ModuleDetailScreen = () => {
   const [steps, setSteps] = useState<Array<ModuleStep & { prompt: Prompt | null }>>([]);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
 
+  const syncVersion = useSyncVersion();
   useEffect(() => {
     (async () => {
       const m = await ModuleRepo.findById(moduleId);
@@ -41,7 +43,7 @@ export const ModuleDetailScreen = () => {
       const done = await ModuleRepo.completedSteps(activeContext.id, moduleId);
       setCompleted(done);
     })();
-  }, [moduleId, activeContext.id]);
+  }, [moduleId, activeContext.id, syncVersion]);
 
   const toggleStep = async (promptId: string) => {
     if (completed.has(promptId)) return;

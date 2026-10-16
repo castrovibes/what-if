@@ -76,6 +76,7 @@ npm start              # in another terminal
 - **Config:** copy `.env.example` to `.env` to point at a real Firebase project, or set `EXPO_PUBLIC_AUTH_BACKEND=mock` to use on-device accounts with no emulator.
 - **Data model:** `src/backend/model.ts`. **Security rules:** `firebase/firestore.rules`, tested with `npm run test:rules`.
 - **Requirement:** the emulators need Java 11+. The scripts use Homebrew's `openjdk@21` if it's installed.
+- **Sync:** when signed in, contexts, favorites, reflections and series progress sync to Firestore (`src/sync/`). Changes queue in an on-device outbox, so they survive being offline. Signing out removes the account's data from the device.
 - **Billing:** still mocked; nothing is charged.
 
 ## 🏗️ Project Structure
