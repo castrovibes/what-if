@@ -58,7 +58,7 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 - [x] **Claude:** Switch email sign-in to Firebase **magic links**. The Verify Code screen is now "Check your email" and continues automatically; the app handles sign-in links that open it.
 - [ ] **You:** Set up a link domain for magic links (Firebase Hosting) and iOS Associated Domains, so tapping the email link opens the app.
 - [x] **Claude:** Sync user data (contexts, favorites, reflections, series progress) between the on-device SQLite database and Firestore. It uses an offline-safe outbox, uploads pre-sign-in data on a device's first sync, pulls the cloud copy on sign-in, and clears the device on sign-out.
-- [ ] **Claude:** Sync preferences (dark mode, active context, preferred age range) to `users/{uid}.preferences`. The data model and rules exist; the app doesn't write them yet.
+- [x] **Claude:** Sync preferences: dark mode and active context go to `users/{uid}.preferences`; the preferred age range syncs with its context. On sign-in the account's saved preferences win; if it has none, this device's choices are saved to it.
 - [ ] **You:** Set up Sign in with Apple (a capability in the Apple Developer account) and the Google OAuth client IDs. **Claude** will add `expo-apple-authentication` and Google sign-in.
 - [ ] **Claude:** Create accounts and sessions on the server, link Apple, Google and email logins to one account, and have the server decide new vs. returning users.
 - [ ] **Claude:** Check username availability on the server (unique names, profanity filter).

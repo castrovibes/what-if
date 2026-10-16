@@ -1,10 +1,23 @@
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Linking } from 'react-native';
 import { Account, AuthService, BillingService, SignInResult } from './types';
 import { mockAuthService, mockBillingService } from './mockAuthService';
 import { firebaseAuthService } from './firebaseAuthService';
 import { authBackend } from '../backend/config';
 import { SyncService } from '../sync/syncService';
+import { PreferenceSync } from '../sync/preferenceSync';
+import { emitSyncChange } from '../sync/events';
+import { useTheme } from '../theme/ThemeProvider';
+import { ACTIVE_CONTEXT_KEY, useActiveContext } from '../providers/ActiveContextProvider';
 
 // Cloud sync needs the Firebase backend; with the mock, data stays on the device.
 const syncEnabled = authBackend === 'firebase';
@@ -79,16 +92,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => sub.remove();
   }, [completeSignInLink]);
 
-  // Start or stop syncing the signed-in user's data when the account changes.
+  // Latest local preferences, read after the (async) sync finishes.
+  const { darkModePreference, applyDarkModePreference } = useTheme();
+  const { activeContext } = useActiveContext();
+  const local = useRef({ darkModePreference, activeContextId: activeContext.id });
+  local.current = { darkModePreference, activeContextId: activeContext.id };
+
+  // When the account changes: sync its data, then its preferences. The account's saved
+  // preferences win; if it has none yet, this device's choices are saved to it.
   const accountId = account?.id ?? null;
   useEffect(() => {
     if (!syncEnabled) return;
-    SyncService.setUser(accountId);
+    PreferenceSync.setUser(accountId);
+    let cancelled = false;
+    (async () => {
+      await SyncService.setUser(accountId);
+      if (!accountId || cancelled) return;
+      const remote = await PreferenceSync.fetch();
+      if (!remote || cancelled) return;
+
+      if (remote.darkMode !== null) applyDarkModePreference(remote.darkMode);
+      else if (local.current.darkModePreference !== null) {
+        PreferenceSync.push({ darkMode: local.current.darkModePreference });
+      }
+
+      if (remote.activeContextId && remote.activeContextId !== local.current.activeContextId) {
+        // ActiveContextProvider re-reads this on a sync change (and ignores unknown ids).
+        await AsyncStorage.setItem(ACTIVE_CONTEXT_KEY, remote.activeContextId);
+        emitSyncChange();
+      } else if (!remote.activeContextId) {
+        PreferenceSync.push({ activeContextId: local.current.activeContextId });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Only re-run for a different account.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId]);
 
   const signOut = async () => {
     // Push pending changes and remove the account's data from this device first.
     if (syncEnabled) await SyncService.signOut();
+    PreferenceSync.setUser(null);
     await authService.signOut();
     setAccount(null);
   };
