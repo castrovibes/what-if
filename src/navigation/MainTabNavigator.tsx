@@ -17,6 +17,7 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { RootStackParamList } from './types';
+import { FeatureFlags } from '../data/featureFlags';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const CommunityStack = createStackNavigator();
@@ -59,7 +60,7 @@ export const MainTabNavigator = () => {
   useEffect(() => {
     if (!signupOfferPending) return;
     setSignupOfferPending(false);
-    if (!account) navigation.navigate('Signup');
+    if (!account && FeatureFlags.showSignup) navigation.navigate('Signup');
   }, [signupOfferPending, setSignupOfferPending, navigation, account]);
 
   return (

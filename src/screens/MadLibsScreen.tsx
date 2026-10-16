@@ -65,10 +65,12 @@ export const MadLibsScreen = () => {
               The Mad Libs builder lets you craft custom prompts from age-appropriate templates.
               Available with Premium.
             </Text>
-            <Button
-              label="See plans"
-              onPress={() => (navigation as any).navigate('Signup')}
-            />
+            {FeatureFlags.showSignup && (
+              <Button
+                label="See plans"
+                onPress={() => (navigation as any).navigate('Signup')}
+              />
+            )}
           </Card>
         </ScreenScroll>
       </Screen>

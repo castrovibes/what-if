@@ -73,7 +73,7 @@ export const SettingsScreen = () => {
               label={account.username ? `Signed in as ${account.username}` : 'Signed in'}
               detail={account.email ?? undefined}
             />
-          ) : (
+          ) : FeatureFlags.showSignup ? (
             <ListRow
               icon="log-in"
               iconColor={surface.accent}
@@ -81,7 +81,7 @@ export const SettingsScreen = () => {
               detail="Optional — the app works without an account"
               onPress={() => (navigation as any).navigate('Signup')}
             />
-          )}
+          ) : null}
           <ListRow icon="user" label="Edit Profile" onPress={() => comingSoon('Editing your profile')} />
           <ListRow icon="mail" label="Email Preferences" onPress={() => comingSoon('Email preferences')} />
           <ListRow
