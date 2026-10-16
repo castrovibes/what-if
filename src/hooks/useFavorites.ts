@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FavoritesRepo } from '../db/repositories/favorites';
 import { useActiveContext } from '../providers/ActiveContextProvider';
+import { useSyncVersion } from '../sync/events';
 
 export function useFavorites(): {
   favorites: Set<string>;
@@ -10,6 +11,7 @@ export function useFavorites(): {
   const { activeContext } = useActiveContext();
   const contextId = activeContext.id;
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const syncVersion = useSyncVersion();
 
   useEffect(() => {
     let cancelled = false;
@@ -19,7 +21,7 @@ export function useFavorites(): {
     return () => {
       cancelled = true;
     };
-  }, [contextId]);
+  }, [contextId, syncVersion]);
 
   const toggle = useCallback(
     async (promptId: string) => {

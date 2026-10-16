@@ -5,6 +5,10 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { ReflectionRepo, Reflection } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
+import { useAuth } from '../auth/AuthProvider';
+import { useSyncVersion } from '../sync/events';
+import { comingSoon } from '../ui/comingSoon';
+import { PlanId } from '../auth/types';
 import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import {
@@ -19,6 +23,12 @@ import {
 } from '../ui/components';
 import { useSurface, PINK } from '../ui/surface';
 
+const PLAN_LABEL: Record<PlanId, string> = {
+  free: 'Free · Kids Safe Mode',
+  premium: 'Premium',
+  professional: 'Professional',
+};
+
 const STATS = [
   { value: '24', label: 'Prompts Explored', color: '#90dcff' },
   { value: '8', label: 'Days Active', color: '#00db96' },
@@ -32,35 +42,68 @@ export const ProfileScreen = () => {
   const { activeContext } = useActiveContext();
   // ProfileScreen is its own stack but we deep-link into PromptsStack screens, which works because the navigator is shared in MainTab
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
+  const { account } = useAuth();
   const [contentFilter, setContentFilter] = useState('vetted');
   const [reflections, setReflections] = useState<Reflection[]>([]);
 
+  const syncVersion = useSyncVersion();
   useEffect(() => {
     ReflectionRepo.listForContext(activeContext.id, 5).then(setReflections);
-  }, [activeContext.id]);
+  }, [activeContext.id, syncVersion]);
 
   return (
     <Screen>
       <ScreenHeader title="Profile" subtitle="Your conversation journey" />
 
       <ScreenScroll>
-        <Card>
-          <View style={local.profileRow}>
-            <View style={[local.profileAvatar, { backgroundColor: surface.accent }]}>
-              <Feather name="user" size={28} color="#fff" />
+        {account ? (
+          <Card>
+            <View style={local.profileRow}>
+              <View style={[local.profileAvatar, { backgroundColor: surface.accent }]}>
+                {account.username ? (
+                  <Text style={local.avatarInitial}>{account.username.charAt(0).toUpperCase()}</Text>
+                ) : (
+                  <Feather name="user" size={28} color="#fff" />
+                )}
+              </View>
+              <View style={local.flex}>
+                <Text style={[local.profileName, { color: colors.textPrimary }]}>
+                  {account.username ? `Welcome back, ${account.username}!` : 'Welcome back!'}
+                </Text>
+                <Text style={[local.profileRole, { color: colors.textSecondary }]}>
+                  {PLAN_LABEL[account.plan]}
+                </Text>
+              </View>
             </View>
-            <View style={local.flex}>
-              <Text style={[local.profileName, { color: colors.textPrimary }]}>Welcome back!</Text>
-              <Text style={[local.profileRole, { color: colors.textSecondary }]}>Parent & Educator</Text>
+            <TouchableOpacity
+              style={[local.editButton, { borderColor: surface.accent }]}
+              activeOpacity={0.85}
+              onPress={() => comingSoon('Editing your profile')}
+            >
+              <Text style={[local.editButtonText, { color: surface.accent }]}>Edit Profile</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : (
+          <Card>
+            <View style={local.profileRow}>
+              <View style={[local.profileAvatar, { backgroundColor: surface.accent }]}>
+                <Feather name="user-plus" size={26} color="#fff" />
+              </View>
+              <View style={local.flex}>
+                <Text style={[local.profileName, { color: colors.textPrimary }]}>
+                  Save your progress
+                </Text>
+                <Text style={[local.profileRole, { color: colors.textSecondary }]}>
+                  Create a free account to keep your favorites and reflections, and to unlock Premium.
+                </Text>
+              </View>
             </View>
-          </View>
-          <TouchableOpacity
-            style={[local.editButton, { borderColor: surface.accent }]}
-            activeOpacity={0.85}
-          >
-            <Text style={[local.editButtonText, { color: surface.accent }]}>Edit Profile</Text>
-          </TouchableOpacity>
-        </Card>
+            <Button
+              label="Sign up or log in"
+              onPress={() => (navigation as any).navigate('Signup')}
+            />
+          </Card>
+        )}
 
         <SectionLabel>Your Activity</SectionLabel>
         <View style={local.statsGrid}>
@@ -74,6 +117,10 @@ export const ProfileScreen = () => {
             </Card>
           ))}
         </View>
+        {/* TODO: real activity stats (needs usage tracking). */}
+        <Text style={[local.sampleNote, { color: colors.iconInactive }]}>
+          Sample numbers for the beta. Activity tracking is coming soon.
+        </Text>
 
         <Card>
           <View style={local.filterHeader}>
@@ -153,7 +200,11 @@ export const ProfileScreen = () => {
           <Text style={[local.cardText, { color: colors.textSecondary }]}>
             Access case management, analytics, and specialized prompt libraries
           </Text>
-          <Button label="Learn More" variant="secondary" />
+          <Button
+            label="Learn More"
+            variant="secondary"
+            onPress={() => comingSoon('Professional plans')}
+          />
         </Card>
       </ScreenScroll>
     </Screen>
@@ -195,6 +246,12 @@ const RadioOption = ({
 };
 
 const local = StyleSheet.create({
+  sampleNote: {
+    fontSize: Typography.caption,
+    fontFamily: 'Inter-Medium',
+    marginTop: -Spacing.xs,
+    marginLeft: 4,
+  },
   flex: { flex: 1 },
   profileRow: {
     flexDirection: 'row',
@@ -208,6 +265,12 @@ const local = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarInitial: {
+    fontSize: Typography.title2,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+    color: '#fff',
   },
   profileName: {
     fontSize: Typography.title3,

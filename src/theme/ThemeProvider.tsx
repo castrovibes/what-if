@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { themes, ThemeColors } from './themes';
+import { PreferenceSync } from '../sync/preferenceSync';
 
 const STORAGE_KEY = 'darkMode';
 
@@ -9,12 +10,18 @@ type ThemeContextType = {
   isDark: boolean;
   colors: ThemeColors;
   toggleDarkMode: () => void;
+  /** The user's explicit choice, or null when following the device. */
+  darkModePreference: boolean | null;
+  /** Applies a saved choice (e.g. from the account) without syncing it back. */
+  applyDarkModePreference: (value: boolean | null) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType>({
   isDark: false,
   colors: themes.light,
   toggleDarkMode: () => {},
+  darkModePreference: null,
+  applyDarkModePreference: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -43,18 +50,37 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, [systemScheme, hasUserPreference]);
 
   const toggleDarkMode = () => {
-    setIsDark(prev => {
-      const next = !prev;
-      AsyncStorage.setItem(STORAGE_KEY, String(next));
+    const next = !isDark;
+    setIsDark(next);
+    setHasUserPreference(true);
+    AsyncStorage.setItem(STORAGE_KEY, String(next));
+    PreferenceSync.push({ darkMode: next });
+  };
+
+  const applyDarkModePreference = (value: boolean | null) => {
+    if (value === null) {
+      setHasUserPreference(false);
+      setIsDark(systemScheme === 'dark');
+      AsyncStorage.removeItem(STORAGE_KEY);
+    } else {
       setHasUserPreference(true);
-      return next;
-    });
+      setIsDark(value);
+      AsyncStorage.setItem(STORAGE_KEY, String(value));
+    }
   };
 
   const colors = isDark ? themes.dark : themes.light;
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors, toggleDarkMode }}>
+    <ThemeContext.Provider
+      value={{
+        isDark,
+        colors,
+        toggleDarkMode,
+        darkModePreference: hasUserPreference ? isDark : null,
+        applyDarkModePreference,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

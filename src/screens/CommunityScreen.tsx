@@ -5,6 +5,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { Screen, ScreenHeader, ScreenScroll, Card, Pill, Dot, Button } from '../ui/components';
 import { useSurface, PINK } from '../ui/surface';
+import { comingSoon } from '../ui/comingSoon';
 
 export const CommunityScreen = () => {
   const { colors } = useTheme();
@@ -14,6 +15,17 @@ export const CommunityScreen = () => {
       <ScreenHeader title="Community" subtitle="Share and discover prompts" />
 
       <ScreenScroll>
+        {/* The community isn't built yet; make that clear to beta testers. */}
+        <Card accent={PINK} style={local.previewCard}>
+          <View style={local.promoTitleRow}>
+            <Feather name="eye" size={18} color={PINK} />
+            <Text style={[local.previewTitle, { color: colors.textPrimary }]}>Preview</Text>
+          </View>
+          <Text style={[local.promoText, { color: colors.textSecondary }]}>
+            Community is coming soon. The posts below are examples of what it will look like.
+          </Text>
+        </Card>
+
         <Card>
           <View style={local.promoTitleRow}>
             <Feather name="users" size={20} color={surface.accent} />
@@ -23,7 +35,7 @@ export const CommunityScreen = () => {
             Share prompts you've created or favorites you've discovered. Help other parents,
             educators, and therapists spark meaningful conversations.
           </Text>
-          <Button label="Create New Prompt" icon="plus" />
+          <Button label="Create New Prompt" icon="plus" onPress={() => comingSoon('Sharing prompts')} />
         </Card>
 
         <ScrollView
@@ -55,15 +67,15 @@ export const CommunityScreen = () => {
             What if you found a lost wallet with money in it?
           </Text>
           <View style={[local.postActions, { borderTopColor: surface.border }]}>
-            <TouchableOpacity style={local.postAction}>
+            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="heart" size={18} color={colors.iconDefault} />
               <Text style={[local.postActionText, { color: colors.textSecondary }]}>24</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={local.postAction}>
+            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="message-circle" size={18} color={colors.iconDefault} />
               <Text style={[local.postActionText, { color: colors.textSecondary }]}>8</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={local.postAction}>
+            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="share-2" size={18} color={colors.iconDefault} />
               <Text style={[local.postActionText, { color: colors.textSecondary }]}>Share</Text>
             </TouchableOpacity>
@@ -87,15 +99,15 @@ export const CommunityScreen = () => {
             What if you noticed a classmate was always alone at lunch?
           </Text>
           <View style={[local.postActions, { borderTopColor: surface.border }]}>
-            <TouchableOpacity style={local.postAction}>
+            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="heart" size={18} color={PINK} />
               <Text style={[local.postActionText, { color: colors.textSecondary }]}>42</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={local.postAction}>
+            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="message-circle" size={18} color={colors.iconDefault} />
               <Text style={[local.postActionText, { color: colors.textSecondary }]}>15</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={local.postAction}>
+            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="share-2" size={18} color={colors.iconDefault} />
               <Text style={[local.postActionText, { color: colors.textSecondary }]}>Share</Text>
             </TouchableOpacity>
@@ -107,6 +119,14 @@ export const CommunityScreen = () => {
 };
 
 const local = StyleSheet.create({
+  previewCard: {
+    gap: Spacing.xs,
+  },
+  previewTitle: {
+    fontSize: Typography.callout,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+  },
   promoTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',

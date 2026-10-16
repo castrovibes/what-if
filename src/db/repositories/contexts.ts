@@ -1,6 +1,9 @@
 import { getDb } from '../index';
 import { Context } from '../types';
 import { AgeGroupId } from '../../data/ageGroups';
+import { SyncService } from '../../sync/syncService';
+
+const syncContext = (c: Context) => SyncService.recordSet('contexts', c);
 
 type ContextRow = {
   id: string;
@@ -40,6 +43,8 @@ export const ContextRepo = {
   async setAgeGroupDefault(id: string, ageGroup: AgeGroupId | null): Promise<void> {
     const db = await getDb();
     await db.runAsync('UPDATE contexts SET age_group_default = ? WHERE id = ?', ageGroup, id);
+    const updated = await this.findById(id);
+    if (updated) await syncContext(updated);
   },
 
   async create(input: {
@@ -63,6 +68,7 @@ export const ContextRepo = {
     );
     const created = await this.findById(input.id);
     if (!created) throw new Error('Failed to create context');
+    await syncContext(created);
     return created;
   },
 };

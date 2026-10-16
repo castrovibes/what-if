@@ -1,4 +1,6 @@
 import { getDb } from '../index';
+import { SyncService } from '../../sync/syncService';
+import { docIds } from '../../backend/model';
 
 export const FavoritesRepo = {
   async listForContext(contextId: string): Promise<string[]> {
@@ -12,12 +14,14 @@ export const FavoritesRepo = {
 
   async add(contextId: string, promptId: string): Promise<void> {
     const db = await getDb();
+    const favoritedAt = new Date().toISOString();
     await db.runAsync(
       'INSERT OR IGNORE INTO favorites (context_id, prompt_id, favorited_at) VALUES (?, ?, ?)',
       contextId,
       promptId,
-      new Date().toISOString()
+      favoritedAt
     );
+    await SyncService.recordSet('favorites', { contextId, promptId, favoritedAt });
   },
 
   async remove(contextId: string, promptId: string): Promise<void> {
@@ -27,5 +31,6 @@ export const FavoritesRepo = {
       contextId,
       promptId
     );
+    await SyncService.recordDelete('favorites', docIds.favorite(contextId, promptId));
   },
 };

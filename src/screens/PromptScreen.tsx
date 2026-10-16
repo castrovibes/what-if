@@ -23,6 +23,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import * as Speech from 'expo-speech';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { ageGroups, findAgeGroup, AgeGroupId } from '../data/ageGroups';
@@ -33,6 +34,7 @@ import { usePersonalization } from '../hooks/usePersonalization';
 import { useLiminalSpaces } from '../hooks/useLiminalSpaces';
 import { useCategories } from '../hooks/useCategories';
 import { useTipsForPrompt } from '../hooks/useTipsForPrompt';
+import { useTtsEnabled } from '../hooks/useTtsEnabled';
 import { DiscussionTips } from '../components/DiscussionTips';
 import { WorldBuildingCarousel } from '../components/WorldBuildingCarousel';
 import { ReflectionRepo } from '../db/repositories/reflections';
@@ -177,9 +179,35 @@ export const PromptScreen = () => {
   const swipe = useSharedValue(0);
   const swipingRef = useRef(false);
 
+  const personalization = usePersonalization();
+  const [ttsEnabled] = useTtsEnabled();
+  const [speaking, setSpeaking] = useState(false);
+
+  // Stop reading aloud when the prompt changes or the screen goes away.
   useEffect(() => {
     setShowTwists(false);
+    Speech.stop();
+    setSpeaking(false);
   }, [promptId]);
+  useEffect(() => () => void Speech.stop(), []);
+
+  const toggleListen = () => {
+    if (!currentPrompt) return;
+    if (speaking) {
+      Speech.stop();
+      setSpeaking(false);
+      return;
+    }
+    const done = () => setSpeaking(false);
+    Speech.speak(`${applyTokens(currentPrompt.text, personalization)} ${currentPrompt.fullQuestion}`, {
+      language: 'en-US',
+      rate: 0.95,
+      onDone: done,
+      onStopped: done,
+      onError: done,
+    });
+    setSpeaking(true);
+  };
 
   // Reset prompt index when filters change so we don't end up on an out-of-range prompt
   useEffect(() => {
@@ -251,7 +279,12 @@ export const PromptScreen = () => {
         {
           text: 'Report',
           style: 'destructive',
-          onPress: () => Alert.alert('Thanks', "We'll take a look at this prompt."),
+          // Reports aren't sent anywhere yet, so point beta testers to TestFlight feedback.
+          onPress: () =>
+            Alert.alert(
+              'Thanks for flagging it',
+              "Reports aren't connected yet in this beta. Please also send a note through TestFlight feedback (take a screenshot) so we can review this prompt.",
+            ),
         },
       ],
     );
@@ -338,7 +371,12 @@ export const PromptScreen = () => {
                 pointerEvents="none"
               >
                 {nextPrompt && (
-                  <PromptCardContent prompt={nextPrompt} category={nextCategory} accent={accent} />
+                  <PromptCardContent
+                    prompt={nextPrompt}
+                    category={nextCategory}
+                    accent={accent}
+                    showListen={ttsEnabled}
+                  />
                 )}
               </Animated.View>
             </>
@@ -358,6 +396,9 @@ export const PromptScreen = () => {
               tipCount={tipCount}
               onReport={handleReport}
               onDiscussion={() => setSheet('discussion')}
+              showListen={ttsEnabled}
+              speaking={speaking}
+              onListen={toggleListen}
             />
           </Animated.View>
         </View>
@@ -587,6 +628,9 @@ const PromptCardContent = ({
   tipCount,
   onReport,
   onDiscussion,
+  showListen = true,
+  speaking = false,
+  onListen,
 }: {
   prompt: Prompt;
   category: Category | undefined;
@@ -594,6 +638,10 @@ const PromptCardContent = ({
   tipCount?: number;
   onReport?: () => void;
   onDiscussion?: () => void;
+  /** Hidden when Text-to-Speech is turned off in Settings. */
+  showListen?: boolean;
+  speaking?: boolean;
+  onListen?: () => void;
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
@@ -633,11 +681,20 @@ const PromptCardContent = ({
       </View>
 
       <View style={localStyles.cardFooter}>
-        {/* TODO: wire up text-to-speech (needs expo-speech + a native rebuild) */}
-        <TouchableOpacity style={localStyles.footerButton} accessibilityLabel="Listen">
-          <Feather name="volume-2" size={16} color={colors.textPrimary} />
-          <Text style={[localStyles.footerText, { color: colors.textPrimary }]}>Listen</Text>
-        </TouchableOpacity>
+        {showListen ? (
+          <TouchableOpacity
+            style={localStyles.footerButton}
+            onPress={onListen}
+            accessibilityLabel={speaking ? 'Stop reading aloud' : 'Read this prompt aloud'}
+          >
+            <Feather name={speaking ? 'square' : 'volume-2'} size={16} color={colors.textPrimary} />
+            <Text style={[localStyles.footerText, { color: colors.textPrimary }]}>
+              {speaking ? 'Stop' : 'Listen'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View />
+        )}
         <TouchableOpacity
           style={[localStyles.footerButton, noTips && localStyles.disabled]}
           onPress={onDiscussion}

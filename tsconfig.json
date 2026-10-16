@@ -25,6 +25,12 @@
 
     // Skip type checking of declaration files (.d.ts) for faster compilation
     // Useful when using third-party libraries with type issues
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    // Firebase Auth's React Native build exports getReactNativePersistence, but the
+    // default (web) typings don't declare it; point TypeScript at the RN typings.
+    "paths": {
+      "@firebase/auth": ["./node_modules/@firebase/auth/dist/rn/index.rn.d.ts"]
+    }
   }
 }

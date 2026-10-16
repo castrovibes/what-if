@@ -1,0 +1,155 @@
+rules_version = '2';
+
+// Data model: src/backend/model.ts. Tests: firebase/tests/rules.test.mjs (`npm run test:rules`).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function usernamePath(name) {
+      return /databases/$(database)/documents/usernames/$(name);
+    }
+
+    function isNullableString(v, maxLen) {
+      return v == null || (v is string && v.size() <= maxLen);
+    }
+
+    // YYYY-MM-DD and at least 18 years old (account holders are adults).
+    function isAdultBirthdate(b) {
+      return b is string
+        && b.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.time >= timestamp.date(
+             int(b.split('-')[0]) + 18, int(b.split('-')[1]), int(b.split('-')[2]));
+    }
+
+    function validPreferences(p) {
+      return p is map
+        && p.keys().hasOnly(['darkMode', 'activeContextId'])
+        && (!('darkMode' in p) || p.darkMode == null || p.darkMode is bool)
+        && (!('activeContextId' in p) || isNullableString(p.activeContextId, 100));
+    }
+
+    // Username fields are both null, or the lowercase form is claimed by this user.
+    function validUsername(data, uid) {
+      return (data.username == null && data.usernameLower == null)
+        || (data.username is string
+            && data.usernameLower == data.username.lower()
+            && data.usernameLower.matches('^[a-z0-9_.]{3,20}$')
+            && existsAfter(usernamePath(data.usernameLower))
+            && getAfter(usernamePath(data.usernameLower)).data.uid == uid);
+    }
+
+    function validProfileFields(data, uid) {
+      return validUsername(data, uid)
+        && (data.birthdate == null || isAdultBirthdate(data.birthdate))
+        && isNullableString(data.photoUrl, 2048)
+        && validPreferences(data.preferences)
+        && data.updatedAt == request.time;
+    }
+
+    // ---------- users/{uid}: the account ----------
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false;
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+             'schemaVersion', 'username', 'usernameLower', 'email', 'authProvider',
+             'birthdate', 'photoUrl', 'plan', 'preferences', 'createdAt', 'updatedAt'])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.authProvider in ['apple', 'google', 'email']
+        && request.resource.data.email == request.auth.token.get('email', null)
+        // Plans are granted by the server after a verified purchase, never by the client.
+        && request.resource.data.plan == 'free'
+        && request.resource.data.createdAt == request.time
+        && validProfileFields(request.resource.data, uid);
+
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'username', 'usernameLower', 'birthdate', 'photoUrl', 'preferences', 'updatedAt'])
+        && validProfileFields(request.resource.data, uid);
+
+      // Account deletion goes through a server function (removes all subcollections too).
+      allow delete: if false;
+
+      // ---------- user-owned data synced from the device ----------
+      match /contexts/{contextId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+               'label', 'ageGroupDefault', 'isAnonymous', 'colorToken',
+               'createdAt', 'archivedAt', 'updatedAt'])
+          && request.resource.data.label is string
+          && request.resource.data.label.size() > 0
+          && request.resource.data.label.size() <= 60
+          && (request.resource.data.ageGroupDefault == null
+              || request.resource.data.ageGroupDefault in ['3-5', '6-8', '9-12', '13-15'])
+          && request.resource.data.isAnonymous is bool
+          && request.resource.data.createdAt is timestamp;
+      }
+
+      match /favorites/{favoriteId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['contextId', 'promptId', 'favoritedAt'])
+          && favoriteId == request.resource.data.contextId + '__' + request.resource.data.promptId
+          && request.resource.data.favoritedAt is timestamp;
+      }
+
+      match /reflections/{reflectionId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+               'contextId', 'promptId', 'note', 'rating', 'createdAt'])
+          && request.resource.data.contextId is string
+          && request.resource.data.promptId is string
+          && isNullableString(request.resource.data.note, 5000)
+          && (request.resource.data.rating == null
+              || (request.resource.data.rating is int
+                  && request.resource.data.rating >= 1
+                  && request.resource.data.rating <= 5))
+          && request.resource.data.createdAt is timestamp;
+      }
+
+      match /moduleProgress/{progressId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['contextId', 'moduleId', 'promptId', 'completedAt'])
+          && progressId == request.resource.data.contextId + '__'
+               + request.resource.data.moduleId + '__' + request.resource.data.promptId;
+      }
+    }
+
+    // ---------- usernames/{usernameLower}: uniqueness claims ----------
+    match /usernames/{name} {
+      // Signed-in users can check whether one name is taken, but can't list them.
+      allow get: if signedIn();
+      allow list: if false;
+
+      // Claim a free name for yourself, in the same batch that sets it on your user doc.
+      allow create: if signedIn()
+        && name.matches('^[a-z0-9_.]{3,20}$')
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && getAfter(userPath(request.auth.uid)).data.usernameLower == name;
+
+      // Release your old name when changing it (your user doc must no longer use it).
+      allow delete: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && getAfter(userPath(request.auth.uid)).data.usernameLower != name;
+
+      allow update: if false;
+    }
+  }
+}

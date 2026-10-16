@@ -6,10 +6,13 @@ import { RootStackParamList } from '../navigation/types';
 import { OnboardingNavigator } from '../navigation/OnboardingNavigator';
 import { MainTabNavigator } from '../navigation/MainTabNavigator';
 import { LoadingScreen } from '../screens/LoadingScreen';
+import { SignupNavigator } from '../navigation/SignupNavigator';
+import { useAuth } from '../auth/AuthProvider';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
+  const { setSignupOfferPending } = useAuth();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
 
@@ -47,6 +50,8 @@ export const RootNavigator = () => {
   const completeOnboarding = async () => {
     try {
       await AsyncStorage.setItem('hasLaunchedBefore', 'true');
+      // Offer (optional) sign-up once the main app appears.
+      setSignupOfferPending(true);
       setIsFirstLaunch(false);
     } catch (error) {
       console.error('Error setting launch flag:', error);
@@ -66,6 +71,11 @@ export const RootNavigator = () => {
       ) : (
         <Stack.Screen name="MainApp" component={MainTabNavigator} />
       )}
+      <Stack.Screen
+        name="Signup"
+        component={SignupNavigator}
+        options={{ presentation: 'modal' }}
+      />
     </Stack.Navigator>
   );
 };

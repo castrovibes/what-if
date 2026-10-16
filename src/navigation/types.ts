@@ -1,6 +1,17 @@
 export type RootStackParamList = {
   Onboarding: undefined;
   MainApp: undefined;
+  /** Sign-up / sign-in flow, presented modally over wherever the user is. */
+  Signup: undefined;
+};
+
+export type SignupStackParamList = {
+  AuthMethod: undefined;
+  EmailEntry: undefined;
+  CheckEmail: { email: string };
+  ProfileSetup: undefined;
+  Paywall: undefined;
+  Done: undefined;
 };
 
 export type OnboardingStackParamList = {

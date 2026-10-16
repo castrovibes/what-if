@@ -4,8 +4,10 @@ import { ContextRepo } from '../db/repositories/contexts';
 import { Context as ConversationContext } from '../db/types';
 import { AgeGroupId } from '../data/ageGroups';
 import { LoadingScreen } from '../screens/LoadingScreen';
+import { useSyncVersion } from '../sync/events';
+import { PreferenceSync } from '../sync/preferenceSync';
 
-const ACTIVE_CONTEXT_KEY = 'activeContextId';
+export const ACTIVE_CONTEXT_KEY = 'activeContextId';
 
 type ActiveContextValue = {
   activeContext: ConversationContext;
@@ -26,6 +28,8 @@ export const useActiveContext = (): ActiveContextValue => {
 export const ActiveContextProvider = ({ children }: { children: ReactNode }) => {
   const [contexts, setContexts] = useState<ConversationContext[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  // Reload when sync pulls contexts from the cloud or clears them on sign-out.
+  const syncVersion = useSyncVersion();
 
   useEffect(() => {
     (async () => {
@@ -41,7 +45,7 @@ export const ActiveContextProvider = ({ children }: { children: ReactNode }) => 
       setContexts(all);
       setActiveId(valid);
     })();
-  }, []);
+  }, [syncVersion]);
 
   const switchContext = async (id: string) => {
     if (!contexts?.some(c => c.id === id)) {
@@ -49,6 +53,7 @@ export const ActiveContextProvider = ({ children }: { children: ReactNode }) => 
     }
     await AsyncStorage.setItem(ACTIVE_CONTEXT_KEY, id);
     setActiveId(id);
+    PreferenceSync.push({ activeContextId: id });
   };
 
   const setPreferredAgeGroup = async (ageGroup: AgeGroupId | null) => {

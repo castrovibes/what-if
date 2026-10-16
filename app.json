@@ -4,13 +4,21 @@
     "slug": "what-could-you-do",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.whatcouldyoudo.app"
+      "bundleIdentifier": "com.whatcouldyoudo.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.whatcouldyoudo.app"
+      "package": "com.whatcouldyoudo.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#e10086"
+      }
     },
     "web": {
       "bundler": "metro"

@@ -1,0 +1,184 @@
+/**
+ * AuthService backed by Firebase Auth (email sign-in links) and Firestore (the
+ * users/{uid} account document). Data model and rules: src/backend/model.ts and
+ * firebase/firestore.rules.
+ */
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  User,
+  isSignInWithEmailLink,
+  sendSignInLinkToEmail,
+  signInWithEmailLink,
+  signOut as firebaseSignOut,
+} from 'firebase/auth';
+import { doc, getDoc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { FirebaseError } from 'firebase/app';
+import { getFirebase } from '../backend/firebase';
+import { EMULATOR_PORTS, emailLinkUrl, emulatorHost, firebaseConfig, useEmulator } from '../backend/config';
+import { SCHEMA_VERSION, USERNAME_PATTERN, UserDoc, paths } from '../backend/model';
+import {
+  Account,
+  AuthProvider,
+  AuthService,
+  InvalidLinkError,
+  NotAvailableError,
+  SignInResult,
+  UsernameStatus,
+} from './types';
+
+const EMAIL_FOR_SIGN_IN_KEY = 'auth.emailForSignIn';
+const BUNDLE_ID = 'com.whatcouldyoudo.app';
+
+const providerOf = (user: User): AuthProvider => {
+  const id = user.providerData[0]?.providerId;
+  if (id === 'apple.com') return 'apple';
+  if (id === 'google.com') return 'google';
+  return 'email';
+};
+
+const toAccount = (uid: string, data: UserDoc): Account => ({
+  id: uid,
+  provider: data.authProvider,
+  email: data.email,
+  username: data.username,
+  birthdate: data.birthdate,
+  photoUri: data.photoUrl,
+  plan: data.plan,
+});
+
+/** Loads the user's account document, creating it on first sign-in. */
+const ensureUserDoc = async (user: User): Promise<SignInResult> => {
+  const { db } = getFirebase();
+  const ref = doc(db, paths.user(user.uid));
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      schemaVersion: SCHEMA_VERSION,
+      username: null,
+      usernameLower: null,
+      email: user.email ?? null,
+      authProvider: providerOf(user),
+      birthdate: null,
+      photoUrl: null,
+      plan: 'free',
+      preferences: { darkMode: null, activeContextId: null },
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }
+  const data = (await getDoc(ref)).data() as UserDoc;
+  return { account: toAccount(user.uid, data), needsProfile: !data.username };
+};
+
+const isLinkError = (e: unknown) =>
+  e instanceof FirebaseError &&
+  ['auth/invalid-action-code', 'auth/expired-action-code', 'auth/invalid-email'].includes(e.code);
+
+export const firebaseAuthService: AuthService = {
+  // TODO: needs the Apple Developer "Sign in with Apple" capability + expo-apple-authentication.
+  async signInWithApple() {
+    throw new NotAvailableError('Sign in with Apple is coming soon. Please continue with email for now.');
+  },
+
+  // TODO: needs Google OAuth client IDs + a native Google sign-in module.
+  async signInWithGoogle() {
+    throw new NotAvailableError('Sign in with Google is coming soon. Please continue with email for now.');
+  },
+
+  async sendSignInLink(email) {
+    const { auth } = getFirebase();
+    const address = email.trim();
+    await sendSignInLinkToEmail(auth, address, {
+      url: emailLinkUrl,
+      handleCodeInApp: true,
+      iOS: { bundleId: BUNDLE_ID },
+      android: { packageName: BUNDLE_ID, installApp: true },
+    });
+    // Firebase needs the same address to finish sign-in when the link is opened.
+    await AsyncStorage.setItem(EMAIL_FOR_SIGN_IN_KEY, address);
+  },
+
+  isSignInLink(url) {
+    return isSignInWithEmailLink(getFirebase().auth, url);
+  },
+
+  async completeSignInLink(url) {
+    const { auth } = getFirebase();
+    const email = await AsyncStorage.getItem(EMAIL_FOR_SIGN_IN_KEY);
+    if (!email) {
+      throw new InvalidLinkError(
+        'Open the link on the same phone where you asked for it, or request a new one.',
+      );
+    }
+    try {
+      const { user } = await signInWithEmailLink(auth, email, url);
+      await AsyncStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
+      return await ensureUserDoc(user);
+    } catch (e) {
+      if (isLinkError(e)) throw new InvalidLinkError();
+      throw e;
+    }
+  },
+
+  // The Auth emulator doesn't send email; it exposes "sent" links over REST.
+  async devLatestSignInLink(email) {
+    if (!useEmulator) return null;
+    const res = await fetch(
+      `http://${emulatorHost}:${EMULATOR_PORTS.auth}/emulator/v1/projects/${firebaseConfig.projectId}/oobCodes`,
+    );
+    const body = (await res.json()) as {
+      oobCodes?: { email: string; requestType: string; oobLink: string }[];
+    };
+    const wanted = email.trim().toLowerCase();
+    const links = (body.oobCodes ?? []).filter(
+      c => c.requestType === 'EMAIL_SIGNIN' && c.email.toLowerCase() === wanted,
+    );
+    return links.length > 0 ? links[links.length - 1].oobLink : null;
+  },
+
+  async checkUsername(username): Promise<UsernameStatus> {
+    const lower = username.trim().toLowerCase();
+    if (!USERNAME_PATTERN.test(lower)) return 'invalid';
+    const { db, auth } = getFirebase();
+    const snap = await getDoc(doc(db, paths.username(lower)));
+    if (!snap.exists()) return 'available';
+    return snap.data().uid === auth.currentUser?.uid ? 'available' : 'taken';
+  },
+
+  async saveProfile(uid, profile) {
+    const { db } = getFirebase();
+    const userRef = doc(db, paths.user(uid));
+    const current = (await getDoc(userRef)).data() as UserDoc;
+    const username = profile.username.trim();
+    const lower = username.toLowerCase();
+
+    // Account update and username claim go in one batch; the rules check them together.
+    const batch = writeBatch(db);
+    batch.update(userRef, {
+      username,
+      usernameLower: lower,
+      birthdate: profile.birthdate,
+      // TODO: upload the photo to Storage and save its URL here.
+      updatedAt: serverTimestamp(),
+    });
+    if (current.usernameLower !== lower) {
+      batch.set(doc(db, paths.username(lower)), { uid, createdAt: serverTimestamp() });
+      if (current.usernameLower) batch.delete(doc(db, paths.username(current.usernameLower)));
+    }
+    await batch.commit();
+
+    const saved = (await getDoc(userRef)).data() as UserDoc;
+    return toAccount(uid, saved);
+  },
+
+  async restoreSession() {
+    const { auth } = getFirebase();
+    await auth.authStateReady();
+    if (!auth.currentUser) return null;
+    return (await ensureUserDoc(auth.currentUser)).account;
+  },
+
+  async signOut() {
+    await firebaseSignOut(getFirebase().auth);
+  },
+};
