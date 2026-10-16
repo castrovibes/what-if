@@ -11,11 +11,12 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 
 - [ ] **You:** Enroll in the Apple Developer Program ($99/year) if not already.
 - [ ] **You:** Create the app in App Store Connect with bundle ID `com.whatcouldyoudo.app`.
-- [ ] **You:** Create an Expo account (for EAS Build, Expo's cloud build service). **Claude** will install the EAS CLI and run `eas init`.
-- [ ] **Claude:** Add `eas.json` with `development`, `preview` and `production` profiles, plus a submit profile for TestFlight.
-- [ ] **You (design) + Claude:** Add a 1024×1024 app icon and a splash screen. There is currently **no app icon** (`AppIcon.appiconset` is empty, and `app.json` has no `icon`).
-- [ ] **Claude:** Set version and build-number handling (`app.json` version 1.0.0; auto-increment the build number in EAS).
-- [ ] **Claude:** Declare export compliance (`ITSAppUsesNonExemptEncryption: false`) so each build doesn't stop for the encryption question.
+- [ ] **You:** Create an Expo account (for EAS Build, Expo's cloud build service), then run `npx eas-cli login` and `npx eas-cli init` once. This links the project and adds its ID to `app.json`.
+- [x] **Claude:** Add `eas.json` with `preview` (internal) and `production` (TestFlight, auto-incrementing build number) profiles and a submit profile. Scripts: `npm run build:ios`, `npm run submit:ios`.
+- [x] **Claude:** Add a **placeholder** 1024×1024 app icon (pink background, white speech bubble with "?") in `assets/images/` and the iOS asset catalog, plus an Android adaptive icon.
+- [ ] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen.
+- [x] **Claude:** Set version and build-number handling (`app.json` version 1.0.0; EAS keeps and auto-increments the build number remotely).
+- [x] **Claude:** Declare export compliance (`ITSAppUsesNonExemptEncryption: false`) in `app.json` and `ios/…/Info.plist`.
 - [ ] **Claude:** Bring the checked-in `ios/` project up to date with new native modules (`@react-native-community/datetimepicker` was added after the last `pod install`). EAS runs `pod install` during builds; local Xcode builds need `npx pod-install` first.
 - [ ] **Claude:** Run a release build and smoke-test it on a real device before the first upload.
 

@@ -5,7 +5,10 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:ios": "npx eas-cli build --platform ios --profile production",
+    "build:ios:preview": "npx eas-cli build --platform ios --profile preview",
+    "submit:ios": "npx eas-cli submit --platform ios --latest"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
