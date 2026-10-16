@@ -1,0 +1,256 @@
+// Security rule tests. Run with `npm run test:rules` (starts the Firestore emulator).
+import { readFileSync } from 'node:fs';
+import { after, before, beforeEach, describe, test } from 'node:test';
+import {
+  assertFails,
+  assertSucceeds,
+  initializeTestEnvironment,
+} from '@firebase/rules-unit-testing';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
+
+let env;
+
+before(async () => {
+  env = await initializeTestEnvironment({
+    projectId: 'demo-what-if',
+    firestore: { rules: readFileSync('firebase/firestore.rules', 'utf8') },
+  });
+});
+
+beforeEach(async () => {
+  await env.clearFirestore();
+});
+
+after(async () => {
+  await env.cleanup();
+});
+
+const db = (uid, email = `${uid}@example.com`) =>
+  env.authenticatedContext(uid, { email }).firestore();
+
+const newUser = (uid, overrides = {}) => ({
+  schemaVersion: 1,
+  username: null,
+  usernameLower: null,
+  email: `${uid}@example.com`,
+  authProvider: 'email',
+  birthdate: null,
+  photoUrl: null,
+  plan: 'free',
+  preferences: { darkMode: null, activeContextId: null },
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+  ...overrides,
+});
+
+/** Creates the user doc and claims a username in one batch, like the app does. */
+const createWithUsername = (firestore, uid, username) => {
+  const batch = writeBatch(firestore);
+  batch.set(
+    doc(firestore, `users/${uid}`),
+    newUser(uid, { username, usernameLower: username.toLowerCase(), birthdate: '1990-03-14' }),
+  );
+  batch.set(doc(firestore, `usernames/${username.toLowerCase()}`), {
+    uid,
+    createdAt: serverTimestamp(),
+  });
+  return batch.commit();
+};
+
+describe('users/{uid}', () => {
+  test('a user can create and read their own account', async () => {
+    const alice = db('alice');
+    await assertSucceeds(setDoc(doc(alice, 'users/alice'), newUser('alice')));
+    await assertSucceeds(getDoc(doc(alice, 'users/alice')));
+  });
+
+  test("a user cannot read or write someone else's account", async () => {
+    await env.withSecurityRulesDisabled(c =>
+      setDoc(doc(c.firestore(), 'users/bob'), { plan: 'free' }),
+    );
+    const alice = db('alice');
+    await assertFails(getDoc(doc(alice, 'users/bob')));
+    await assertFails(setDoc(doc(alice, 'users/mallory'), newUser('mallory')));
+  });
+
+  test('signed-out users cannot read accounts', async () => {
+    const anon = env.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'users/alice')));
+  });
+
+  test('a new account must start on the free plan', async () => {
+    const alice = db('alice');
+    await assertFails(setDoc(doc(alice, 'users/alice'), newUser('alice', { plan: 'premium' })));
+  });
+
+  test('a user cannot upgrade their own plan', async () => {
+    const alice = db('alice');
+    await setDoc(doc(alice, 'users/alice'), newUser('alice'));
+    await assertFails(
+      updateDoc(doc(alice, 'users/alice'), { plan: 'premium', updatedAt: serverTimestamp() }),
+    );
+  });
+
+  test('the account email must match the signed-in email', async () => {
+    const alice = db('alice');
+    await assertFails(
+      setDoc(doc(alice, 'users/alice'), newUser('alice', { email: 'someone@else.com' })),
+    );
+  });
+
+  test('accounts must be 18 or older', async () => {
+    const alice = db('alice');
+    await setDoc(doc(alice, 'users/alice'), newUser('alice'));
+    const thisYear = new Date().getFullYear();
+    await assertFails(
+      updateDoc(doc(alice, 'users/alice'), {
+        birthdate: `${thisYear - 10}-01-01`,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(alice, 'users/alice'), {
+        birthdate: '1990-03-14',
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  test('preferences can be updated; unknown fields cannot be added', async () => {
+    const alice = db('alice');
+    await setDoc(doc(alice, 'users/alice'), newUser('alice'));
+    await assertSucceeds(
+      updateDoc(doc(alice, 'users/alice'), {
+        preferences: { darkMode: true, activeContextId: 'ctx-quick-start' },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(alice, 'users/alice'), { isAdmin: true, updatedAt: serverTimestamp() }),
+    );
+  });
+});
+
+describe('usernames', () => {
+  test('a user can claim a free username together with their account', async () => {
+    await assertSucceeds(createWithUsername(db('alice'), 'alice', 'RiverWalker32'));
+  });
+
+  test('a taken username cannot be claimed by someone else', async () => {
+    await createWithUsername(db('alice'), 'alice', 'riverwalker32');
+    await assertFails(createWithUsername(db('bob'), 'bob', 'riverwalker32'));
+  });
+
+  test('a username must be claimed to be set on the account', async () => {
+    const alice = db('alice');
+    await assertFails(
+      setDoc(
+        doc(alice, 'users/alice'),
+        newUser('alice', { username: 'ghost', usernameLower: 'ghost' }),
+      ),
+    );
+  });
+
+  test('invalid usernames are rejected', async () => {
+    await assertFails(createWithUsername(db('alice'), 'alice', 'no spaces!'));
+  });
+
+  test('signed-in users can check one username but not list them all', async () => {
+    await createWithUsername(db('alice'), 'alice', 'riverwalker32');
+    const bob = db('bob');
+    await assertSucceeds(getDoc(doc(bob, 'usernames/riverwalker32')));
+    await assertFails(getDocs(collection(bob, 'usernames')));
+  });
+});
+
+describe('user data subcollections', () => {
+  test('a user can sync their own favorites, reflections and contexts', async () => {
+    const alice = db('alice');
+    await assertSucceeds(
+      setDoc(doc(alice, 'users/alice/favorites/ctx-1__ph-3-5-001'), {
+        contextId: 'ctx-1',
+        promptId: 'ph-3-5-001',
+        favoritedAt: serverTimestamp(),
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(alice, 'users/alice/reflections/r1'), {
+        contextId: 'ctx-1',
+        promptId: 'ph-3-5-001',
+        note: 'They suggested taking turns.',
+        rating: 4,
+        createdAt: serverTimestamp(),
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(alice, 'users/alice/contexts/ctx-1'), {
+        label: 'Group A',
+        ageGroupDefault: '6-8',
+        isAnonymous: true,
+        colorToken: null,
+        createdAt: serverTimestamp(),
+        archivedAt: null,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  test("a user cannot touch another user's data", async () => {
+    const alice = db('alice');
+    await assertFails(getDocs(collection(alice, 'users/bob/reflections')));
+    await assertFails(
+      setDoc(doc(alice, 'users/bob/favorites/ctx-1__p1'), {
+        contextId: 'ctx-1',
+        promptId: 'p1',
+        favoritedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  test('favorite ids must match their context and prompt', async () => {
+    await assertFails(
+      setDoc(doc(db('alice'), 'users/alice/favorites/wrong-id'), {
+        contextId: 'ctx-1',
+        promptId: 'p1',
+        favoritedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  test('reflection notes are capped and ratings are 1–5', async () => {
+    const alice = db('alice');
+    await assertFails(
+      setDoc(doc(alice, 'users/alice/reflections/r1'), {
+        contextId: 'ctx-1',
+        promptId: 'p1',
+        note: 'x'.repeat(5001),
+        rating: 3,
+        createdAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      setDoc(doc(alice, 'users/alice/reflections/r2'), {
+        contextId: 'ctx-1',
+        promptId: 'p1',
+        note: null,
+        rating: 9,
+        createdAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  test('personalization is not a synced collection', async () => {
+    await assertFails(
+      setDoc(doc(db('alice'), 'users/alice/personalization/name'), { value: 'Maya' }),
+    );
+  });
+});
