@@ -9,6 +9,7 @@ import { migration_0007_faq_and_resources } from './0007_faq_and_resources';
 import { migration_0008_trim_placeholder_question } from './0008_trim_placeholder_question';
 import { migration_0009_trim_madlibs_question } from './0009_trim_madlibs_question';
 import { migration_0010_sync } from './0010_sync';
+import { migration_0011_strip_placeholder_markers } from './0011_strip_placeholder_markers';
 
 export type Migration = {
   name: string;
@@ -26,4 +27,5 @@ export const migrations: Migration[] = [
   migration_0008_trim_placeholder_question,
   migration_0009_trim_madlibs_question,
   migration_0010_sync,
+  migration_0011_strip_placeholder_markers,
 ];
