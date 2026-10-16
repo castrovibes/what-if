@@ -179,6 +179,13 @@ export const SyncService = {
     });
   },
 
+  /** After deleting the account: drop pending changes and the account's data here. */
+  async discardAfterAccountDeletion() {
+    currentUid = null;
+    await clearUserData();
+    emitSyncChange();
+  },
+
   /** Before signing out: push what's pending, then remove the account's data here. */
   async signOut() {
     const uid = currentUid;

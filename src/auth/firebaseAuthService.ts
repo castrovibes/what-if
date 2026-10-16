@@ -6,22 +6,32 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   User,
+  deleteUser,
   isSignInWithEmailLink,
   sendSignInLinkToEmail,
   signInWithEmailLink,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { getFirebase } from '../backend/firebase';
 import { EMULATOR_PORTS, emailLinkUrl, emulatorHost, firebaseConfig, useEmulator } from '../backend/config';
-import { SCHEMA_VERSION, USERNAME_PATTERN, UserDoc, paths } from '../backend/model';
+import { SCHEMA_VERSION, USERNAME_PATTERN, USER_COLLECTIONS, UserDoc, paths } from '../backend/model';
 import {
   Account,
   AuthProvider,
   AuthService,
   InvalidLinkError,
   NotAvailableError,
+  ReauthRequiredError,
   SignInResult,
   UsernameStatus,
 } from './types';
@@ -69,6 +79,10 @@ const ensureUserDoc = async (user: User): Promise<SignInResult> => {
   const data = (await getDoc(ref)).data() as UserDoc;
   return { account: toAccount(user.uid, data), needsProfile: !data.username };
 };
+
+// Firebase only lets a sign-in be deleted shortly after signing in.
+const RECENT_SIGN_IN_MS = 5 * 60 * 1000;
+const FIRESTORE_BATCH_LIMIT = 450;
 
 const isLinkError = (e: unknown) =>
   e instanceof FirebaseError &&
@@ -180,5 +194,43 @@ export const firebaseAuthService: AuthService = {
 
   async signOut() {
     await firebaseSignOut(getFirebase().auth);
+  },
+
+  async deleteAccount() {
+    const { auth, db } = getFirebase();
+    const user = auth.currentUser;
+    if (!user) return;
+    // Check first, so we never delete the data but leave the sign-in behind.
+    const lastSignIn = Date.parse(user.metadata.lastSignInTime ?? '');
+    if (!lastSignIn || Date.now() - lastSignIn > RECENT_SIGN_IN_MS) {
+      throw new ReauthRequiredError();
+    }
+
+    // 1. The user's synced data.
+    for (const coll of USER_COLLECTIONS) {
+      const snap = await getDocs(collection(db, paths.userCollection(user.uid, coll)));
+      for (let i = 0; i < snap.docs.length; i += FIRESTORE_BATCH_LIMIT) {
+        const batch = writeBatch(db);
+        snap.docs.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+    // 2. The account and its username claim, together (the rules check them as a pair).
+    const userRef = doc(db, paths.user(user.uid));
+    const data = (await getDoc(userRef)).data() as UserDoc | undefined;
+    const batch = writeBatch(db);
+    if (data?.usernameLower) batch.delete(doc(db, paths.username(data.usernameLower)));
+    batch.delete(userRef);
+    await batch.commit();
+    // 3. The sign-in itself.
+    try {
+      await deleteUser(user);
+    } catch (e) {
+      if (e instanceof FirebaseError && e.code === 'auth/requires-recent-login') {
+        throw new ReauthRequiredError();
+      }
+      throw e;
+    }
+    await AsyncStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
   },
 };

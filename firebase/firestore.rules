@@ -79,8 +79,9 @@ service cloud.firestore {
              'username', 'usernameLower', 'birthdate', 'photoUrl', 'preferences', 'updatedAt'])
         && validProfileFields(request.resource.data, uid);
 
-      // Account deletion goes through a server function (removes all subcollections too).
-      allow delete: if false;
+      // Account deletion: the app deletes the subcollections first, then this document
+      // (with the username claim) in one batch, then the sign-in itself.
+      allow delete: if isOwner(uid);
 
       // ---------- user-owned data synced from the device ----------
       match /contexts/{contextId} {
@@ -165,10 +166,12 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && getAfter(userPath(request.auth.uid)).data.usernameLower == name;
 
-      // Release your old name when changing it (your user doc must no longer use it).
+      // Release your name when changing it or deleting your account (your user doc must
+      // no longer use it, or no longer exist).
       allow delete: if signedIn()
         && resource.data.uid == request.auth.uid
-        && getAfter(userPath(request.auth.uid)).data.usernameLower != name;
+        && (!existsAfter(userPath(request.auth.uid))
+            || getAfter(userPath(request.auth.uid)).data.usernameLower != name);
 
       allow update: if false;
     }

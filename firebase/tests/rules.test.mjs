@@ -9,6 +9,7 @@ import {
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -296,5 +297,31 @@ describe('reports', () => {
     await assertFails(addDoc(collection(db('alice'), 'reports'), report({ uid: 'bob' })));
     const anon = env.unauthenticatedContext().firestore();
     await assertFails(addDoc(collection(anon, 'reports'), report({ uid: 'bob' })));
+  });
+});
+
+describe('account deletion', () => {
+  test('a user can delete their account and release their username together', async () => {
+    const alice = db('alice');
+    await createWithUsername(alice, 'alice', 'riverwalker32');
+    const batch = writeBatch(alice);
+    batch.delete(doc(alice, 'usernames/riverwalker32'));
+    batch.delete(doc(alice, 'users/alice'));
+    await assertSucceeds(batch.commit());
+    // The name is free again.
+    await assertSucceeds(createWithUsername(db('bob'), 'bob', 'riverwalker32'));
+  });
+
+  test("a user cannot delete someone else's account or username", async () => {
+    await createWithUsername(db('alice'), 'alice', 'riverwalker32');
+    const bob = db('bob');
+    await assertFails(deleteDoc(doc(bob, 'users/alice')));
+    await assertFails(deleteDoc(doc(bob, 'usernames/riverwalker32')));
+  });
+
+  test('a username in use cannot be released while the account still uses it', async () => {
+    const alice = db('alice');
+    await createWithUsername(alice, 'alice', 'riverwalker32');
+    await assertFails(deleteDoc(doc(alice, 'usernames/riverwalker32')));
   });
 });
