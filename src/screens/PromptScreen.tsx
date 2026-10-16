@@ -728,8 +728,8 @@ const PromptCardContent = ({
           disabled={noTips}
           accessibilityLabel="Discussion tips"
         >
-          <Feather name="message-circle" size={16} color={colors.textPrimary} />
-          <Text style={[localStyles.footerText, { color: colors.textPrimary }]}>Discussion</Text>
+          <Feather name="info" size={16} color={colors.textPrimary} />
+          <Text style={[localStyles.footerText, { color: colors.textPrimary }]}>Tips</Text>
         </TouchableOpacity>
       </View>
     </>
