@@ -3,10 +3,14 @@ import { Platform, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { ExploreStackParamList, MainTabParamList } from './types';
+import { CreateStackParamList, ExploreStackParamList, MainTabParamList } from './types';
 import { PromptsStackNavigator } from './PromptsStackNavigator';
 import { ExploreScreen } from '../screens/ExploreScreen';
 import { ModuleDetailScreen } from '../screens/ModuleDetailScreen';
+import { CreateScreen } from '../screens/CreateScreen';
+import { MadLibsScreen } from '../screens/MadLibsScreen';
+import { PromptEditorScreen } from '../screens/PromptEditorScreen';
+import { MyPromptsScreen } from '../screens/MyPromptsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
@@ -26,6 +30,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // Stack screens that take over the whole screen, with no tab bar.
 const FULL_SCREEN_ROUTES = ['Welcome', 'WelcomeTutorial'];
 const ExploreStack = createStackNavigator<ExploreStackParamList>();
+const CreateStack = createStackNavigator<CreateStackParamList>();
 const ProfileStack = createStackNavigator();
 const SettingsStack = createStackNavigator();
 
@@ -36,6 +41,18 @@ const ExploreStackNavigator = () => {
       <ExploreStack.Screen name="ExploreMain" component={ExploreScreen} />
       <ExploreStack.Screen name="ModuleDetail" component={ModuleDetailScreen} />
     </ExploreStack.Navigator>
+  );
+};
+
+const CreateStackNavigator = () => {
+  const screenOptions = useStackScreenOptions();
+  return (
+    <CreateStack.Navigator screenOptions={screenOptions}>
+      <CreateStack.Screen name="CreateMain" component={CreateScreen} />
+      <CreateStack.Screen name="MadLibs" component={MadLibsScreen} />
+      <CreateStack.Screen name="PromptEditor" component={PromptEditorScreen} />
+      <CreateStack.Screen name="MyPrompts" component={MyPromptsScreen} />
+    </CreateStack.Navigator>
   );
 };
 
@@ -96,6 +113,7 @@ export const MainTabNavigator = () => {
 
           if (route.name === 'Prompts') iconName = 'message-circle';
           else if (route.name === 'Explore') iconName = 'compass';
+          else if (route.name === 'Create') iconName = 'plus-circle';
           else if (route.name === 'Profile') iconName = 'user';
           else if (route.name === 'Settings') iconName = 'settings';
 
@@ -117,6 +135,7 @@ export const MainTabNavigator = () => {
     >
       <Tab.Screen name="Prompts" component={PromptsStackNavigator} />
       <Tab.Screen name="Explore" component={ExploreStackNavigator} />
+      <Tab.Screen name="Create" component={CreateStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileStackNavigator} />
       <Tab.Screen name="Settings" component={SettingsStackNavigator} />
     </Tab.Navigator>

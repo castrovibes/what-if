@@ -111,6 +111,8 @@ const deckShadow = (slot: number, base: ShadowBase) => {
   };
 };
 
+type DeckSource = 'official' | 'user';
+
 const SOURCE_LABEL: Record<PromptSource, string> = {
   official: 'What If Originals',
   community: 'Community',
@@ -209,7 +211,7 @@ const DeckCard = ({
   );
 };
 
-type Sheet = 'situation' | 'discussion' | 'more' | 'report' | null;
+type Sheet = 'situation' | 'discussion' | 'more' | 'report' | 'source' | null;
 
 const REPORT_REASONS: { reason: ReportReason; label: string; icon: keyof typeof Feather.glyphMap }[] = [
   { reason: 'inappropriate', label: 'Not appropriate', icon: 'alert-triangle' },
@@ -245,6 +247,25 @@ export const PromptScreen = () => {
   const [liminalSpace, setLiminalSpace] = useState<string | null>(
     route.params?.liminalSpace ?? null,
   );
+  // Which prompts the deck deals: the What If Originals library, or the user's own
+  // (chosen from the card's source label, or sent here from Create).
+  const [deckSource, setDeckSource] = useState<DeckSource>(route.params?.source ?? 'official');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Opened from elsewhere (e.g. "Play in deck" after writing a prompt): show those
+  // prompts, for that age group, in any situation, and load them fresh.
+  const opened = route.params?.opened;
+  useEffect(() => {
+    if (!opened) return;
+    const params = route.params;
+    if (params?.source) setDeckSource(params.source);
+    if (params?.ageGroup) setSelectedAge(params.ageGroup as AgeGroupId);
+    setLiminalSpace(null);
+    setSessionStarted(true);
+    setReloadKey(opened);
+    // Only react to a new request, identified by `opened`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened]);
   // The deck counts prompts without bound (wrapped with % to pick the prompt), so
   // each card in the deck has its own index even when there's a single prompt.
   // currentPromptIndex is the prompt that has settled on top; deckTarget is where
@@ -257,6 +278,8 @@ export const PromptScreen = () => {
 
   const { prompts, loading } = usePromptsForAge(selectedAge ?? '3-5', {
     liminalSpace: liminalSpace ?? undefined,
+    source: deckSource,
+    reloadKey,
   });
   const { isFavorited, toggle: toggleFavorite } = useFavorites();
   const spaces = useLiminalSpaces();
@@ -360,7 +383,16 @@ export const PromptScreen = () => {
     animatingRef.current = false;
     setDeckTarget(0);
     setCurrentPromptIndex(0);
-  }, [liminalSpace, selectedAge, progress]);
+  }, [liminalSpace, selectedAge, deckSource, reloadKey, progress]);
+
+  const chooseSource = (source: DeckSource) => {
+    setSheet(null);
+    setDeckSource(source);
+  };
+  const openPromptEditor = () =>
+    navigation
+      .getParent()
+      ?.navigate('Create', { screen: 'PromptEditor', params: { ageGroup: selectedAge ?? undefined } });
 
   const shadowBase: ShadowBase = {
     opacity: surface.shadow.shadowOpacity,
@@ -573,6 +605,22 @@ export const PromptScreen = () => {
         <View style={localStyles.emptyState}>
           {loading ? (
             <ActivityIndicator size="large" color={PINK} />
+          ) : deckSource === 'user' ? (
+            <>
+              <Text style={[localStyles.emptyText, { color: colors.textSecondary }]}>
+                {liminalSpace
+                  ? "None of your prompts fit this age group and situation yet."
+                  : "You haven't made any prompts for this age group yet."}
+              </Text>
+              <View style={localStyles.emptyActions}>
+                <Button label="Write a prompt" icon="edit-3" onPress={openPromptEditor} />
+                <Button
+                  label="Show What If Originals"
+                  variant="secondary"
+                  onPress={() => chooseSource('official')}
+                />
+              </View>
+            </>
           ) : (
             <Text style={[localStyles.emptyText, { color: colors.textSecondary }]}>
               No prompts match these filters. Try a different age group or situation.
@@ -637,6 +685,7 @@ export const PromptScreen = () => {
                         showListen={ttsEnabled}
                         speaking={speaking}
                         onListen={toggleListen}
+                        onSourcePress={() => setSheet('source')}
                       />
                     </Animated.View>
                     {twist && (
@@ -861,6 +910,21 @@ export const PromptScreen = () => {
           </TouchableOpacity>
         </View>
       )}
+
+      <BottomSheet visible={sheet === 'source'} title="Show prompts from" onClose={() => setSheet(null)}>
+        <SheetOption
+          label="What If Originals"
+          selected={deckSource === 'official'}
+          leading={<Ionicons name="sparkles-outline" size={16} color={colors.iconDefault} />}
+          onPress={() => chooseSource('official')}
+        />
+        <SheetOption
+          label="My Prompts"
+          selected={deckSource === 'user'}
+          leading={<Ionicons name="folder-outline" size={16} color={colors.iconDefault} />}
+          onPress={() => chooseSource('user')}
+        />
+      </BottomSheet>
 
       <BottomSheet visible={sheet === 'situation'} title="Right now we're…" onClose={() => setSheet(null)}>
         <SheetOption
@@ -1192,6 +1256,7 @@ const PromptCardContent = ({
   showListen = true,
   speaking = false,
   onListen,
+  onSourcePress,
 }: {
   prompt: Prompt;
   category: Category | undefined;
@@ -1203,6 +1268,8 @@ const PromptCardContent = ({
   showListen?: boolean;
   speaking?: boolean;
   onListen?: () => void;
+  /** Opens the deck source picker; the label shows a ⌄ on every card in the deck. */
+  onSourcePress?: () => void;
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
@@ -1213,12 +1280,24 @@ const PromptCardContent = ({
   return (
     <>
       <View style={localStyles.cardHeader}>
-        <View style={localStyles.sourceRow}>
-          <Ionicons name="sparkles-outline" size={14} color={accent} />
+        <TouchableOpacity
+          style={localStyles.sourceRow}
+          onPress={onSourcePress}
+          disabled={!onSourcePress}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`${SOURCE_LABEL[prompt.source]}. Choose which prompts to show`}
+        >
+          <Ionicons
+            name={prompt.source === 'user' ? 'folder-outline' : 'sparkles-outline'}
+            size={14}
+            color={accent}
+          />
           <Text style={[localStyles.sourceText, { color: accent }]}>
             {SOURCE_LABEL[prompt.source]}
           </Text>
-        </View>
+          <Feather name="chevron-down" size={14} color={accent} />
+        </TouchableOpacity>
         <View style={localStyles.cardHeaderRight}>
           {category && (
             <View style={[localStyles.categoryPill, { borderColor: surface.border }]}>
@@ -1480,6 +1559,11 @@ const localStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.lg,
+  },
+  emptyActions: {
+    alignSelf: 'stretch',
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
   },
   emptyText: {
     fontSize: Typography.callout,

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { MadLibsRepo, MadLibsTemplate, applyTemplate } from '../db/repositories/madLibs';
 import { FeatureFlags } from '../data/featureFlags';
 import { Typography, Spacing } from '../utils/deviceHelpers';
-import { findAgeGroup } from '../data/ageGroups';
+import { findAgeGroup, AgeGroupId } from '../data/ageGroups';
+import { UserPromptRepo, newUserPromptId } from '../db/repositories/userPrompts';
+import { playMyPromptsInDeck } from '../navigation/deckLinks';
 import {
   Screen,
   ScreenHeader,
@@ -32,7 +34,7 @@ const AgeMeta = ({ ageGroup }: { ageGroup: string }) => {
 };
 
 export const MadLibsScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { colors } = useTheme();
   const surface = useSurface();
   const [templates, setTemplates] = useState<MadLibsTemplate[]>([]);
@@ -68,7 +70,7 @@ export const MadLibsScreen = () => {
             {FeatureFlags.showSignup && (
               <Button
                 label="See plans"
-                onPress={() => (navigation as any).navigate('Signup')}
+                onPress={() => navigation.navigate('Signup')}
               />
             )}
           </Card>
@@ -80,11 +82,14 @@ export const MadLibsScreen = () => {
   const handleSave = async () => {
     if (!selected) return;
     const preview = applyTemplate(selected.templateText, fills);
-    const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    await MadLibsRepo.saveAsUserPrompt({ id, ageGroup: selected.ageGroup, text: preview });
-    Alert.alert('Saved!', 'Your custom prompt is now in your library.');
+    const ageGroup = selected.ageGroup as AgeGroupId;
+    await UserPromptRepo.save({ id: newUserPromptId(), ageGroup, text: preview, situations: [] });
     setSelectedId(null);
     setFills([]);
+    Alert.alert('Saved to My Prompts', 'Want to try it now?', [
+      { text: 'Done', style: 'cancel' },
+      { text: 'Play in deck', onPress: () => playMyPromptsInDeck(navigation, ageGroup) },
+    ]);
   };
 
   const setFill = (i: number, v: string) => {

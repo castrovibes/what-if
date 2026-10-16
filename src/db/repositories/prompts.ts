@@ -1,5 +1,5 @@
 import { getDb } from '../index';
-import { Prompt } from '../types';
+import { Prompt, PromptSource } from '../types';
 import { AgeGroupId } from '../../data/ageGroups';
 
 type PromptRow = {
@@ -38,6 +38,8 @@ export type PromptFilter = {
   ageGroup?: AgeGroupId;
   liminalSpace?: string | null;
   parentAskable?: boolean;
+  /** 'official' for the What If Originals library, 'user' for My Prompts. */
+  source?: PromptSource;
 };
 
 export const PromptRepo = {
@@ -55,6 +57,10 @@ export const PromptRepo = {
         'EXISTS (SELECT 1 FROM prompt_liminal_spaces pls WHERE pls.prompt_id = prompts.id AND pls.liminal_space_id = ?)'
       );
       params.push(filter.liminalSpace);
+    }
+    if (filter.source) {
+      where.push('source = ?');
+      params.push(filter.source);
     }
     if (filter.parentAskable) {
       where.push('parent_askable = 1');

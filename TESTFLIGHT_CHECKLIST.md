@@ -88,9 +88,14 @@ Do these **one at a time**: finish, check and commit each before starting the ne
 4. **New Create tab.** A tab called **Create** that holds **Mad Libs** (moved from ☰), **notes** (writing a reflection; see Phase 2b item 1), and a **blank prompt creator** (write your own "What if…?").
    - Create sits third, between Explore and Profile.
    - [x] **You:** Decided: the **blank prompt creator is in the beta**.
-   - [ ] **You:** Decide where created prompts appear: in the Prompts deck (mixed in, or only when you choose "My Prompts"), in a **My Prompts** list, or both. Notes depend on the Phase 2b item 1 decision.
-   - [ ] **Claude:** Add the Create tab (suggested icon: `plus-circle` or `edit-3`) with a screen listing the three tools. Move Mad Libs there. Build the blank prompt creator, applying the length decision from Phase 2b item 8. Add notes once that design is decided.
-   - [ ] **Claude:** Give user-created prompts a home. Today, Mad Libs saves them into the prompt library on the phone (marked as the user's own) with no screen that lists them, and they don't sync (Phase 2b item 7). Add a **My Prompts** list (view, edit, delete) for prompts from Mad Libs and the blank creator, and sync them to the account like favorites.
+   - [x] **You:** Decided: **both**. Created prompts live in a **My Prompts** list, and the deck can switch to them. The card's source label ("What If Originals") gets a ⌄ and becomes a dropdown to choose **What If Originals** or **My Prompts**; the creator can also send you straight to your prompts in the deck. The deck shows Originals by default, no longer mixing in your own.
+   - Notes depend on the Phase 2b item 1 decision; Create shows them as "Coming soon" until then.
+   - Steps, one at a time:
+     - [x] **4a. Claude:** Create tab (icon `plus-circle`, third in the tab bar) with a screen listing **Write a prompt**, **Mad Libs** and **Notes** (coming soon); `src/screens/CreateScreen.tsx`. Mad Libs opens inside the Create tab (and still from the Prompts ☰ menu until item 1).
+     - [x] **4b. Claude:** Blank prompt creator (`PromptEditorScreen.tsx`): your "What if…?" text (150-character limit for now; see Phase 2b item 8), an age group, and optional situations; a "?" is added if missing. Saving offers **Play in deck**, which opens the Prompts deck on My Prompts for that age group. Mad Libs' save offers the same.
+     - [x] **4c. Claude:** **My Prompts** list in Create (`MyPromptsScreen.tsx`): tap to edit, ▶ to play in the deck, 🗑 to delete (hidden, not erased, so notes and favorites that point at it stay valid). Stored on the phone via `UserPromptRepo`.
+     - [x] **4d. Claude:** Deck source dropdown on the card's source label (⌄): **What If Originals** / **My Prompts**. The age and situation filters apply to both. An empty My Prompts deck offers **Write a prompt** (for that age group) or **Show What If Originals**. The deck shows Originals by default and no longer mixes in your own.
+     - [ ] **4e. Claude:** Sync your prompts to your account like favorites (data model, rules, outbox; also Phase 2b item 7).
 
 ## Phase 3 — External beta (Beta App Review)
 
