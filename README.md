@@ -63,6 +63,21 @@ After running `npm start`, you'll see options in the terminal:
 | `npm run ios` | Run on iOS simulator |
 | `npm run android` | Run on Android emulator |
 
+## 🔐 Accounts & Backend (Firebase)
+
+Accounts are optional. Sign-up uses Firebase Auth (email sign-in links) and stores the account in Firestore. In development, everything runs against local emulators, so no Firebase project is needed.
+
+```bash
+npm run emulators      # Auth + Firestore emulators, UI at http://127.0.0.1:4000
+npm start              # in another terminal
+```
+
+- **Sign-in links:** the emulator doesn't send email. On the "Check your email" screen, tap **Open link (dev)** to use the link it generated.
+- **Config:** copy `.env.example` to `.env` to point at a real Firebase project, or set `EXPO_PUBLIC_AUTH_BACKEND=mock` to use on-device accounts with no emulator.
+- **Data model:** `src/backend/model.ts`. **Security rules:** `firebase/firestore.rules`, tested with `npm run test:rules`.
+- **Requirement:** the emulators need Java 11+. The scripts use Homebrew's `openjdk@21` if it's installed.
+- **Billing:** still mocked; nothing is charged.
+
 ## 🏗️ Project Structure
 
 ```

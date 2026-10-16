@@ -54,8 +54,8 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 - [x] **Claude:** Build the data model (`src/backend/model.ts`), Firestore security rules with 18 tests (`npm run test:rules`), and a local emulator setup (`npm run emulators`).
 - [ ] **You:** Create the real Firebase project (separate dev and prod projects recommended), add an iOS app with bundle ID `com.whatcouldyoudo.app`, and share the web config keys. **Claude** will deploy the rules.
 - [ ] **You:** Decide whether personalization (the child's name, town and interests) may ever sync. Today it is deliberately device-only.
-- [ ] **Claude:** Connect the app to Firebase (JS SDK, emulators in development) and replace the mock `AuthService` with Firebase Auth.
-- [ ] **Claude:** Switch email sign-in to Firebase **magic links** (decided). The Verify Code screen becomes "Check your email", plus deep-link handling.
+- [x] **Claude:** Connect the app to Firebase (JS SDK, emulators in development) and replace the mock `AuthService` with Firebase Auth. Sign-in creates `users/{uid}`; the profile step claims a unique username. Verified end to end against the emulators.
+- [x] **Claude:** Switch email sign-in to Firebase **magic links**. The Verify Code screen is now "Check your email" and continues automatically; the app handles sign-in links that open it.
 - [ ] **You:** Set up a link domain for magic links (Firebase Hosting) and iOS Associated Domains, so tapping the email link opens the app.
 - [ ] **Claude:** Sync user data between the on-device SQLite database and Firestore (upload on sign-in, keep in sync, merge across devices).
 - [ ] **You:** Set up Sign in with Apple (a capability in the Apple Developer account) and the Google OAuth client IDs. **Claude** will add `expo-apple-authentication` and Google sign-in.

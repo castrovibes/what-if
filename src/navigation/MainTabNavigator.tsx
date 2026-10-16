@@ -53,14 +53,14 @@ const SettingsStackNavigator = () => (
 export const MainTabNavigator = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const { signupOfferPending, setSignupOfferPending } = useAuth();
+  const { account, signupOfferPending, setSignupOfferPending } = useAuth();
 
   // Right after first-launch onboarding, offer sign-up once (it can be closed).
   useEffect(() => {
     if (!signupOfferPending) return;
     setSignupOfferPending(false);
-    navigation.navigate('Signup');
-  }, [signupOfferPending, setSignupOfferPending, navigation]);
+    if (!account) navigation.navigate('Signup');
+  }, [signupOfferPending, setSignupOfferPending, navigation, account]);
 
   return (
     <Tab.Navigator

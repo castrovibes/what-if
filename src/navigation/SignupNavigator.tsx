@@ -3,7 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { SignupStackParamList } from './types';
 import { AuthMethodScreen } from '../screens/signup/AuthMethodScreen';
 import { EmailEntryScreen } from '../screens/signup/EmailEntryScreen';
-import { VerifyCodeScreen } from '../screens/signup/VerifyCodeScreen';
+import { CheckEmailScreen } from '../screens/signup/CheckEmailScreen';
 import { ProfileSetupScreen } from '../screens/signup/ProfileSetupScreen';
 import { PaywallScreen } from '../screens/signup/PaywallScreen';
 import { DoneScreen } from '../screens/signup/DoneScreen';
@@ -15,7 +15,7 @@ export const SignupNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="AuthMethod" component={AuthMethodScreen} />
     <Stack.Screen name="EmailEntry" component={EmailEntryScreen} />
-    <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+    <Stack.Screen name="CheckEmail" component={CheckEmailScreen} />
     <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
     <Stack.Screen name="Paywall" component={PaywallScreen} />
     <Stack.Screen name="Done" component={DoneScreen} options={{ gestureEnabled: false }} />

@@ -22,13 +22,13 @@ export const EmailEntryScreen = () => {
   const [sending, setSending] = useState(false);
   const valid = looksLikeEmail(email);
 
-  const sendCode = async () => {
+  const sendLink = async () => {
     setSending(true);
     try {
-      await auth.sendEmailCode(email.trim());
-      navigation.navigate('VerifyCode', { email: email.trim() });
+      await auth.sendSignInLink(email.trim());
+      navigation.navigate('CheckEmail', { email: email.trim() });
     } catch {
-      Alert.alert("Couldn't send the code", 'Check the address and try again.');
+      Alert.alert("Couldn't send the link", 'Check the address and your connection, then try again.');
     } finally {
       setSending(false);
     }
@@ -39,15 +39,15 @@ export const EmailEntryScreen = () => {
       header={<SignupHeader step={1} onBack={() => navigation.goBack()} />}
       footer={
         <Button
-          label={sending ? 'Sending…' : 'Send Code'}
+          label={sending ? 'Sending…' : 'Send Link'}
           variant="secondary"
-          onPress={sendCode}
+          onPress={sendLink}
           disabled={!valid || sending}
         />
       }
     >
       <SignupTitle>What's your email?</SignupTitle>
-      <SignupText>We'll send you a 6-digit code to verify it's you.</SignupText>
+      <SignupText>We'll email you a link to sign in. No password needed.</SignupText>
       <FieldLabel>Email</FieldLabel>
       <SignupField
         value={email}
@@ -60,7 +60,7 @@ export const EmailEntryScreen = () => {
         textContentType="emailAddress"
         autoFocus
         returnKeyType="send"
-        onSubmitEditing={() => valid && sendCode()}
+        onSubmitEditing={() => valid && sendLink()}
         active
       />
     </SignupLayout>

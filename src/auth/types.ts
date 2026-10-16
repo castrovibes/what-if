@@ -1,9 +1,10 @@
 /**
  * Account + billing contracts for the sign-up flow.
  *
- * The app only talks to these interfaces. Today they're backed by a local mock
- * (`mockAuthService.ts`); a real backend (Supabase/Firebase auth + RevenueCat/IAP)
- * replaces the mock without touching the screens.
+ * The app only talks to these interfaces. Accounts are backed by Firebase
+ * (`firebaseAuthService.ts`; local emulators in development) or, for offline demos,
+ * an on-device mock (`mockAuthService.ts`). Billing is still mocked until store
+ * products and purchase validation exist.
  */
 
 export type AuthProvider = 'apple' | 'google' | 'email';
@@ -38,12 +39,23 @@ export type Plan = {
 };
 
 export interface AuthService {
+  /** Throws `NotAvailableError` until the provider is set up. */
   signInWithApple(): Promise<SignInResult>;
   signInWithGoogle(): Promise<SignInResult>;
-  /** Emails a one-time 6-digit code. */
-  sendEmailCode(email: string): Promise<void>;
-  /** Throws `InvalidCodeError` when the code is wrong or expired. */
-  verifyEmailCode(email: string, code: string): Promise<SignInResult>;
+  /** Emails a sign-in ("magic") link and remembers the address on this device. */
+  sendSignInLink(email: string): Promise<void>;
+  /** True when a URL (e.g. an opened deep link) is a sign-in link. */
+  isSignInLink(url: string): boolean;
+  /**
+   * Signs in with a link from the email. Throws `InvalidLinkError` when it's
+   * expired, already used, or was requested on another device.
+   */
+  completeSignInLink(url: string): Promise<SignInResult>;
+  /**
+   * Development only: the most recent link "sent" to this address by the local
+   * emulator (or mock), so sign-in can be finished without a real inbox.
+   */
+  devLatestSignInLink?(email: string): Promise<string | null>;
   checkUsername(username: string): Promise<UsernameStatus>;
   saveProfile(
     accountId: string,
@@ -56,15 +68,24 @@ export interface AuthService {
 
 export interface BillingService {
   getPlans(): Promise<Plan[]>;
+  /** The plan the user is actually entitled to (store state can override account.plan). */
+  planFor(account: Account): Promise<PlanId>;
   /** Starts the store purchase for a plan; resolves with the updated account. */
-  purchase(accountId: string, planId: Plan['id']): Promise<Account>;
+  purchase(account: Account, planId: Plan['id']): Promise<Account>;
   /** Records the free (Kids Safe Mode) choice. */
-  chooseFree(accountId: string): Promise<Account>;
+  chooseFree(account: Account): Promise<Account>;
 }
 
-export class InvalidCodeError extends Error {
-  constructor() {
-    super('That code is incorrect or has expired.');
-    this.name = 'InvalidCodeError';
+export class InvalidLinkError extends Error {
+  constructor(message = 'That sign-in link has expired or was already used. Request a new one.') {
+    super(message);
+    this.name = 'InvalidLinkError';
+  }
+}
+
+export class NotAvailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotAvailableError';
   }
 }

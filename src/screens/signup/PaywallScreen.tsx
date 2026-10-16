@@ -40,9 +40,9 @@ export const PaywallScreen = () => {
   };
 
   const purchase = () =>
-    finishWith(async () => setAccount(await billing.purchase(account!.id, selected)));
+    finishWith(async () => setAccount(await billing.purchase(account!, selected)));
   const continueFree = () =>
-    finishWith(async () => setAccount(await billing.chooseFree(account!.id)));
+    finishWith(async () => setAccount(await billing.chooseFree(account!)));
 
   return (
     <SignupLayout

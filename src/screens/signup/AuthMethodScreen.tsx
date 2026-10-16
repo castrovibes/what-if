@@ -17,7 +17,8 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { useSurface, PINK } from '../../ui/surface';
 import { Screen } from '../../ui/components';
 import { useAuth } from '../../auth/AuthProvider';
-import { SignInResult } from '../../auth/types';
+import { NotAvailableError, SignInResult } from '../../auth/types';
+import { authBackend } from '../../backend/config';
 import { SignupStackParamList } from '../../navigation/types';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
 import { SignupHeader, MockNote, MODAL_EDGES } from './SignupChrome';
@@ -66,8 +67,9 @@ export const AuthMethodScreen = () => {
       continueWith(
         await (method === 'apple' ? auth.signInWithApple() : auth.signInWithGoogle()),
       );
-    } catch {
-      Alert.alert('Sign in failed', 'Please try again.');
+    } catch (e) {
+      if (e instanceof NotAvailableError) Alert.alert('Coming soon', e.message);
+      else Alert.alert('Sign in failed', 'Please try again.');
     } finally {
       setBusy(null);
     }
@@ -156,7 +158,7 @@ export const AuthMethodScreen = () => {
           <Text style={[styles.authText, { color: colors.textPrimary }]}>Continue with Email</Text>
         </TouchableOpacity>
 
-        <MockNote>Apple and Google sign-in are simulated.</MockNote>
+        {authBackend === 'mock' && <MockNote>Apple and Google sign-in are simulated.</MockNote>}
       </View>
     </Screen>
   );

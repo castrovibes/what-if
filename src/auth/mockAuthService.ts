@@ -1,17 +1,17 @@
 /**
- * MOCK BACKEND — nothing here is real.
+ * MOCK BACKENDS — nothing here is real.
  *
- * Stand-in for the auth + billing backend so the sign-up flow can be built and
- * demoed. Accounts live only in this device's AsyncStorage; no email is sent,
- * no Apple/Google sign-in happens and nothing is charged.
+ * - mockAuthService: on-device accounts for offline demos (EXPO_PUBLIC_AUTH_BACKEND=mock).
+ *   No email is sent; the "sign-in link" is fetched with the dev button on the
+ *   Check Email screen. Apple/Google sign-in are simulated.
+ * - mockBillingService: used with every auth backend until store products and server
+ *   purchase validation exist. Nothing is charged; the chosen plan is remembered on
+ *   this device only.
  *
  * Mock rules (handy when testing):
- * - Any 6-digit code verifies, except 000000, which is rejected.
  * - Usernames in TAKEN_USERNAMES are reported as taken.
  * - Signing in again with the same email (or Apple/Google) finds the earlier
  *   account and skips the profile step if it already has one.
- *
- * Replace with real implementations of AuthService / BillingService.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -19,14 +19,18 @@ import {
   AuthProvider,
   AuthService,
   BillingService,
-  InvalidCodeError,
+  InvalidLinkError,
   Plan,
+  PlanId,
   SignInResult,
   UsernameStatus,
 } from './types';
 
 const ACCOUNTS_KEY = 'mockAuth.accounts';
 const SESSION_KEY = 'mockAuth.sessionAccountId';
+const PENDING_EMAIL_KEY = 'mockAuth.pendingEmail';
+const PLAN_KEY = (accountId: string) => `mockBilling.plan.${accountId}`;
+const MOCK_LINK_PREFIX = 'whatif-mock://signin?email=';
 const TAKEN_USERNAMES = ['admin', 'whatif', 'riverwalker', 'test'];
 const LATENCY_MS = 500;
 
@@ -90,15 +94,28 @@ export const mockAuthService: AuthService = {
     return signIn('google:mock-user', 'google', 'google.user@example.com');
   },
 
-  async sendEmailCode() {
+  async sendSignInLink(email) {
     await delay();
+    await AsyncStorage.setItem(PENDING_EMAIL_KEY, email.trim().toLowerCase());
   },
 
-  async verifyEmailCode(email, code) {
+  isSignInLink(url) {
+    return url.startsWith(MOCK_LINK_PREFIX);
+  },
+
+  async completeSignInLink(url) {
     await delay();
-    if (!/^\d{6}$/.test(code) || code === '000000') throw new InvalidCodeError();
+    const email = decodeURIComponent(url.slice(MOCK_LINK_PREFIX.length));
+    const pending = await AsyncStorage.getItem(PENDING_EMAIL_KEY);
+    if (!email || email !== pending) throw new InvalidLinkError();
+    await AsyncStorage.removeItem(PENDING_EMAIL_KEY);
+    return signIn(`email:${email}`, 'email', email);
+  },
+
+  async devLatestSignInLink(email) {
+    const pending = await AsyncStorage.getItem(PENDING_EMAIL_KEY);
     const normalized = email.trim().toLowerCase();
-    return signIn(`email:${normalized}`, 'email', normalized);
+    return pending === normalized ? MOCK_LINK_PREFIX + encodeURIComponent(normalized) : null;
   },
 
   async checkUsername(username): Promise<UsernameStatus> {
@@ -161,12 +178,19 @@ export const mockBillingService: BillingService = {
     return PLANS;
   },
 
-  async purchase(accountId, planId) {
-    await delay(800);
-    return updateAccount(accountId, { plan: planId });
+  async planFor(account) {
+    const stored = await AsyncStorage.getItem(PLAN_KEY(account.id));
+    return (stored as PlanId | null) ?? account.plan;
   },
 
-  async chooseFree(accountId) {
-    return updateAccount(accountId, { plan: 'free' });
+  async purchase(account, planId) {
+    await delay(800);
+    await AsyncStorage.setItem(PLAN_KEY(account.id), planId);
+    return { ...account, plan: planId };
+  },
+
+  async chooseFree(account) {
+    await AsyncStorage.setItem(PLAN_KEY(account.id), 'free');
+    return { ...account, plan: 'free' };
   },
 };

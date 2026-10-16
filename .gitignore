@@ -32,3 +32,7 @@ flutter/
 # Firebase emulator logs
 *-debug.log
 .firebase/
+
+# Local environment (Firebase config etc.). Copy .env.example to .env.
+.env
+.env.local

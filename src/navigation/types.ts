@@ -8,7 +8,7 @@ export type RootStackParamList = {
 export type SignupStackParamList = {
   AuthMethod: undefined;
   EmailEntry: undefined;
-  VerifyCode: { email: string };
+  CheckEmail: { email: string };
   ProfileSetup: undefined;
   Paywall: undefined;
   Done: undefined;
