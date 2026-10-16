@@ -126,7 +126,7 @@ The current wireframe prototype is built in React with these screens and feature
 
 **Screens:**
 1. **Welcome** — Splash with "What Could You Do?" branding, gradient background (indigo-50 → purple-50 → pink-50), large background "?" watermark
-2. **How to Use** — 3-step onboarding guide for meaningful conversations
+2. **Welcome Tutorial** — swipeable card deck of tips for meaningful conversations
 3. **Home** — Age group selection grid (4 colored buttons), "Ready to explore?" prompt, resume last session
 4. **Age Selection** — Grid view of all age groups with prompt counts
 5. **Prompt Display** — Full-screen prompt text, Read Aloud (TTS), Save/Favorite, prompt counter (X of Y), Discussion Tips, Next Prompt navigation

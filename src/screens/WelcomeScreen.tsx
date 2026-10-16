@@ -40,7 +40,7 @@ export const WelcomeScreen = () => {
         </View>
 
         <View style={local.actions}>
-          <Button label="Get Started" onPress={() => navigation.navigate('HowToUse')} />
+          <Button label="Get Started" onPress={() => navigation.navigate('WelcomeTutorial')} />
           <Text style={[local.footer, { color: colors.textSecondary }]}>
             For Parents, Educators & Therapists
           </Text>

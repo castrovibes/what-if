@@ -16,7 +16,7 @@ export type SignupStackParamList = {
 
 export type OnboardingStackParamList = {
   Welcome: undefined;
-  HowToUse: undefined;
+  WelcomeTutorial: undefined;
 };
 
 export type MainTabParamList = {
