@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,7 +13,10 @@ import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { HowToUseScreen } from '../screens/HowToUseScreen';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
+import { useAuth } from '../auth/AuthProvider';
+import { RootStackParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const CommunityStack = createStackNavigator();
@@ -49,6 +52,16 @@ const SettingsStackNavigator = () => (
 
 export const MainTabNavigator = () => {
   const { colors } = useTheme();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { signupOfferPending, setSignupOfferPending } = useAuth();
+
+  // Right after first-launch onboarding, offer sign-up once (it can be closed).
+  useEffect(() => {
+    if (!signupOfferPending) return;
+    setSignupOfferPending(false);
+    navigation.navigate('Signup');
+  }, [signupOfferPending, setSignupOfferPending, navigation]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

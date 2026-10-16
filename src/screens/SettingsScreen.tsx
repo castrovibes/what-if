@@ -19,6 +19,7 @@ import {
   SheetOption,
 } from '../ui/components';
 import { useActiveContext } from '../providers/ActiveContextProvider';
+import { useAuth } from '../auth/AuthProvider';
 import { ageGroups, findAgeGroup } from '../data/ageGroups';
 
 export const SettingsScreen = () => {
@@ -28,6 +29,7 @@ export const SettingsScreen = () => {
   const [ageSheetOpen, setAgeSheetOpen] = useState(false);
   const { isDark, colors, toggleDarkMode } = useTheme();
   const surface = useSurface();
+  const { account, signOut } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [ttsEnabled, setTtsEnabled] = useState(true);
 
@@ -41,15 +43,13 @@ export const SettingsScreen = () => {
           title: 'Are you sure you want to log out?',
         },
         buttonIndex => {
-          if (buttonIndex === 1) {
-            Alert.alert('Logged Out', 'You have been logged out successfully.');
-          }
+          if (buttonIndex === 1) signOut();
         }
       );
     } else {
       Alert.alert('Log Out', 'Are you sure you want to log out?', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Log Out', style: 'destructive', onPress: () => {} },
+        { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
       ]);
     }
   };
@@ -92,6 +92,22 @@ export const SettingsScreen = () => {
       <ScreenScroll>
         <SectionLabel>Account</SectionLabel>
         <Card padded={false}>
+          {account ? (
+            <ListRow
+              icon="user-check"
+              iconColor={surface.accent}
+              label={account.username ? `Signed in as ${account.username}` : 'Signed in'}
+              detail={account.email ?? undefined}
+            />
+          ) : (
+            <ListRow
+              icon="log-in"
+              iconColor={surface.accent}
+              label="Sign up or log in"
+              detail="Optional — the app works without an account"
+              onPress={() => (navigation as any).navigate('Signup')}
+            />
+          )}
           <ListRow icon="user" label="Edit Profile" onPress={() => {}} />
           <ListRow icon="mail" label="Email Preferences" onPress={() => {}} />
           <ListRow icon="lock" label="Privacy & Security" onPress={() => {}} last />
@@ -181,16 +197,19 @@ export const SettingsScreen = () => {
           <Button label="Upgrade Now" onPress={() => {}} />
         </Card>
 
-        <Card padded={false}>
-          <ListRow icon="log-out" label="Log Out" onPress={showLogOutActionSheet} />
-          <ListRow
-            icon="trash-2"
-            label="Delete Account"
-            onPress={showDeleteAccountActionSheet}
-            destructive
-            last
-          />
-        </Card>
+        {account && (
+          <Card padded={false}>
+            <ListRow icon="log-out" label="Log Out" onPress={showLogOutActionSheet} />
+            {/* TODO: needs a backend endpoint; App Store requires in-app account deletion. */}
+            <ListRow
+              icon="trash-2"
+              label="Delete Account"
+              onPress={showDeleteAccountActionSheet}
+              destructive
+              last
+            />
+          </Card>
+        )}
 
         <Card padded={false} style={localStyles.devCard}>
           <ListRow

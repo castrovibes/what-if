@@ -16,6 +16,7 @@ import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 import { DbProvider } from './src/providers/DbProvider';
 import { ActiveContextProvider } from './src/providers/ActiveContextProvider';
 import { RootNavigator } from './src/app/RootNavigator';
+import { AuthProvider } from './src/auth/AuthProvider';
 
 /**
  * Status bar that follows the app's theme (which can override the device setting),
@@ -43,7 +44,9 @@ export default function App() {
         <ThemeProvider>
           <DbProvider>
             <ActiveContextProvider>
-              <RootNavigator />
+              <AuthProvider>
+                <RootNavigator />
+              </AuthProvider>
             </ActiveContextProvider>
           </DbProvider>
           <ThemedStatusBar />
