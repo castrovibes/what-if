@@ -17,26 +17,26 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 - [ ] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen.
 - [x] **Claude:** Set version and build-number handling (`app.json` version 1.0.0; EAS keeps and auto-increments the build number remotely).
 - [x] **Claude:** Declare export compliance (`ITSAppUsesNonExemptEncryption: false`) in `app.json` and `ios/…/Info.plist`.
-- [ ] **Claude:** Bring the checked-in `ios/` project up to date with new native modules (`@react-native-community/datetimepicker` was added after the last `pod install`). EAS runs `pod install` during builds; local Xcode builds need `npx pod-install` first.
+- [x] **Claude:** Bring the checked-in `ios/` project up to date with new native modules (`pod install`: datetimepicker, expo-speech).
 - [ ] **Claude:** Run a release build and smoke-test it on a real device before the first upload.
 
 ## Phase 2 — Make the app safe to hand to testers
 
 - [x] **Claude:** Hide dev-only UI in release builds (`FeatureFlags.showDevTools`). The "Replay First Launch (Dev)" row and the sign-up `[MOCK]`/dev notes only appear in development.
-- [ ] **You:** Decide what sign-up does in the first beta, until Phase 4 exists:
-  - (a) ship the mock, so accounts live only on the tester's phone and nothing is charged, labeled as beta;
-  - (b) hide sign-up for now; or
-  - (c) wait for the real backend.
-- [ ] **You:** Decide how the paywall behaves in beta. Testers must not think they're paying. Options: hide plans, or show them as "Free during beta".
-- [ ] **Claude:** Replace `FeatureFlags.isPremium: true` (hard-coded) with whatever the beta decision is.
+- [x] **You:** Decide what sign-up does in the first beta. Decided: **hidden until the backend is live**.
+- [x] **Claude:** `FeatureFlags.showSignup` hides the sign-up offer, Profile's sign-up card, the Settings row and "See plans" in builds. Set `EXPO_PUBLIC_ENABLE_SIGNUP=true` once the Firebase project exists.
+- [x] **You:** Decide how the paywall behaves in beta. Decided: **"Free during beta"**, and every tester gets Premium.
+- [x] **Claude:** `FeatureFlags.betaFreeAccess` (`EXPO_PUBLIC_BETA_FREE_ACCESS`, on by default) shows plans as "Free during beta" and drives `isPremium`.
 - [ ] **You (content team):** Deliver the real prompt library. All prompts, tips, twists, FAQ and series are still `[PLACEHOLDER]` seed data.
-- [ ] **Claude:** Import the 290-prompt library (`Ethical_Choices_App_Full_Prompt_Library.xlsx`) through a new migration once it's approved.
+- [x] **You:** Approve importing the 290-prompt library.
+- [ ] **You:** Put `Ethical_Choices_App_Full_Prompt_Library.xlsx` in the project folder. It isn't anywhere on this Mac.
+- [ ] **Claude:** Import it through a new migration. Professional (therapeutic) prompts stay hidden unless `isProfessional`.
 - [ ] **You + clinician advisor:** Clinical review of "I'm concerned".
 - [x] **Claude:** Gate "I'm concerned" behind `FeatureFlags.showImConcerned`: on in development, off in builds unless `EXPO_PUBLIC_SHOW_IM_CONCERNED=true`.
 - [x] **Claude:** Wire **Listen** to text-to-speech (`expo-speech`). It reads the prompt and full question, becomes Stop while speaking, and is hidden when Settings > Text-to-Speech is off (now a real, saved setting).
 - [x] **Claude:** Label the controls that do nothing yet, so testers don't report them as bugs. They show "Coming soon"; About shows the version; Notifications reads "Coming soon" and is disabled; Community has a Preview notice; Profile's activity numbers are marked as sample data.
-- [ ] **You:** Decide where **Report** (flag icon) reports should go: email, a form, or the backend. For now the confirmation asks testers to also use TestFlight feedback.
-- [ ] **Claude:** Wire Report to the chosen destination.
+- [x] **You:** Decide where **Report** (flag icon) reports go. Decided: a **Firestore `reports` collection**.
+- [x] **Claude:** Wire Report to it: a reason picker, then an anonymous, create-only `reports/{id}` record. Until a Firebase project exists, builds ask testers to use TestFlight feedback instead.
 - [ ] **Claude (recommended):** Add crash reporting (e.g. Sentry) so beta crashes reach us.
 - [ ] **You:** Add internal testers in App Store Connect and upload the first build.
 
@@ -66,7 +66,7 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 - [ ] **Claude:** Check username availability on the server (unique names, profanity filter).
 - [ ] **You:** Create the subscription products in App Store Connect and Google Play, and set real prices. They are "$X.XX/month" today.
 - [ ] **Claude:** Integrate in-app purchases (RevenueCat recommended): receipt validation, **Restore Purchases** (Apple requires it), and unlocking Premium and Professional content from the plan.
-- [ ] **Claude:** Add in-app **account deletion** backed by the server (Apple requires it whenever an app has sign-up).
+- [x] **Claude:** Add in-app **account deletion** (Apple requires it). It runs client-side: it deletes synced data, the account and username claim, then the sign-in, and asks for a fresh sign-in first if needed.
 - [ ] **Claude:** Add profile photo upload (`expo-image-picker` + storage).
 - [ ] **You:** Define **parental consent** for Premium ("Parental consent required").
 - [ ] **You:** Define **professional verification** for Professional ("For verified educators & therapists"): license lookup or manual review.
