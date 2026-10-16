@@ -7,6 +7,7 @@ import { ReflectionRepo, Reflection } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { useSyncVersion } from '../sync/events';
+import { comingSoon } from '../ui/comingSoon';
 import { PlanId } from '../auth/types';
 import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
@@ -77,6 +78,7 @@ export const ProfileScreen = () => {
             <TouchableOpacity
               style={[local.editButton, { borderColor: surface.accent }]}
               activeOpacity={0.85}
+              onPress={() => comingSoon('Editing your profile')}
             >
               <Text style={[local.editButtonText, { color: surface.accent }]}>Edit Profile</Text>
             </TouchableOpacity>
@@ -115,6 +117,10 @@ export const ProfileScreen = () => {
             </Card>
           ))}
         </View>
+        {/* TODO: real activity stats (needs usage tracking). */}
+        <Text style={[local.sampleNote, { color: colors.iconInactive }]}>
+          Sample numbers for the beta. Activity tracking is coming soon.
+        </Text>
 
         <Card>
           <View style={local.filterHeader}>
@@ -194,7 +200,11 @@ export const ProfileScreen = () => {
           <Text style={[local.cardText, { color: colors.textSecondary }]}>
             Access case management, analytics, and specialized prompt libraries
           </Text>
-          <Button label="Learn More" variant="secondary" />
+          <Button
+            label="Learn More"
+            variant="secondary"
+            onPress={() => comingSoon('Professional plans')}
+          />
         </Card>
       </ScreenScroll>
     </Screen>
@@ -236,6 +246,12 @@ const RadioOption = ({
 };
 
 const local = StyleSheet.create({
+  sampleNote: {
+    fontSize: Typography.caption,
+    fontFamily: 'Inter-Medium',
+    marginTop: -Spacing.xs,
+    marginLeft: 4,
+  },
   flex: { flex: 1 },
   profileRow: {
     flexDirection: 'row',

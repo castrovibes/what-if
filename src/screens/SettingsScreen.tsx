@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Switch, Platform, ActionSheetIOS, Alert } from 
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK } from '../ui/surface';
@@ -21,6 +22,11 @@ import {
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { ageGroups, findAgeGroup } from '../data/ageGroups';
+import { FeatureFlags } from '../data/featureFlags';
+import { useTtsEnabled } from '../hooks/useTtsEnabled';
+import { comingSoon } from '../ui/comingSoon';
+
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 export const SettingsScreen = () => {
   const navigation = useNavigation();
@@ -30,8 +36,7 @@ export const SettingsScreen = () => {
   const { isDark, colors, toggleDarkMode } = useTheme();
   const surface = useSurface();
   const { account, signOut } = useAuth();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [ttsEnabled, setTtsEnabled] = useTtsEnabled();
 
   const showLogOutActionSheet = () => {
     if (Platform.OS === 'ios') {
@@ -51,37 +56,6 @@ export const SettingsScreen = () => {
         { text: 'Cancel', style: 'cancel' },
         { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
       ]);
-    }
-  };
-
-  const showDeleteAccountActionSheet = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Delete Account'],
-          destructiveButtonIndex: 1,
-          cancelButtonIndex: 0,
-          title: 'Delete Account?',
-          message: 'This action cannot be undone. All your data will be permanently deleted.',
-        },
-        buttonIndex => {
-          if (buttonIndex === 1) {
-            Alert.alert('Confirm Deletion', 'Type DELETE to confirm account deletion', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Delete', style: 'destructive', onPress: () => {} },
-            ]);
-          }
-        }
-      );
-    } else {
-      Alert.alert(
-        'Delete Account',
-        'This action cannot be undone. All your data will be permanently deleted.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete Account', style: 'destructive', onPress: () => {} },
-        ]
-      );
     }
   };
 
@@ -108,9 +82,14 @@ export const SettingsScreen = () => {
               onPress={() => (navigation as any).navigate('Signup')}
             />
           )}
-          <ListRow icon="user" label="Edit Profile" onPress={() => {}} />
-          <ListRow icon="mail" label="Email Preferences" onPress={() => {}} />
-          <ListRow icon="lock" label="Privacy & Security" onPress={() => {}} last />
+          <ListRow icon="user" label="Edit Profile" onPress={() => comingSoon('Editing your profile')} />
+          <ListRow icon="mail" label="Email Preferences" onPress={() => comingSoon('Email preferences')} />
+          <ListRow
+            icon="lock"
+            label="Privacy & Security"
+            onPress={() => comingSoon('Privacy & Security settings')}
+            last
+          />
         </Card>
 
         <SectionLabel>Preferences</SectionLabel>
@@ -128,10 +107,11 @@ export const SettingsScreen = () => {
           <ListRow
             icon="bell"
             label="Notifications"
+            detail="Coming soon"
             right={
               <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
+                value={false}
+                disabled
                 trackColor={{ false: colors.switchTrackFalse, true: PINK }}
                 thumbColor="#fff"
               />
@@ -140,6 +120,7 @@ export const SettingsScreen = () => {
           <ListRow
             icon="volume-2"
             label="Text-to-Speech"
+            detail="Shows Listen on prompts"
             right={
               <Switch
                 value={ttsEnabled}
@@ -161,7 +142,13 @@ export const SettingsScreen = () => {
               />
             }
           />
-          <ListRow icon="globe" label="Language" detail="English" onPress={() => {}} last />
+          <ListRow
+            icon="globe"
+            label="Language"
+            detail="English"
+            onPress={() => comingSoon('Other languages')}
+            last
+          />
         </Card>
 
         <SectionLabel>Support & Info</SectionLabel>
@@ -176,14 +163,25 @@ export const SettingsScreen = () => {
             label="Help & FAQ"
             onPress={() => (navigation as any).navigate('FAQ')}
           />
+          {/* Hidden from testers until the content has clinical review. */}
+          {FeatureFlags.showImConcerned && (
+            <ListRow
+              icon="life-buoy"
+              iconColor={surface.accent}
+              label="I'm concerned"
+              onPress={() => (navigation as any).navigate('ImConcerned')}
+            />
+          )}
+          <ListRow icon="mail" label="Contact Support" onPress={() => comingSoon('Contact Support')} />
           <ListRow
-            icon="life-buoy"
-            iconColor={surface.accent}
-            label="I'm concerned"
-            onPress={() => (navigation as any).navigate('ImConcerned')}
+            icon="file-text"
+            label="About"
+            detail={`Version ${APP_VERSION}`}
+            onPress={() =>
+              Alert.alert('What Could You Do?', `Version ${APP_VERSION} (beta)`)
+            }
+            last
           />
-          <ListRow icon="mail" label="Contact Support" onPress={() => {}} />
-          <ListRow icon="file-text" label="About" detail="Version 1.0.0" onPress={() => {}} last />
         </Card>
 
         <Card accent={surface.accent} style={localStyles.upgradeCard}>
@@ -194,37 +192,39 @@ export const SettingsScreen = () => {
           <Text style={[localStyles.upgradeDescription, { color: colors.textSecondary }]}>
             Unlock advanced features for educators and therapists
           </Text>
-          <Button label="Upgrade Now" onPress={() => {}} />
+          <Button label="Upgrade Now" onPress={() => comingSoon('Professional plans')} />
         </Card>
 
         {account && (
           <Card padded={false}>
             <ListRow icon="log-out" label="Log Out" onPress={showLogOutActionSheet} />
-            {/* TODO: needs a backend endpoint; App Store requires in-app account deletion. */}
+            {/* TODO: needs a server function; the App Store requires in-app account deletion. */}
             <ListRow
               icon="trash-2"
               label="Delete Account"
-              onPress={showDeleteAccountActionSheet}
+              onPress={() => comingSoon('Deleting your account')}
               destructive
               last
             />
           </Card>
         )}
 
-        <Card padded={false} style={localStyles.devCard}>
-          <ListRow
-            icon="refresh-cw"
-            iconColor={DEV_AMBER}
-            label="Replay First Launch (Dev)"
-            detail="Shows the welcome flow on next launch. Theme & data preserved."
-            chevron={false}
-            onPress={async () => {
-              await AsyncStorage.removeItem('hasLaunchedBefore');
-              Alert.alert('Reset Complete', 'Restart the app to see the welcome screen.');
-            }}
-            last
-          />
-        </Card>
+        {FeatureFlags.showDevTools && (
+          <Card padded={false} style={localStyles.devCard}>
+            <ListRow
+              icon="refresh-cw"
+              iconColor={DEV_AMBER}
+              label="Replay First Launch (Dev)"
+              detail="Shows the welcome flow on next launch. Theme & data preserved."
+              chevron={false}
+              onPress={async () => {
+                await AsyncStorage.removeItem('hasLaunchedBefore');
+                Alert.alert('Reset Complete', 'Restart the app to see the welcome screen.');
+              }}
+              last
+            />
+          </Card>
+        )}
       </ScreenScroll>
       <BottomSheet
         visible={ageSheetOpen}

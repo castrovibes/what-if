@@ -22,7 +22,7 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 
 ## Phase 2 — Make the app safe to hand to testers
 
-- [ ] **Claude:** Hide dev-only UI in release builds. The "Replay First Launch (Dev)" row currently shows in all builds. The sign-up `[MOCK]` notes are already dev-only.
+- [x] **Claude:** Hide dev-only UI in release builds (`FeatureFlags.showDevTools`). The "Replay First Launch (Dev)" row and the sign-up `[MOCK]`/dev notes only appear in development.
 - [ ] **You:** Decide what sign-up does in the first beta, until Phase 4 exists:
   - (a) ship the mock, so accounts live only on the tester's phone and nothing is charged, labeled as beta;
   - (b) hide sign-up for now; or
@@ -31,10 +31,12 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 - [ ] **Claude:** Replace `FeatureFlags.isPremium: true` (hard-coded) with whatever the beta decision is.
 - [ ] **You (content team):** Deliver the real prompt library. All prompts, tips, twists, FAQ and series are still `[PLACEHOLDER]` seed data.
 - [ ] **Claude:** Import the 290-prompt library (`Ethical_Choices_App_Full_Prompt_Library.xlsx`) through a new migration once it's approved.
-- [ ] **You + clinician advisor:** "I'm concerned" must not reach external testers before clinical review. **Claude** will hide it behind a flag for builds that aren't internal.
-- [ ] **Claude:** Wire **Listen** to text-to-speech (`expo-speech`). The button currently does nothing.
-- [ ] **Claude:** Hide or label the controls that do nothing yet, so testers don't report them as bugs: Edit Profile, Email Preferences, Privacy & Security, Language, Contact Support, About, Upgrade Now, Learn More, Community filters and post actions, and Create New Prompt.
-- [ ] **Claude:** Make **Report** (flag icon) send the report somewhere: email, a form, or the backend.
+- [ ] **You + clinician advisor:** Clinical review of "I'm concerned".
+- [x] **Claude:** Gate "I'm concerned" behind `FeatureFlags.showImConcerned`: on in development, off in builds unless `EXPO_PUBLIC_SHOW_IM_CONCERNED=true`.
+- [x] **Claude:** Wire **Listen** to text-to-speech (`expo-speech`). It reads the prompt and full question, becomes Stop while speaking, and is hidden when Settings > Text-to-Speech is off (now a real, saved setting).
+- [x] **Claude:** Label the controls that do nothing yet, so testers don't report them as bugs. They show "Coming soon"; About shows the version; Notifications reads "Coming soon" and is disabled; Community has a Preview notice; Profile's activity numbers are marked as sample data.
+- [ ] **You:** Decide where **Report** (flag icon) reports should go: email, a form, or the backend. For now the confirmation asks testers to also use TestFlight feedback.
+- [ ] **Claude:** Wire Report to the chosen destination.
 - [ ] **Claude (recommended):** Add crash reporting (e.g. Sentry) so beta crashes reach us.
 - [ ] **You:** Add internal testers in App Store Connect and upload the first build.
 
