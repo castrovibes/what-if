@@ -18,7 +18,11 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 - [x] **Claude:** Set version and build-number handling (`app.json` version 1.0.0; EAS keeps and auto-increments the build number remotely).
 - [x] **Claude:** Declare export compliance (`ITSAppUsesNonExemptEncryption: false`) in `app.json` and `ios/…/Info.plist`.
 - [x] **Claude:** Bring the checked-in `ios/` project up to date with new native modules (`pod install`: datetimepicker, expo-speech).
-- [ ] **Claude:** Run a release build and smoke-test it on a real device before the first upload.
+- [x] **Claude:** Fix the native iOS project's identity. The bundle ID was `org.name.WhatCouldYouDo`, which wouldn't match App Store Connect; it's now `com.whatcouldyoudo.app`, version 1.0.0, with the home-screen name "What Could You Do".
+- [x] **Claude:** Smoke-test a Release build in the simulator. Confirmed: no sign-up offer, row or card; no I'm Concerned; no dev tools; no placeholder tags; Report falls back to TestFlight feedback.
+- [ ] **You:** Check the home-screen name. "What Could You Do" may be cut off under the icon; a shorter name like "What If?" fits.
+- [ ] **Claude:** Smoke-test a release build on a real device before the first upload (needs your Apple account for signing).
+  - Local native builds fail from this folder: the space in iCloud's `Mobile Documents` path breaks Expo's `expo-constants` build script. EAS cloud builds aren't affected. For local release builds, use a checkout in a path without spaces, or move the project out of iCloud Drive (it's also much faster there).
 
 ## Phase 2 — Make the app safe to hand to testers
 
