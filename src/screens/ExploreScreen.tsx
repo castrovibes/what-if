@@ -1,20 +1,55 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
-import { Screen, ScreenHeader, ScreenScroll, Card, Pill, Dot, Button } from '../ui/components';
+import {
+  Screen,
+  ScreenHeader,
+  ScreenScroll,
+  SectionLabel,
+  Card,
+  Pill,
+  Dot,
+  Button,
+} from '../ui/components';
 import { useSurface, PINK } from '../ui/surface';
 import { comingSoon } from '../ui/comingSoon';
+import { ModuleRepo, Module } from '../db/repositories/modules';
+import { ExploreStackParamList } from '../navigation/types';
+import { SeriesCard } from '../components/SeriesCard';
 
-export const CommunityScreen = () => {
+/**
+ * Explore: things to discover beyond the prompt deck. Today that's the conversation
+ * Series and a preview of the community; written content (guides, articles) may join
+ * later. The detailed layout is still to be designed (TESTFLIGHT_CHECKLIST.md, 2c).
+ */
+export const ExploreScreen = () => {
+  const navigation = useNavigation<NavigationProp<ExploreStackParamList>>();
   const { colors } = useTheme();
   const surface = useSurface();
+  const [series, setSeries] = useState<Module[]>([]);
+
+  useEffect(() => {
+    ModuleRepo.list().then(setSeries);
+  }, []);
+
   return (
     <Screen>
-      <ScreenHeader title="Community" subtitle="Share and discover prompts" />
+      <ScreenHeader title="Explore" subtitle="Series, community and more" />
 
       <ScreenScroll>
+        {series.length > 0 && <SectionLabel>Series</SectionLabel>}
+        {series.map(m => (
+          <SeriesCard
+            key={m.id}
+            module={m}
+            onPress={() => navigation.navigate('ModuleDetail', { moduleId: m.id })}
+          />
+        ))}
+
+        <SectionLabel>Community</SectionLabel>
         {/* The community isn't built yet; a small note makes that clear to beta testers. */}
         <View style={[local.previewNote, { borderColor: surface.border }]}>
           <Feather name="eye" size={13} color={PINK} />

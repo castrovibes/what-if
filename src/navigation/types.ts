@@ -21,12 +21,17 @@ export type OnboardingStackParamList = {
 
 export type MainTabParamList = {
   Prompts: undefined;
-  Community: undefined;
+  Explore: undefined;
   Profile: undefined;
   Settings: undefined;
   Prompt: undefined;
   Developer: undefined;
   Loading: undefined;
+};
+
+export type ExploreStackParamList = {
+  ExploreMain: undefined;
+  ModuleDetail: { moduleId: string };
 };
 
 export type PromptsStackParamList = {

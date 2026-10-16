@@ -3,9 +3,10 @@ import { Platform, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { MainTabParamList } from './types';
+import { ExploreStackParamList, MainTabParamList } from './types';
 import { PromptsStackNavigator } from './PromptsStackNavigator';
-import { CommunityScreen } from '../screens/CommunityScreen';
+import { ExploreScreen } from '../screens/ExploreScreen';
+import { ModuleDetailScreen } from '../screens/ModuleDetailScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
@@ -24,16 +25,17 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Stack screens that take over the whole screen, with no tab bar.
 const FULL_SCREEN_ROUTES = ['Welcome', 'WelcomeTutorial'];
-const CommunityStack = createStackNavigator();
+const ExploreStack = createStackNavigator<ExploreStackParamList>();
 const ProfileStack = createStackNavigator();
 const SettingsStack = createStackNavigator();
 
-const CommunityStackNavigator = () => {
+const ExploreStackNavigator = () => {
   const screenOptions = useStackScreenOptions();
   return (
-    <CommunityStack.Navigator screenOptions={screenOptions}>
-      <CommunityStack.Screen name="CommunityMain" component={CommunityScreen} />
-    </CommunityStack.Navigator>
+    <ExploreStack.Navigator screenOptions={screenOptions}>
+      <ExploreStack.Screen name="ExploreMain" component={ExploreScreen} />
+      <ExploreStack.Screen name="ModuleDetail" component={ModuleDetailScreen} />
+    </ExploreStack.Navigator>
   );
 };
 
@@ -93,7 +95,7 @@ export const MainTabNavigator = () => {
           let iconName: keyof typeof Feather.glyphMap = 'message-circle';
 
           if (route.name === 'Prompts') iconName = 'message-circle';
-          else if (route.name === 'Community') iconName = 'users';
+          else if (route.name === 'Explore') iconName = 'compass';
           else if (route.name === 'Profile') iconName = 'user';
           else if (route.name === 'Settings') iconName = 'settings';
 
@@ -114,7 +116,7 @@ export const MainTabNavigator = () => {
       })}
     >
       <Tab.Screen name="Prompts" component={PromptsStackNavigator} />
-      <Tab.Screen name="Community" component={CommunityStackNavigator} />
+      <Tab.Screen name="Explore" component={ExploreStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileStackNavigator} />
       <Tab.Screen name="Settings" component={SettingsStackNavigator} />
     </Tab.Navigator>
