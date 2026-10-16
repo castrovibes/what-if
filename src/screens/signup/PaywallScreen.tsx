@@ -7,6 +7,7 @@ import { useSurface, PINK } from '../../ui/surface';
 import { Button } from '../../ui/components';
 import { useAuth } from '../../auth/AuthProvider';
 import { Plan } from '../../auth/types';
+import { FeatureFlags } from '../../data/featureFlags';
 import { SignupStackParamList } from '../../navigation/types';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
 import { SignupHeader, SignupLayout, SignupTitle, SignupText, MockNote } from './SignupChrome';
@@ -66,7 +67,11 @@ export const PaywallScreen = () => {
     >
       <ScrollView showsVerticalScrollIndicator={false}>
         <SignupTitle>Choose your plan</SignupTitle>
-        <SignupText>Unlock more ways to connect and reflect together.</SignupText>
+        <SignupText>
+          {FeatureFlags.betaFreeAccess
+            ? 'Every plan is free while we’re in beta. Pick the one that fits you best.'
+            : 'Unlock more ways to connect and reflect together.'}
+        </SignupText>
 
         {plans.map(plan => {
           const active = plan.id === selected;
@@ -91,7 +96,7 @@ export const PaywallScreen = () => {
                 <View style={styles.flex}>
                   <Text style={[styles.planName, { color: colors.textPrimary }]}>{plan.name}</Text>
                   <Text style={[styles.planPrice, { color: colors.textSecondary }]}>
-                    {plan.priceLabel}
+                    {FeatureFlags.betaFreeAccess ? 'Free during beta' : plan.priceLabel}
                   </Text>
                   {plan.tagline && (
                     <Text style={[styles.planTagline, { color: colors.textPrimary }]}>

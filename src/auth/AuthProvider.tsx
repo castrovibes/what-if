@@ -39,6 +39,8 @@ type AuthContextValue = {
   linkError: string | null;
   clearLinkError: () => void;
   signOut: () => Promise<void>;
+  /** Permanently deletes the account (see AuthService.deleteAccount). */
+  deleteAccount: () => Promise<void>;
   /** Set when first-launch onboarding finishes, so the app can offer sign-up once. */
   signupOfferPending: boolean;
   setSignupOfferPending: (pending: boolean) => void;
@@ -139,9 +141,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAccount(null);
   };
 
+  const deleteAccount = async () => {
+    await authService.deleteAccount();
+    if (syncEnabled) await SyncService.discardAfterAccountDeletion();
+    PreferenceSync.setUser(null);
+    setAccount(null);
+  };
+
   return (
     <AuthContext.Provider
       value={{
+        deleteAccount,
         account,
         ready,
         setAccount,

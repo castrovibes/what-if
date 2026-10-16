@@ -79,8 +79,9 @@ service cloud.firestore {
              'username', 'usernameLower', 'birthdate', 'photoUrl', 'preferences', 'updatedAt'])
         && validProfileFields(request.resource.data, uid);
 
-      // Account deletion goes through a server function (removes all subcollections too).
-      allow delete: if false;
+      // Account deletion: the app deletes the subcollections first, then this document
+      // (with the username claim) in one batch, then the sign-in itself.
+      allow delete: if isOwner(uid);
 
       // ---------- user-owned data synced from the device ----------
       match /contexts/{contextId} {
@@ -130,6 +131,27 @@ service cloud.firestore {
       }
     }
 
+    // ---------- reports/{id}: prompt reports from the flag icon ----------
+    // Anyone can file one (accounts are optional); nobody can read or change them from
+    // the app. The team reviews them in the Firebase console. No personal data.
+    match /reports/{reportId} {
+      allow create: if request.resource.data.keys().hasOnly(
+            ['promptId', 'reason', 'appVersion', 'platform', 'uid', 'createdAt'])
+        && request.resource.data.keys().hasAll(
+            ['promptId', 'reason', 'appVersion', 'platform', 'uid', 'createdAt'])
+        && request.resource.data.promptId is string
+        && request.resource.data.promptId.size() > 0
+        && request.resource.data.promptId.size() <= 100
+        && request.resource.data.reason in ['inappropriate', 'wrong-age', 'confusing', 'other']
+        && request.resource.data.appVersion is string
+        && request.resource.data.appVersion.size() <= 20
+        && request.resource.data.platform in ['ios', 'android', 'web']
+        && (request.resource.data.uid == null
+            || (signedIn() && request.resource.data.uid == request.auth.uid))
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+
     // ---------- usernames/{usernameLower}: uniqueness claims ----------
     match /usernames/{name} {
       // Signed-in users can check whether one name is taken, but can't list them.
@@ -144,10 +166,12 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && getAfter(userPath(request.auth.uid)).data.usernameLower == name;
 
-      // Release your old name when changing it (your user doc must no longer use it).
+      // Release your name when changing it or deleting your account (your user doc must
+      // no longer use it, or no longer exist).
       allow delete: if signedIn()
         && resource.data.uid == request.auth.uid
-        && getAfter(userPath(request.auth.uid)).data.usernameLower != name;
+        && (!existsAfter(userPath(request.auth.uid))
+            || getAfter(userPath(request.auth.uid)).data.usernameLower != name);
 
       allow update: if false;
     }

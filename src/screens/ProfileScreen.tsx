@@ -22,6 +22,7 @@ import {
   Button,
 } from '../ui/components';
 import { useSurface, PINK } from '../ui/surface';
+import { FeatureFlags } from '../data/featureFlags';
 
 const PLAN_LABEL: Record<PlanId, string> = {
   free: 'Free · Kids Safe Mode',
@@ -82,6 +83,21 @@ export const ProfileScreen = () => {
             >
               <Text style={[local.editButtonText, { color: surface.accent }]}>Edit Profile</Text>
             </TouchableOpacity>
+          </Card>
+        ) : !FeatureFlags.showSignup ? (
+          // Accounts aren't offered yet (beta): a simple welcome instead of sign-up.
+          <Card>
+            <View style={local.profileRow}>
+              <View style={[local.profileAvatar, { backgroundColor: surface.accent }]}>
+                <Feather name="user" size={28} color="#fff" />
+              </View>
+              <View style={local.flex}>
+                <Text style={[local.profileName, { color: colors.textPrimary }]}>Welcome!</Text>
+                <Text style={[local.profileRole, { color: colors.textSecondary }]}>
+                  Your favorites and settings are saved on this phone.
+                </Text>
+              </View>
+            </View>
           </Card>
         ) : (
           <Card>

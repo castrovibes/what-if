@@ -21,6 +21,7 @@ import {
 } from '../ui/components';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { useAuth } from '../auth/AuthProvider';
+import { ReauthRequiredError } from '../auth/types';
 import { ageGroups, findAgeGroup } from '../data/ageGroups';
 import { FeatureFlags } from '../data/featureFlags';
 import { useTtsEnabled } from '../hooks/useTtsEnabled';
@@ -35,7 +36,7 @@ export const SettingsScreen = () => {
   const [ageSheetOpen, setAgeSheetOpen] = useState(false);
   const { isDark, colors, toggleDarkMode } = useTheme();
   const surface = useSurface();
-  const { account, signOut } = useAuth();
+  const { account, signOut, deleteAccount } = useAuth();
   const [ttsEnabled, setTtsEnabled] = useTtsEnabled();
 
   const showLogOutActionSheet = () => {
@@ -59,6 +60,41 @@ export const SettingsScreen = () => {
     }
   };
 
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete your account?',
+      'This permanently deletes your account and everything synced to it: favorites, reflections and progress. This can’t be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount();
+              Alert.alert('Account deleted', 'Your account and its data have been deleted.');
+            } catch (e) {
+              if (e instanceof ReauthRequiredError) {
+                Alert.alert('Please sign in again', e.message, [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Sign in again',
+                    onPress: async () => {
+                      await signOut();
+                      (navigation as any).navigate('Signup');
+                    },
+                  },
+                ]);
+              } else {
+                Alert.alert('Couldn’t delete your account', 'Please check your connection and try again.');
+              }
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <Screen>
       <ScreenHeader title="Settings" subtitle="Customize your experience" />
@@ -73,7 +109,7 @@ export const SettingsScreen = () => {
               label={account.username ? `Signed in as ${account.username}` : 'Signed in'}
               detail={account.email ?? undefined}
             />
-          ) : (
+          ) : FeatureFlags.showSignup ? (
             <ListRow
               icon="log-in"
               iconColor={surface.accent}
@@ -81,7 +117,7 @@ export const SettingsScreen = () => {
               detail="Optional — the app works without an account"
               onPress={() => (navigation as any).navigate('Signup')}
             />
-          )}
+          ) : null}
           <ListRow icon="user" label="Edit Profile" onPress={() => comingSoon('Editing your profile')} />
           <ListRow icon="mail" label="Email Preferences" onPress={() => comingSoon('Email preferences')} />
           <ListRow
@@ -178,7 +214,7 @@ export const SettingsScreen = () => {
             label="About"
             detail={`Version ${APP_VERSION}`}
             onPress={() =>
-              Alert.alert('What Could You Do?', `Version ${APP_VERSION} (beta)`)
+              Alert.alert('What If?', `Version ${APP_VERSION} (beta)`)
             }
             last
           />
@@ -198,11 +234,10 @@ export const SettingsScreen = () => {
         {account && (
           <Card padded={false}>
             <ListRow icon="log-out" label="Log Out" onPress={showLogOutActionSheet} />
-            {/* TODO: needs a server function; the App Store requires in-app account deletion. */}
             <ListRow
               icon="trash-2"
               label="Delete Account"
-              onPress={() => comingSoon('Deleting your account')}
+              onPress={confirmDeleteAccount}
               destructive
               last
             />

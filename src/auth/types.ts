@@ -64,6 +64,11 @@ export interface AuthService {
   /** The signed-in account restored from the device, if any. */
   restoreSession(): Promise<Account | null>;
   signOut(): Promise<void>;
+  /**
+   * Permanently deletes the signed-in account and its cloud data. Throws
+   * `ReauthRequiredError` if the user must sign in again first (nothing is deleted).
+   */
+  deleteAccount(): Promise<void>;
 }
 
 export interface BillingService {
@@ -80,6 +85,13 @@ export class InvalidLinkError extends Error {
   constructor(message = 'That sign-in link has expired or was already used. Request a new one.') {
     super(message);
     this.name = 'InvalidLinkError';
+  }
+}
+
+export class ReauthRequiredError extends Error {
+  constructor() {
+    super('For your security, please sign in again, then delete your account.');
+    this.name = 'ReauthRequiredError';
   }
 }
 

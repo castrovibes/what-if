@@ -145,6 +145,15 @@ export const mockAuthService: AuthService = {
   async signOut() {
     await AsyncStorage.removeItem(SESSION_KEY);
   },
+
+  async deleteAccount() {
+    const id = await AsyncStorage.getItem(SESSION_KEY);
+    if (!id) return;
+    const accounts = await loadAccounts();
+    for (const key of Object.keys(accounts)) if (accounts[key].id === id) delete accounts[key];
+    await saveAccounts(accounts);
+    await AsyncStorage.multiRemove([SESSION_KEY, PLAN_KEY(id)]);
+  },
 };
 
 // Prices are placeholders until store products exist.

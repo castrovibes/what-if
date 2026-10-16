@@ -12,13 +12,17 @@ import { PersonalizationScreen } from '../screens/PersonalizationScreen';
 import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
-import { HowToUseScreen } from '../screens/HowToUseScreen';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { WelcomeTutorialScreen } from '../screens/WelcomeTutorialScreen';
+import { useNavigation, NavigationProp, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { RootStackParamList } from './types';
+import { FeatureFlags } from '../data/featureFlags';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+// Stack screens that take over the whole screen, with no tab bar.
+const FULL_SCREEN_ROUTES = ['Welcome', 'WelcomeTutorial'];
 const CommunityStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 const SettingsStack = createStackNavigator();
@@ -42,10 +46,17 @@ const SettingsStackNavigator = () => (
     <SettingsStack.Screen name="FAQ" component={FAQScreen} />
     <SettingsStack.Screen name="ImConcerned" component={ImConcernedScreen} />
     <SettingsStack.Screen name="Personalization" component={PersonalizationScreen} />
-    {/* "View Welcome Guide" replays onboarding; finishing it returns to Settings. */}
+    {/* "View Welcome Guide" replays onboarding; finishing it opens the Prompts tab. */}
     <SettingsStack.Screen name="Welcome" component={WelcomeScreen} />
-    <SettingsStack.Screen name="HowToUse">
-      {({ navigation }) => <HowToUseScreen onComplete={() => navigation.popToTop()} />}
+    <SettingsStack.Screen name="WelcomeTutorial">
+      {({ navigation }) => (
+        <WelcomeTutorialScreen
+          onComplete={() => {
+            navigation.popToTop();
+            navigation.getParent()?.navigate('Prompts');
+          }}
+        />
+      )}
     </SettingsStack.Screen>
   </SettingsStack.Navigator>
 );
@@ -59,7 +70,7 @@ export const MainTabNavigator = () => {
   useEffect(() => {
     if (!signupOfferPending) return;
     setSignupOfferPending(false);
-    if (!account) navigation.navigate('Signup');
+    if (!account && FeatureFlags.showSignup) navigation.navigate('Signup');
   }, [signupOfferPending, setSignupOfferPending, navigation, account]);
 
   return (
@@ -79,6 +90,9 @@ export const MainTabNavigator = () => {
         tabBarActiveTintColor: '#e10086',
         tabBarInactiveTintColor: colors.iconInactive,
         tabBarStyle: {
+          display: FULL_SCREEN_ROUTES.includes(getFocusedRouteNameFromRoute(route) ?? '')
+            ? 'none'
+            : 'flex',
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.tabBarBorder,
           backgroundColor: colors.tabBarBg,

@@ -29,6 +29,9 @@ export const authBackend: 'firebase' | 'mock' =
 export const useEmulator =
   clean(raw.useEmulator) === 'true' || (__DEV__ && !realProjectConfigured && clean(raw.useEmulator) !== 'false');
 
+/** True when there is a Firebase backend to talk to (local emulators or a real project). */
+export const firebaseAvailable = useEmulator || realProjectConfigured;
+
 const projectId = clean(raw.projectId) ?? DEMO_PROJECT_ID;
 
 export const firebaseConfig = {
