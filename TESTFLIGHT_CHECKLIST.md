@@ -50,8 +50,14 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 
 The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real implementation replaces `mockAuthService.ts` without changing the screens.
 
-- [ ] **You:** Choose and create the backend project (Supabase or Firebase) and share the keys. **Claude** will wire it up.
-- [ ] **Claude:** Build email one-time-code sign-in (the Verify Code screen): send codes, make them expire, limit wrong attempts and resends.
+- [x] **You:** Choose the backend. Decided: **Firebase** (Auth + Firestore), syncing accounts and user data (contexts, favorites, reflections, series progress). Prompt content stays bundled in the app.
+- [x] **Claude:** Build the data model (`src/backend/model.ts`), Firestore security rules with 18 tests (`npm run test:rules`), and a local emulator setup (`npm run emulators`).
+- [ ] **You:** Create the real Firebase project (separate dev and prod projects recommended), add an iOS app with bundle ID `com.whatcouldyoudo.app`, and share the web config keys. **Claude** will deploy the rules.
+- [ ] **You:** Decide whether personalization (the child's name, town and interests) may ever sync. Today it is deliberately device-only.
+- [ ] **Claude:** Connect the app to Firebase (JS SDK, emulators in development) and replace the mock `AuthService` with Firebase Auth.
+- [ ] **Claude:** Switch email sign-in to Firebase **magic links** (decided). The Verify Code screen becomes "Check your email", plus deep-link handling.
+- [ ] **You:** Set up a link domain for magic links (Firebase Hosting) and iOS Associated Domains, so tapping the email link opens the app.
+- [ ] **Claude:** Sync user data between the on-device SQLite database and Firestore (upload on sign-in, keep in sync, merge across devices).
 - [ ] **You:** Set up Sign in with Apple (a capability in the Apple Developer account) and the Google OAuth client IDs. **Claude** will add `expo-apple-authentication` and Google sign-in.
 - [ ] **Claude:** Create accounts and sessions on the server, link Apple, Google and email logins to one account, and have the server decide new vs. returning users.
 - [ ] **Claude:** Check username availability on the server (unique names, profanity filter).
