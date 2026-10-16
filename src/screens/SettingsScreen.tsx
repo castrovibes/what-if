@@ -214,7 +214,7 @@ export const SettingsScreen = () => {
             label="About"
             detail={`Version ${APP_VERSION}`}
             onPress={() =>
-              Alert.alert('What Could You Do?', `Version ${APP_VERSION} (beta)`)
+              Alert.alert('What If?', `Version ${APP_VERSION} (beta)`)
             }
             last
           />

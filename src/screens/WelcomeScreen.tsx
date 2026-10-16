@@ -32,7 +32,7 @@ export const WelcomeScreen = () => {
         )}
         <View style={local.content}>
           <Text style={[local.mark, { color: surface.accent }]}>?</Text>
-          <Text style={[local.title, { color: surface.accent }]}>What Could You Do?</Text>
+          <Text style={[local.title, { color: surface.accent }]}>What If?</Text>
           <Text style={[local.subtitle, { color: colors.textSecondary }]}>
             Foster meaningful conversations with children through age-appropriate prompts that spark
             critical thinking and ethical reasoning

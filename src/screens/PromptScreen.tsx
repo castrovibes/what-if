@@ -340,7 +340,7 @@ export const PromptScreen = () => {
               ]}
             >
               <Text style={[localStyles.titleMark, { color: accent }]}>?</Text>
-              <Text style={[localStyles.titleText, { color: accent }]}>What Could You Do?</Text>
+              <Text style={[localStyles.titleText, { color: accent }]}>What If?</Text>
               <Text style={[localStyles.titleSubtitle, { color: colors.textSecondary }]}>
                 {currentAgeGroup
                   ? `Start a session to get your first prompt for ages ${currentAgeGroup.label.replace(' years', '').replace('-', ' – ')}.`

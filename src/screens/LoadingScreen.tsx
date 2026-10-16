@@ -15,7 +15,7 @@ export const LoadingScreen = () => {
   return (
     <View style={[local.container, { backgroundColor: surface.screen }]}>
       <Text style={[local.mark, { color: surface.accent, fontFamily }]}>?</Text>
-      <Text style={[local.title, { color: colors.textPrimary, fontFamily }]}>What Could You Do?</Text>
+      <Text style={[local.title, { color: colors.textPrimary, fontFamily }]}>What If?</Text>
     </View>
   );
 };
