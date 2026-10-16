@@ -1,6 +1,6 @@
 /**
- * Keeps the signed-in user's data (contexts, favorites, reflections, series progress)
- * in sync between this device's SQLite database and Firestore.
+ * Keeps the signed-in user's data (their own prompts, contexts, favorites, reflections,
+ * series progress) in sync between this device's SQLite database and Firestore.
  *
  * - The device database stays the source the screens read from.
  * - While signed in, every local change is queued in `sync_outbox` and pushed in

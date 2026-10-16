@@ -1,12 +1,13 @@
 import { getDb } from '../index';
 import { AgeGroupId } from '../../data/ageGroups';
+import { SyncService } from '../../sync/syncService';
 
 /**
  * Prompts the user made (the blank creator and Mad Libs). They're ordinary prompts
  * with source 'user', so the deck can show them; situations go in
  * prompt_liminal_spaces like the library's. Deleting hides a prompt (is_active = 0)
  * rather than removing the row, so notes and favorites that point at it stay valid.
- * They live on the phone only for now (TESTFLIGHT_CHECKLIST.md, 2c item 4e).
+ * When signed in they sync to the account (users/{uid}/myPrompts) like favorites.
  */
 export type UserPrompt = {
   id: string;
@@ -44,6 +45,20 @@ const SELECT = `
            WHERE prompt_id = p.id) AS situations
     FROM prompts p
    WHERE p.source = 'user' AND p.is_active = 1`;
+
+/** Queues the prompt's current state (including a delete) for the account. */
+const syncPrompt = async (id: string) => {
+  const db = await getDb();
+  const row = await db.getFirstAsync<Row & { is_active: number }>(
+    `SELECT p.id, p.text, p.age_group, p.is_active, p.created_at, p.updated_at,
+            (SELECT GROUP_CONCAT(liminal_space_id) FROM prompt_liminal_spaces
+              WHERE prompt_id = p.id) AS situations
+       FROM prompts p WHERE p.id = ? AND p.source = 'user'`,
+    id,
+  );
+  if (!row) return;
+  await SyncService.recordSet('myPrompts', { ...fromRow(row), deleted: row.is_active !== 1 });
+};
 
 export const newUserPromptId = () =>
   `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -102,6 +117,7 @@ export const UserPromptRepo = {
         );
       }
     });
+    await syncPrompt(input.id);
   },
 
   async remove(id: string): Promise<void> {
@@ -111,5 +127,6 @@ export const UserPromptRepo = {
       new Date().toISOString(),
       id,
     );
+    await syncPrompt(id);
   },
 };

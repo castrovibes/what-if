@@ -6,9 +6,11 @@
  *   users/{uid}/favorites/{contextId__promptId}             FavoriteDoc
  *   users/{uid}/reflections/{reflectionId}                  ReflectionDoc
  *   users/{uid}/moduleProgress/{contextId__moduleId__promptId}  ModuleProgressDoc
+ *   users/{uid}/myPrompts/{promptId}         MyPromptDoc — prompts the user wrote
  *   usernames/{usernameLower}                UsernameDoc — makes usernames unique
  *
- * Prompt content (prompts, tips, series, …) stays bundled in the app's SQLite DB.
+ * Prompt content (prompts, tips, series, …) stays bundled in the app's SQLite DB;
+ * only the user's own prompts (My Prompts) sync.
  *
  * Privacy: these documents hold the ADULT account holder's data. Nothing here may
  * identify a child. Personalization (child's name, town, interests) is deliberately
@@ -81,13 +83,37 @@ export type ModuleProgressDoc = {
   completedAt: Timestamp | null;
 };
 
+/**
+ * A prompt the user wrote (Create → Write a prompt, or Mad Libs). Free text by the
+ * adult, like reflection notes; it may mention people, so treat it as personal data.
+ * Deleting sets `deleted` rather than removing the document, so favorites and notes
+ * that refer to it on other devices stay valid.
+ */
+export type MyPromptDoc = {
+  text: string;
+  ageGroup: AgeGroupId;
+  /** Situation ids ("ls-car-ride", …). */
+  situations: string[];
+  deleted: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
 export type UsernameDoc = {
   uid: string;
   createdAt: Timestamp;
 };
 
 /** Collections under users/{uid} that sync from the device. */
-export const USER_COLLECTIONS = ['contexts', 'favorites', 'reflections', 'moduleProgress'] as const;
+// myPrompts comes first so that, when the device is rebuilt from the cloud copy, the
+// prompts exist before the favorites and notes that refer to them.
+export const USER_COLLECTIONS = [
+  'myPrompts',
+  'contexts',
+  'favorites',
+  'reflections',
+  'moduleProgress',
+] as const;
 export type UserCollection = (typeof USER_COLLECTIONS)[number];
 
 export const paths = {

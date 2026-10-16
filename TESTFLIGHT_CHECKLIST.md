@@ -66,7 +66,7 @@ Your brainstorm board (objects, attributes and actions) compared with what's bui
 6. **Post, Article, and the Prompt's "Settings" attribute.** These have no attributes defined yet. Community shows sample posts only; nothing in the app corresponds to Article (the closest are the FAQ and the I'm Concerned resources).
    - [ ] **You:** Define Post and Article (attributes and actions), and what the Prompt's "Settings" attribute means.
 7. **Mad Libs prompts don't sync.** Prompts saved from Mad Libs are stored as the user's own prompts on the phone, but aren't part of cloud sync.
-   - [ ] **Claude:** Add them to sync (data model, rules, outbox).
+   - [x] **Claude:** Done with Phase 2c item 4e: all of the user's own prompts (Mad Libs and Write a prompt) now sync.
 8. **Long prompts.** Every prompt card is now the same height (380 pt). Prompt text shrinks to fit, from the title size down to a readable minimum (`title3`, 18–22 pt depending on the phone). Anything still too long at the minimum is cut off. That's fine for the current library, but user-created prompts (Mad Libs, community submissions) could be any length.
    - [ ] **You:** Choose an approach: a **word or character limit** on user-created prompts (simplest; roughly 170 characters fits at the minimum size, so ~150 leaves room), or a **multi-page card** for long prompts, e.g. tapping the card to **flip** it and read the rest on the back.
    - [ ] **Claude:** Build the chosen approach. A limit means a counter and validation on the prompt forms; a flip means a flip animation plus a "more" cue on cards whose text doesn't fit.
@@ -95,7 +95,7 @@ Do these **one at a time**: finish, check and commit each before starting the ne
      - [x] **4b. Claude:** Blank prompt creator (`PromptEditorScreen.tsx`): your "What if…?" text (150-character limit for now; see Phase 2b item 8), an age group, and optional situations; a "?" is added if missing. Saving offers **Play in deck**, which opens the Prompts deck on My Prompts for that age group. Mad Libs' save offers the same.
      - [x] **4c. Claude:** **My Prompts** list in Create (`MyPromptsScreen.tsx`): tap to edit, ▶ to play in the deck, 🗑 to delete (hidden, not erased, so notes and favorites that point at it stay valid). Stored on the phone via `UserPromptRepo`.
      - [x] **4d. Claude:** Deck source dropdown on the card's source label (⌄): **What If Originals** / **My Prompts**. The age and situation filters apply to both. An empty My Prompts deck offers **Write a prompt** (for that age group) or **Show What If Originals**. The deck shows Originals by default and no longer mixes in your own.
-     - [ ] **4e. Claude:** Sync your prompts to your account like favorites (data model, rules, outbox; also Phase 2b item 7).
+     - [x] **4e. Claude:** Your prompts sync to your account like favorites: `users/{uid}/myPrompts/{promptId}` (model, rules with 2 new tests, 27 passing; outbox; adopted on first sign-in; pulled down on sign-in; cleared from the phone on sign-out; removed with the account). Deleting syncs as `deleted: true`. Verified against the emulators: upload, sign-out/sign-in round trip, and a live edit.
 
 ## Phase 3 — External beta (Beta App Review)
 
