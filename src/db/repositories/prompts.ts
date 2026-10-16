@@ -50,7 +50,10 @@ export const PromptRepo = {
       params.push(filter.ageGroup);
     }
     if (filter.liminalSpace) {
-      where.push('liminal_space = ?');
+      // A prompt can suit several situations (prompt_liminal_spaces, migration 0012).
+      where.push(
+        'EXISTS (SELECT 1 FROM prompt_liminal_spaces pls WHERE pls.prompt_id = prompts.id AND pls.liminal_space_id = ?)'
+      );
       params.push(filter.liminalSpace);
     }
     if (filter.parentAskable) {

@@ -15,16 +15,14 @@ export const CommunityScreen = () => {
       <ScreenHeader title="Community" subtitle="Share and discover prompts" />
 
       <ScreenScroll>
-        {/* The community isn't built yet; make that clear to beta testers. */}
-        <Card accent={PINK} style={local.previewCard}>
-          <View style={local.promoTitleRow}>
-            <Feather name="eye" size={18} color={PINK} />
-            <Text style={[local.previewTitle, { color: colors.textPrimary }]}>Preview</Text>
-          </View>
-          <Text style={[local.promoText, { color: colors.textSecondary }]}>
-            Community is coming soon. The posts below are examples of what it will look like.
+        {/* The community isn't built yet; a small note makes that clear to beta testers. */}
+        <View style={[local.previewNote, { borderColor: surface.border }]}>
+          <Feather name="eye" size={13} color={PINK} />
+          <Text style={[local.previewNoteText, { color: colors.textSecondary }]}>
+            <Text style={{ color: colors.textPrimary }}>Preview</Text> · Coming soon; posts below
+            are examples.
           </Text>
-        </Card>
+        </View>
 
         <Card>
           <View style={local.promoTitleRow}>
@@ -119,13 +117,19 @@ export const CommunityScreen = () => {
 };
 
 const local = StyleSheet.create({
-  previewCard: {
-    gap: Spacing.xs,
+  previewNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  previewTitle: {
-    fontSize: Typography.callout,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+  previewNoteText: {
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-Medium',
   },
   promoTitleRow: {
     flexDirection: 'row',

@@ -8,12 +8,14 @@ import { MadLibsScreen } from '../screens/MadLibsScreen';
 import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
+import { useStackScreenOptions } from './transitions';
 
 const Stack = createStackNavigator<PromptsStackParamList>();
 
 export const PromptsStackNavigator = () => {
+  const screenOptions = useStackScreenOptions();
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="PromptsMain" component={PromptScreen} />
       <Stack.Screen name="Modules" component={ModulesScreen} />
       <Stack.Screen name="ModuleDetail" component={ModuleDetailScreen} />

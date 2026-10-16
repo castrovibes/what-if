@@ -18,6 +18,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { RootStackParamList } from './types';
 import { FeatureFlags } from '../data/featureFlags';
+import { useStackScreenOptions, useTransitions } from './transitions';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -27,39 +28,50 @@ const CommunityStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 const SettingsStack = createStackNavigator();
 
-const CommunityStackNavigator = () => (
-  <CommunityStack.Navigator screenOptions={{ headerShown: false }}>
-    <CommunityStack.Screen name="CommunityMain" component={CommunityScreen} />
-  </CommunityStack.Navigator>
-);
+const CommunityStackNavigator = () => {
+  const screenOptions = useStackScreenOptions();
+  return (
+    <CommunityStack.Navigator screenOptions={screenOptions}>
+      <CommunityStack.Screen name="CommunityMain" component={CommunityScreen} />
+    </CommunityStack.Navigator>
+  );
+};
 
-const ProfileStackNavigator = () => (
-  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
-    <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
-    <ProfileStack.Screen name="Personalization" component={PersonalizationScreen} />
-  </ProfileStack.Navigator>
-);
+const ProfileStackNavigator = () => {
+  const screenOptions = useStackScreenOptions();
+  return (
+    <ProfileStack.Navigator screenOptions={screenOptions}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="Personalization" component={PersonalizationScreen} />
+    </ProfileStack.Navigator>
+  );
+};
 
-const SettingsStackNavigator = () => (
-  <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
-    <SettingsStack.Screen name="SettingsMain" component={SettingsScreen} />
-    <SettingsStack.Screen name="FAQ" component={FAQScreen} />
-    <SettingsStack.Screen name="ImConcerned" component={ImConcernedScreen} />
-    <SettingsStack.Screen name="Personalization" component={PersonalizationScreen} />
-    {/* "View Welcome Guide" replays onboarding; finishing it opens the Prompts tab. */}
-    <SettingsStack.Screen name="Welcome" component={WelcomeScreen} />
-    <SettingsStack.Screen name="WelcomeTutorial">
-      {({ navigation }) => (
-        <WelcomeTutorialScreen
-          onComplete={() => {
-            navigation.popToTop();
-            navigation.getParent()?.navigate('Prompts');
-          }}
-        />
-      )}
-    </SettingsStack.Screen>
-  </SettingsStack.Navigator>
-);
+const SettingsStackNavigator = () => {
+  const screenOptions = useStackScreenOptions();
+  const { fade } = useTransitions();
+  return (
+    <SettingsStack.Navigator screenOptions={screenOptions}>
+      <SettingsStack.Screen name="SettingsMain" component={SettingsScreen} />
+      <SettingsStack.Screen name="FAQ" component={FAQScreen} />
+      <SettingsStack.Screen name="ImConcerned" component={ImConcernedScreen} />
+      <SettingsStack.Screen name="Personalization" component={PersonalizationScreen} />
+      {/* "View Welcome Guide" replays onboarding (with its fades); finishing it opens the Prompts tab. */}
+      <SettingsStack.Screen name="Welcome" component={WelcomeScreen} options={fade} />
+      <SettingsStack.Screen name="WelcomeTutorial" options={fade}>
+        {({ navigation }) => (
+          <WelcomeTutorialScreen
+            onComplete={() => {
+              navigation.popToTop();
+              navigation.getParent()?.navigate('Prompts');
+            }}
+          />
+        )}
+      </SettingsStack.Screen>
+    </SettingsStack.Navigator>
+  );
+};
+
 
 export const MainTabNavigator = () => {
   const { colors } = useTheme();

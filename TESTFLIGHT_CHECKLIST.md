@@ -46,7 +46,7 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 
 ## Phase 2b — Gaps from the object brainstorm board
 
-Your brainstorm board (objects, attributes and actions) compared with what's built. The data layer covers most objects; the gaps are mostly actions (CTAs) that have no screen yet. Items 1, 2 and 5 are the ones testers would notice.
+Your brainstorm board (objects, attributes and actions) compared with what's built. The data layer covers most objects; the gaps are mostly actions (CTAs) that have no screen yet. Items 1, 2 and 5 are the ones testers would notice; item 8 matters once users can write prompts.
 
 1. **Notes: "Give Feedback".** Reflections (note plus a 1–5 emoji rating) are stored and synced, but nothing in the app creates one since the redesign removed the "How did that go?" pop-up.
    - [ ] **You:** Decide where a note is written: a button on the prompt card, a prompt after skipping, or a Notes tab.
@@ -67,6 +67,30 @@ Your brainstorm board (objects, attributes and actions) compared with what's bui
    - [ ] **You:** Define Post and Article (attributes and actions), and what the Prompt's "Settings" attribute means.
 7. **Mad Libs prompts don't sync.** Prompts saved from Mad Libs are stored as the user's own prompts on the phone, but aren't part of cloud sync.
    - [ ] **Claude:** Add them to sync (data model, rules, outbox).
+8. **Long prompts.** Every prompt card is now the same height (380 pt). Prompt text shrinks to fit, from the title size down to a readable minimum (`title3`, 18–22 pt depending on the phone). Anything still too long at the minimum is cut off. That's fine for the current library, but user-created prompts (Mad Libs, community submissions) could be any length.
+   - [ ] **You:** Choose an approach: a **word or character limit** on user-created prompts (simplest; roughly 170 characters fits at the minimum size, so ~150 leaves room), or a **multi-page card** for long prompts, e.g. tapping the card to **flip** it and read the rest on the back.
+   - [ ] **Claude:** Build the chosen approach. A limit means a counter and validation on the prompt forms; a flip means a flip animation plus a "more" cue on cards whose text doesn't fit.
+
+## Phase 2c — Navigation reorganization
+
+Do these **one at a time**: finish, check and commit each before starting the next. Today the tab bar is **Prompts · Community · Profile · Settings**, and the Prompts screen's ☰ menu ("More ways to talk") holds **Series** and **Mad Libs**. The target tab bar is **Prompts · Explore · Create · Profile**, with Settings as a ⚙ button at the top of the screens.
+
+**Suggested order: 2 → 4 → 1 → 3.** Item 1 removes the ☰ menu, so Series (moving to Explore, item 2) and Mad Libs (moving to Create, item 4) should have their new homes first. Otherwise they're unreachable in between.
+
+1. **Settings moves to the top of the screens; the Prompts ☰ menu goes.** Remove the ☰ "More ways to talk" menu from the Prompts screen. Put a ⚙ (gear) button in its place, at the top right, on every tab's main screen; it opens Settings. Settings comes off the tab bar.
+   - [x] **You:** Decided: the ⚙ shows on **every** screen, deeper ones included (e.g. a Series, FAQ), alongside their back arrow. Exception: Settings itself and its own deeper screens don't need it.
+   - [ ] **Claude:** Add the ⚙ to the shared screen header. Make Settings a screen it opens (pushed, or a sheet), and remove the Settings tab and the ☰ menu. Check that Settings' own deeper screens (FAQ, Personalize, Welcome Guide replay, and I'm Concerned in dev) still work.
+2. **Community becomes Explore.** Rename the tab and screen to **Explore**. It's the home for **Series** (today under ☰ → Series), **community** content (today's sample posts), and possibly **written content** like guides and blogs. The detailed design comes later.
+   - [ ] **Claude:** Rename the tab, screen and icon (suggested: `compass`). Move Series in (a section linking to the Series list and detail screens). Keep the sample community posts and the "Preview" note. Add a placeholder "Guides" section only if you want one now.
+   - [ ] **You (later):** Design the Explore screen in detail: sections, order, and what guides/blogs are (ties in with Phase 2b item 6, defining Post and Article).
+3. **Profile moves to the far right of the tab bar.**
+   - [ ] **Claude:** Reorder the tabs so Profile is last: **Prompts · Explore · Create · Profile**. The app keeps opening on **Prompts**.
+4. **New Create tab.** A tab called **Create** that holds **Mad Libs** (moved from ☰), **notes** (writing a reflection; see Phase 2b item 1), and a **blank prompt creator** (write your own "What if…?").
+   - Create sits third, between Explore and Profile.
+   - [x] **You:** Decided: the **blank prompt creator is in the beta**.
+   - [ ] **You:** Decide where created prompts appear: in the Prompts deck (mixed in, or only when you choose "My Prompts"), in a **My Prompts** list, or both. Notes depend on the Phase 2b item 1 decision.
+   - [ ] **Claude:** Add the Create tab (suggested icon: `plus-circle` or `edit-3`) with a screen listing the three tools. Move Mad Libs there. Build the blank prompt creator, applying the length decision from Phase 2b item 8. Add notes once that design is decided.
+   - [ ] **Claude:** Give user-created prompts a home. Today, Mad Libs saves them into the prompt library on the phone (marked as the user's own) with no screen that lists them, and they don't sync (Phase 2b item 7). Add a **My Prompts** list (view, edit, delete) for prompts from Mad Libs and the blank creator, and sync them to the account like favorites.
 
 ## Phase 3 — External beta (Beta App Review)
 

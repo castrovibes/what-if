@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,22 +6,30 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
+  StyleProp,
+  ViewStyle,
+  LayoutChangeEvent,
   Modal,
   TextInput,
   Alert,
   Pressable,
+  PanResponder,
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
   Easing,
   FadeInDown,
   FadeOutUp,
+  cancelAnimation,
   interpolate,
   runOnJS,
+  SharedValue,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
@@ -36,29 +44,72 @@ import { useCategories } from '../hooks/useCategories';
 import { useTipsForPrompt } from '../hooks/useTipsForPrompt';
 import { useTtsEnabled } from '../hooks/useTtsEnabled';
 import { DiscussionTips } from '../components/DiscussionTips';
-import { WorldBuildingCarousel } from '../components/WorldBuildingCarousel';
 import { ReflectionRepo } from '../db/repositories/reflections';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { ReportReason, submitPromptReport } from '../backend/reports';
-import { Category, Prompt, PromptSource } from '../db/types';
+import { Category, Prompt, PromptSource, WorldBuildingCard } from '../db/types';
 import { applyTokens } from '../data/personalizationTokens';
 import { PromptsStackParamList } from '../navigation/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK, CARD_RADIUS } from '../ui/surface';
+import { useReduceMotion } from '../navigation/transitions';
 import { Screen, ScreenHeader, Pill, Dot, Button, BottomSheet, SheetOption } from '../ui/components';
 
-const DRAWER_MS = 400;
 const CARD_MARGIN_BOTTOM = 24;
 const CARD_CORNER_RADIUS = CARD_RADIUS;
-const DRAWER_TUCK = CARD_MARGIN_BOTTOM + CARD_CORNER_RADIUS;
-const DRAWER_DARKEN = 0.5625;
+
+// Twists: the Twist button flips the top card over to show them on its back.
+const FLIP_MS = 450;
+// While flipped, a twist slides this far out (fading) and the next one slides in.
+const TWIST_SLIDE = 40;
+const TWIST_OUT_MS = 110;
+const TWIST_IN_MS = 170;
+// How much the card swells at the midpoint of a flip.
+const FLIP_LIFT = 0.06;
 
 const SWIPE_MS = 320;
+// Fraction of the screen width a drag must cover to change prompts (or a quick flick),
+// matching the Welcome Tutorial's deck.
+const SWIPE_THRESHOLD = 0.22;
+const FLICK_VELOCITY = 0.5;
+// Card edge tap zones stop this far from the top and bottom, clear of the header and
+// footer buttons.
+const CARD_EDGE_ZONE_INSET = 64;
+// Page-turn tap feedback: a soft gradient that flashes in from the tapped side of the
+// screen, strongest at the edge and fading out toward the card.
+const TAP_FLASH_IN_MS = 90;
+const TAP_FLASH_OUT_MS = 380;
+const TAP_FLASH_LIGHT = 'rgba(0, 0, 0, 0.04)'; // a slightly darker shade in light mode
+const TAP_FLASH_DARK = 'rgba(255, 255, 255, 0.06)'; // slightly lighter in dark mode
 
-// Resting offsets of the cards stacked behind the current prompt. During a skip
-// swipe the top card flies off and each card below slides up into the slot above.
-const UNDER_CARD = { translateY: 6, rotate: -1.5 };
-const BOTTOM_CARD = { translateY: 12, rotate: 2 };
+// Resting offsets of the deck's slots, top card first. During a skip the top card
+// flies off and each card below moves up one slot. The steps shrink with depth
+// (6px/1.5°, then 4px/0.9°, then 2px/0.6°), so most of the motion is at the top and
+// the bottom of the deck barely stirs.
+const SLOT_Y = [0, 6, 10, 12];
+const SLOT_ROTATE = [0, -1.5, -0.6, 0];
+const SLOTS = SLOT_Y.map((_, i) => i);
+const DEEPEST_SLOT = SLOTS.length - 1;
+// The deck never runs out: a card is mounted one slot past the deepest, invisible,
+// and fades in as the others move up.
+const SPAWN_DEPTH = SLOTS.length;
+// Every card casts a shadow, sized by its slot: short and tight near the bottom of
+// the deck, growing to the full card shadow as it rises to the top.
+const SHADOW_SIZE = [1, 0.5, 0.3, 0.15];
+const SHADOW_STRENGTH = [1, 0.85, 0.7, 0.55];
+
+type ShadowBase = { opacity: number; radius: number; offsetY: number; elevation: number };
+
+const deckShadow = (slot: number, base: ShadowBase) => {
+  'worklet';
+  const size = interpolate(slot, SLOTS, SHADOW_SIZE, 'clamp');
+  return {
+    shadowOpacity: base.opacity * interpolate(slot, SLOTS, SHADOW_STRENGTH, 'clamp'),
+    shadowRadius: base.radius * size,
+    shadowOffset: { width: 0, height: base.offsetY * size },
+    elevation: base.elevation * size,
+  };
+};
 
 const SOURCE_LABEL: Record<PromptSource, string> = {
   official: 'What If Originals',
@@ -66,62 +117,97 @@ const SOURCE_LABEL: Record<PromptSource, string> = {
   user: 'My Prompts',
 };
 
-const darken = (hex: string, factor: number): string => {
-  const h = hex.replace('#', '');
-  const channel = (i: number) =>
-    Math.round(parseInt(h.slice(i, i + 2), 16) * factor)
-      .toString(16)
-      .padStart(2, '0');
-  return `#${channel(0)}${channel(2)}${channel(4)}`;
-};
-
-const drawerEntering = (values: { targetHeight: number }) => {
-  'worklet';
-  return {
-    initialValues: { height: DRAWER_TUCK },
-    animations: { height: withTiming(values.targetHeight, { duration: DRAWER_MS }) },
-  };
-};
-
-const drawerExiting = (values: { currentHeight: number }) => {
-  'worklet';
-  return {
-    initialValues: { height: values.currentHeight },
-    animations: { height: withTiming(DRAWER_TUCK, { duration: DRAWER_MS }) },
-  };
-};
-
-const slideFromBehindCard = (values: { targetHeight: number }) => {
-  'worklet';
-  return {
-    initialValues: {
-      transform: [{ translateY: -(values.targetHeight + CARD_CORNER_RADIUS) }],
-    },
-    animations: {
-      transform: [{ translateY: withTiming(0, { duration: DRAWER_MS }) }],
-    },
-  };
-};
-
-const slideBackBehindCard = (values: { currentHeight: number }) => {
-  'worklet';
-  return {
-    initialValues: { transform: [{ translateY: 0 }] },
-    animations: {
-      transform: [
-        {
-          translateY: withTiming(-(values.currentHeight + CARD_CORNER_RADIUS), {
-            duration: DRAWER_MS,
-          }),
-        },
-      ],
-    },
-  };
-};
-
-const restingTransform = (offset: { translateY: number; rotate: number }) => ({
-  transform: [{ translateY: offset.translateY }, { rotate: `${offset.rotate}deg` }],
+const restingTransform = (slot: number, shadow: ShadowBase) => ({
+  ...deckShadow(slot, shadow),
+  transform: [{ translateY: SLOT_Y[slot] }, { rotate: `${SLOT_ROTATE[slot]}deg` }],
 });
+
+/**
+ * One prompt card in the deck. Each card keeps the same prompt for as long as it's
+ * mounted; only `progress` (the deck position, in prompt indexes) moves it. Where the
+ * card sits relative to the position decides how it looks:
+ *   - behind the top (d > 0): in a deck slot, its shadow sized to match; one slot
+ *     past the deepest it's fully transparent, and fades in as it arrives;
+ *   - on top (d = 0): the current prompt;
+ *   - passed (-1 < d < 0): flying off to the left (or back in, when going back).
+ */
+const DeckCard = ({
+  index,
+  progress,
+  width,
+  shadow,
+  interactive,
+  flip,
+  style,
+  children,
+}: {
+  index: number;
+  progress: SharedValue<number>;
+  width: number;
+  shadow: ShadowBase;
+  interactive: boolean;
+  /** 0 = front, 1 = flipped over (the top card only). */
+  flip?: SharedValue<number>;
+  style: StyleProp<ViewStyle>;
+  children?: React.ReactNode;
+}) => {
+  // Where the card sits in the deck (see above), before any flip.
+  const deckCardStyle = () => {
+    'worklet';
+    const p = progress.value;
+    // Tugging the first prompt to the right, with nothing before it: rubber-band.
+    if (index === 0 && p < 0) {
+      return {
+        opacity: 1,
+        ...deckShadow(0, shadow),
+        transform: [{ translateX: -p * width * 1.2 }, { rotate: `${-p * 14}deg` }],
+      };
+    }
+    const d = index - p;
+    if (d < 0) {
+      return {
+        opacity: d > -1 ? 1 : 0,
+        ...deckShadow(0, shadow),
+        transform: [{ translateX: d * width * 1.2 }, { rotate: `${d * 14}deg` }],
+      };
+    }
+    const slot = Math.min(d, DEEPEST_SLOT);
+    return {
+      opacity: interpolate(d, [DEEPEST_SLOT, DEEPEST_SLOT + 1], [1, 0], 'clamp'),
+      ...deckShadow(slot, shadow),
+      transform: [
+        { translateY: interpolate(slot, SLOTS, SLOT_Y) },
+        { rotate: `${interpolate(slot, SLOTS, SLOT_ROTATE)}deg` },
+      ],
+    };
+  };
+  const animated = useAnimatedStyle(() => {
+    const flipped = flip ? flip.value : 0;
+    const placed = deckCardStyle();
+    // Turning over: the card narrows to its edge and widens again (the faces swap at
+    // the edge), swelling slightly as if picked up and set back down. This is a 2D
+    // squeeze rather than a 3D rotation, which on iOS let half the card sink behind
+    // its own back face and the deck.
+    return {
+      ...placed,
+      transform: [
+        ...placed.transform,
+        { scale: 1 + FLIP_LIFT * Math.sin(Math.PI * flipped) },
+        { scaleX: Math.max(0.001, Math.abs(Math.cos(Math.PI * flipped))) },
+      ],
+    };
+  });
+  return (
+    <Animated.View
+      style={[style, animated]}
+      pointerEvents={interactive ? 'auto' : 'none'}
+      accessibilityElementsHidden={!interactive}
+      importantForAccessibility={interactive ? 'auto' : 'no-hide-descendants'}
+    >
+      <View style={localStyles.stackCardClip}>{children}</View>
+    </Animated.View>
+  );
+};
 
 type Sheet = 'situation' | 'discussion' | 'more' | 'report' | null;
 
@@ -135,7 +221,7 @@ const REPORT_REASONS: { reason: ReportReason; label: string; icon: keyof typeof 
 export const PromptScreen = () => {
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
   const route = useRoute<RouteProp<PromptsStackParamList, 'PromptsMain'>>();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const surface = useSurface();
   const { width: windowWidth } = useWindowDimensions();
   const accent = surface.accent;
@@ -159,10 +245,14 @@ export const PromptScreen = () => {
   const [liminalSpace, setLiminalSpace] = useState<string | null>(
     route.params?.liminalSpace ?? null,
   );
-  // Grows without bound (wrapped with % below) so every skip is a state change,
-  // even when the deck has a single prompt.
+  // The deck counts prompts without bound (wrapped with % to pick the prompt), so
+  // each card in the deck has its own index even when there's a single prompt.
+  // currentPromptIndex is the prompt that has settled on top; deckTarget is where
+  // the deck is heading (ahead of it while cards are still flying).
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+  const [deckTarget, setDeckTarget] = useState(0);
   const [showTwists, setShowTwists] = useState(false);
+  const [twistIndex, setTwistIndex] = useState(0);
   const [sheet, setSheet] = useState<Sheet>(null);
 
   const { prompts, loading } = usePromptsForAge(selectedAge ?? '3-5', {
@@ -177,23 +267,68 @@ export const PromptScreen = () => {
 
   const safeIndex = prompts.length > 0 ? currentPromptIndex % prompts.length : 0;
   const currentPrompt = prompts[safeIndex];
-  const nextPrompt = prompts.length > 0 ? prompts[(safeIndex + 1) % prompts.length] : undefined;
+  const promptAt = (index: number) => prompts[index % prompts.length];
+  // Swiping right goes back through prompts already seen this session.
+  const canGoBack = deckTarget > 0;
   const promptId = currentPrompt?.id ?? '';
   const { cards: twistCards } = useWorldBuilding(promptId);
   const hasTwists = twistCards.length > 0;
+  const twist = twistCards[Math.min(twistIndex, twistCards.length - 1)];
+
+  // Flip the top card over to its twists, and back. With Reduce Motion on, the faces
+  // just swap.
+  const reduceMotion = useReduceMotion();
+  const flip = useSharedValue(0);
+  useEffect(() => {
+    flip.value = withTiming(showTwists ? 1 : 0, {
+      duration: reduceMotion ? 0 : FLIP_MS,
+      easing: Easing.inOut(Easing.cubic),
+    });
+  }, [showTwists, reduceMotion, flip]);
+  // Each face shows for its half of the turn; they swap when the card is edge-on.
+  const frontFaceStyle = useAnimatedStyle(() => ({ opacity: flip.value < 0.5 ? 1 : 0 }));
+  const backFaceStyle = useAnimatedStyle(() => ({ opacity: flip.value >= 0.5 ? 1 : 0 }));
+
+  // Moving between twists: the current one slides out and fades, then the next
+  // slides in from the other side.
+  const twistShift = useSharedValue(0);
+  const showTwist = (next: number, dir: number) => {
+    setTwistIndex(next);
+    twistShift.value = dir * TWIST_SLIDE;
+    twistShift.value = withTiming(0, { duration: TWIST_IN_MS, easing: Easing.out(Easing.quad) });
+  };
+  const changeTwist = (dir: 1 | -1) => {
+    const next = twistIndex + dir;
+    if (next < 0 || next >= twistCards.length) {
+      twistShift.value = withTiming(0, { duration: TWIST_IN_MS });
+      return;
+    }
+    twistShift.value = withTiming(
+      -dir * TWIST_SLIDE,
+      { duration: TWIST_OUT_MS, easing: Easing.in(Easing.quad) },
+      finished => {
+        if (finished) runOnJS(showTwist)(next, dir);
+      },
+    );
+  };
   const { total: tipCount } = useTipsForPrompt(promptId);
 
-  // 0 = card at rest, 1 = swiped off screen
-  const swipe = useSharedValue(0);
-  const swipingRef = useRef(false);
+  // The deck position, in prompt indexes: whole numbers at rest, fractional while a
+  // card is moving. Every card's motion is derived from it, so no card ever swaps
+  // its prompt mid-animation.
+  const progress = useSharedValue(0);
+  const targetRef = useRef(0);
+  const animatingRef = useRef(false);
 
   const personalization = usePersonalization();
   const [ttsEnabled] = useTtsEnabled();
   const [speaking, setSpeaking] = useState(false);
 
-  // Stop reading aloud when the prompt changes or the screen goes away.
+  // Stop reading aloud when the prompt changes or the screen goes away. A new prompt
+  // also starts face up, at its first twist.
   useEffect(() => {
     setShowTwists(false);
+    setTwistIndex(0);
     Speech.stop();
     setSpeaking(false);
   }, [promptId]);
@@ -217,65 +352,132 @@ export const PromptScreen = () => {
     setSpeaking(true);
   };
 
-  // Reset prompt index when filters change so we don't end up on an out-of-range prompt
+  // Start the deck over when filters change so we don't end up on an out-of-range prompt
   useEffect(() => {
+    cancelAnimation(progress);
+    progress.value = 0;
+    targetRef.current = 0;
+    animatingRef.current = false;
+    setDeckTarget(0);
     setCurrentPromptIndex(0);
-  }, [liminalSpace, selectedAge]);
+  }, [liminalSpace, selectedAge, progress]);
 
-  // Once the next prompt has rendered into the top card, snap it back into place
-  // before paint so the swap is invisible.
-  useLayoutEffect(() => {
-    swipe.value = 0;
-    swipingRef.current = false;
-  }, [currentPromptIndex, swipe]);
-
-  const topCardStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: -swipe.value * windowWidth * 1.2 },
-      { rotate: `${-swipe.value * 14}deg` },
-    ],
-  }));
-
-  const underCardStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(swipe.value, [0, 1], [UNDER_CARD.translateY, 0]) },
-      { rotate: `${interpolate(swipe.value, [0, 1], [UNDER_CARD.rotate, 0])}deg` },
-    ],
-  }));
-
-  const bottomCardStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY: interpolate(
-          swipe.value,
-          [0, 1],
-          [BOTTOM_CARD.translateY, UNDER_CARD.translateY],
-        ),
-      },
-      {
-        rotate: `${interpolate(swipe.value, [0, 1], [BOTTOM_CARD.rotate, UNDER_CARD.rotate])}deg`,
-      },
-    ],
-  }));
+  const shadowBase: ShadowBase = {
+    opacity: surface.shadow.shadowOpacity,
+    radius: surface.shadow.shadowRadius,
+    offsetY: surface.shadow.shadowOffset.height,
+    elevation: surface.shadow.elevation,
+  };
 
   const category = categories.find(c => c.id === currentPrompt?.categoryId);
-  const nextCategory = categories.find(c => c.id === nextPrompt?.categoryId);
   const favorited = isFavorited(promptId);
 
-  const advancePrompt = () => setCurrentPromptIndex(i => i + 1);
+  const settle = (index: number) => {
+    animatingRef.current = false;
+    setCurrentPromptIndex(index);
+  };
 
-  const handleSkip = () => {
-    if (swipingRef.current || prompts.length === 0) return;
-    swipingRef.current = true;
-    setShowTwists(false);
-    swipe.value = withTiming(
-      1,
-      { duration: SWIPE_MS, easing: Easing.in(Easing.quad) },
-      finished => {
-        if (finished) runOnJS(advancePrompt)();
-      },
+  /**
+   * Moves the deck to `target`. Calls stack up: a second swipe while a card is still
+   * flying retargets the same animation, so quick swipes are never dropped.
+   */
+  const goTo = (target: number) => {
+    const t = Math.max(0, target);
+    if (prompts.length === 0) return;
+    if (t !== targetRef.current) setShowTwists(false);
+    // From rest, a skip accelerates away; mid-flight, or going back, it eases in.
+    const easing =
+      !animatingRef.current && t > targetRef.current ? Easing.in(Easing.quad) : Easing.out(Easing.quad);
+    targetRef.current = t;
+    animatingRef.current = true;
+    setDeckTarget(t);
+    progress.value = withTiming(t, { duration: SWIPE_MS, easing }, finished => {
+      if (finished) runOnJS(settle)(t);
+    });
+  };
+  const handleSkip = () => goTo(targetRef.current + 1);
+  const handleBack = () => {
+    if (targetRef.current > 0) goTo(targetRef.current - 1);
+  };
+
+  // Dragging the card: left skips to the next prompt, right brings back the previous
+  // one. A drag can start mid-flight; it picks the deck up where it is. The responder
+  // is created once, so it reads the latest handlers from a ref.
+  const dragStart = useRef(0);
+  const gesture = useRef({
+    grant: () => {},
+    move: (_dx: number) => {},
+    release: (_dx: number, _vx: number) => {},
+  });
+  // While the card is flipped, swiping it moves between twists instead; the prompt
+  // deck stays put.
+  gesture.current = {
+    grant: () => {
+      if (showTwists) return;
+      cancelAnimation(progress);
+      dragStart.current = progress.value;
+    },
+    move: dx => {
+      if (showTwists) {
+        twistShift.value = Math.max(-TWIST_SLIDE, Math.min(TWIST_SLIDE, dx * 0.35));
+        return;
+      }
+      let p = dragStart.current - dx / windowWidth;
+      // Rubber-band before the first prompt, and never more than one card ahead.
+      if (p < 0) p = p / 3;
+      progress.value = Math.min(p, targetRef.current + 1);
+    },
+    release: (dx, vx) => {
+      const forward = dx < -windowWidth * SWIPE_THRESHOLD || vx < -FLICK_VELOCITY;
+      const back = dx > windowWidth * SWIPE_THRESHOLD || vx > FLICK_VELOCITY;
+      if (showTwists) {
+        if (forward || back) changeTwist(forward ? 1 : -1);
+        else twistShift.value = withTiming(0, { duration: TWIST_IN_MS });
+        return;
+      }
+      if (forward) handleSkip();
+      else if (back && targetRef.current > 0) handleBack();
+      else goTo(targetRef.current);
+    },
+  };
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => gesture.current.grant(),
+      onPanResponderMove: (_, g) => gesture.current.move(g.dx),
+      onPanResponderRelease: (_, g) => gesture.current.release(g.dx, g.vx),
+      onPanResponderTerminate: () => gesture.current.release(0, 0),
+    }),
+  ).current;
+
+  // Tapping a page-turn zone flashes that side of the screen, but only when the tap
+  // actually turns the page (not "back" from the first prompt).
+  const flashLeft = useSharedValue(0);
+  const flashRight = useSharedValue(0);
+  const flash = (side: SharedValue<number>) => {
+    side.value = withSequence(
+      withTiming(1, { duration: TAP_FLASH_IN_MS, easing: Easing.out(Easing.quad) }),
+      withTiming(0, { duration: TAP_FLASH_OUT_MS, easing: Easing.in(Easing.quad) }),
     );
   };
+  const tapBack = () => {
+    if (targetRef.current === 0) return;
+    flash(flashLeft);
+    handleBack();
+  };
+  const tapForward = () => {
+    if (prompts.length === 0) return;
+    flash(flashRight);
+    handleSkip();
+  };
+  const flashLeftStyle = useAnimatedStyle(() => ({ opacity: flashLeft.value }));
+  const flashRightStyle = useAnimatedStyle(() => ({ opacity: flashRight.value }));
+  const flashTint = isDark ? TAP_FLASH_DARK : TAP_FLASH_LIGHT;
+  const flashClear = isDark ? 'rgba(255, 255, 255, 0)' : 'rgba(0, 0, 0, 0)';
+  // Midpoint of an eased falloff, so the glow hugs the edge rather than fading evenly.
+  const flashMid = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.0125)';
 
   const handleReport = () => setSheet('report');
 
@@ -314,11 +516,21 @@ export const PromptScreen = () => {
     else setAgeMenuOpen(true);
   };
 
+  // Cards behind the top one are the same color; the top card's drop shadow is what
+  // darkens their peeking edges, so nothing changes color when a card moves up.
   const stackCardStyle = {
-    backgroundColor: surface.underCard,
+    backgroundColor: surface.card,
     borderColor: surface.border,
-    ...surface.shadow,
+    shadowColor: surface.shadow.shadowColor,
   };
+
+  // Cards mounted in the deck: the one to go back to, the top card, and the slots
+  // below it plus one invisible spare at the bottom. While cards are flying, this
+  // spans both where the deck has settled and where it's heading.
+  const deckFirst = Math.max(0, Math.min(currentPromptIndex, deckTarget) - 1);
+  const deckLast = Math.max(currentPromptIndex, deckTarget) + SPAWN_DEPTH;
+  const deckIndexes: number[] = [];
+  for (let i = deckLast; i >= deckFirst; i--) deckIndexes.push(i);
 
   const renderBody = () => {
     if (!sessionStarted) {
@@ -330,8 +542,12 @@ export const PromptScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           <View style={localStyles.deck}>
-            <View style={[localStyles.stackCard, stackCardStyle, restingTransform(BOTTOM_CARD)]} />
-            <View style={[localStyles.stackCard, stackCardStyle, restingTransform(UNDER_CARD)]} />
+            {[3, 2, 1].map(slot => (
+              <View
+                key={slot}
+                style={[localStyles.stackCard, stackCardStyle, restingTransform(slot, shadowBase)]}
+              />
+            ))}
             <View
               style={[
                 localStyles.card,
@@ -372,76 +588,142 @@ export const PromptScreen = () => {
         contentContainerStyle={localStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={localStyles.deck}>
-          {/* The rest of the deck, peeking out behind the current prompt. The card
-              directly underneath shows the next prompt so a skip reveals it. */}
-          {!showTwists && (
-            <>
-              <Animated.View style={[localStyles.stackCard, stackCardStyle, bottomCardStyle]} />
-              <Animated.View
-                style={[localStyles.stackCard, stackCardStyle, underCardStyle]}
-                pointerEvents="none"
+        {/* Page-turn zones, like an ebook: tapping the empty space left of center goes
+            back, right of center goes forward. They sit behind the card, so taps on
+            the card and its buttons never reach them. Hidden from VoiceOver, which
+            has the Previous prompt button's actions instead. */}
+        <View
+          style={localStyles.tapZones}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Pressable style={localStyles.tapZone} onPress={tapBack} />
+          <Pressable style={localStyles.tapZone} onPress={tapForward} />
+        </View>
+
+        <View style={localStyles.deck} {...pan.panHandlers}>
+          {/* The deck, deepest card first so the top card draws last. Cards are keyed
+              by their place in the deck, so each keeps its prompt from the moment it
+              fades in at the bottom until it has flown off and is removed. */}
+          {deckIndexes.map(index => {
+            const prompt = promptAt(index);
+            const isCurrent = index === currentPromptIndex;
+            return (
+              <DeckCard
+                key={index}
+                index={index}
+                progress={progress}
+                width={windowWidth}
+                shadow={shadowBase}
+                interactive={isCurrent}
+                flip={isCurrent ? flip : undefined}
+                style={[localStyles.stackCard, stackCardStyle]}
               >
-                {nextPrompt && (
+                {isCurrent ? (
+                  <>
+                    <Animated.View
+                      style={[localStyles.cardFace, frontFaceStyle]}
+                      pointerEvents={showTwists ? 'none' : 'auto'}
+                      accessibilityElementsHidden={showTwists}
+                      importantForAccessibility={showTwists ? 'no-hide-descendants' : 'auto'}
+                    >
+                      <PromptCardContent
+                        prompt={prompt}
+                        category={category}
+                        accent={accent}
+                        tipCount={tipCount}
+                        onReport={handleReport}
+                        onDiscussion={() => setSheet('discussion')}
+                        showListen={ttsEnabled}
+                        speaking={speaking}
+                        onListen={toggleListen}
+                      />
+                    </Animated.View>
+                    {twist && (
+                      <Animated.View
+                        style={[localStyles.cardFace, backFaceStyle]}
+                        pointerEvents={showTwists ? 'auto' : 'none'}
+                        accessibilityElementsHidden={!showTwists}
+                        importantForAccessibility={showTwists ? 'auto' : 'no-hide-descendants'}
+                      >
+                        <TwistCardContent
+                          card={twist}
+                          index={twistIndex}
+                          count={twistCards.length}
+                          fullQuestion={prompt.fullQuestion}
+                          accent={accent}
+                          shift={twistShift}
+                          onPrev={() => changeTwist(-1)}
+                          onNext={() => changeTwist(1)}
+                        />
+                      </Animated.View>
+                    )}
+                  </>
+                ) : (
                   <PromptCardContent
-                    prompt={nextPrompt}
-                    category={nextCategory}
+                    prompt={prompt}
+                    category={categories.find(c => c.id === prompt.categoryId)}
                     accent={accent}
                     showListen={ttsEnabled}
                   />
                 )}
-              </Animated.View>
-            </>
-          )}
+              </DeckCard>
+            );
+          })}
 
-          <Animated.View
-            style={[
-              localStyles.card,
-              { backgroundColor: surface.card, borderColor: surface.border, ...surface.shadow },
-              topCardStyle,
-            ]}
-          >
-            <PromptCardContent
-              prompt={currentPrompt}
-              category={category}
-              accent={accent}
-              tipCount={tipCount}
-              onReport={handleReport}
-              onDiscussion={() => setSheet('discussion')}
-              showListen={ttsEnabled}
-              speaking={speaking}
-              onListen={toggleListen}
-            />
-          </Animated.View>
+          {/* The page-turn zones continue onto the card's outer edges, between the
+              header (flag) and footer (Listen, Tips) so those buttons stay clear. They
+              belong to the deck, not a card, so a quick second tap still lands while
+              the first card is flying off. */}
+          {/* Face up only: on the twist side the card's own arrows take over. */}
+          {!showTwists && (
+            <View
+              style={localStyles.cardEdgeZones}
+              pointerEvents="box-none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <Pressable style={localStyles.cardEdgeZone} onPress={tapBack} />
+              <Pressable style={localStyles.cardEdgeZone} onPress={tapForward} />
+            </View>
+          )}
         </View>
 
-        {hasTwists && showTwists && (
-          <Animated.View
-            entering={drawerEntering}
-            exiting={drawerExiting}
-            style={localStyles.drawerClip}
-          >
-            <Animated.View entering={slideFromBehindCard} exiting={slideBackBehindCard}>
-              <WorldBuildingCarousel
-                cards={twistCards}
-                resetKey={promptId}
-                accent={currentAgeGroup?.bgColor}
-                bgColor={
-                  currentAgeGroup ? darken(currentAgeGroup.bgColor, DRAWER_DARKEN) : undefined
-                }
-                peekFromTop={CARD_CORNER_RADIUS}
-              />
-            </Animated.View>
-          </Animated.View>
-        )}
       </ScrollView>
     );
   };
 
   return (
     <Screen>
+      {/* Tap feedback for the page-turn zones: full screen height so it has no hard
+          top or bottom edge. Drawn first, so it sits behind the cards and controls. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[localStyles.tapFlash, localStyles.tapFlashLeft, flashLeftStyle]}
+      >
+        <LinearGradient
+          colors={[flashTint, flashMid, flashClear]}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      <Animated.View
+        pointerEvents="none"
+        style={[localStyles.tapFlash, localStyles.tapFlashRight, flashRightStyle]}
+      >
+        <LinearGradient
+          colors={[flashClear, flashMid, flashTint]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
       <ScreenHeader
-        title="What If"
+        title="What If?"
         rightIcon="menu"
         rightLabel="More"
         onRightPress={() => setSheet('more')}
@@ -517,12 +799,34 @@ export const PromptScreen = () => {
 
       {sessionStarted && currentPrompt && !loading && (
         <View style={localStyles.actionRow}>
+          {/* Back to the previous prompt (swiping the card left skips forward). VoiceOver
+              users can't swipe the card, so both directions are also actions here. */}
           <TouchableOpacity
-            onPress={handleSkip}
-            style={[localStyles.circleButton, { borderColor: surface.border, backgroundColor: surface.card }]}
-            accessibilityLabel="Skip to next prompt"
+            onPress={handleBack}
+            style={[
+              localStyles.circleButton,
+              { borderColor: surface.border, backgroundColor: surface.card },
+              !canGoBack && localStyles.disabled,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Previous prompt"
+            accessibilityHint={
+              canGoBack
+                ? 'Goes back to the prompt before this one. Swipe up or down for more actions.'
+                : 'This is the first prompt. Swipe up or down for more actions.'
+            }
+            accessibilityState={{ disabled: !canGoBack }}
+            accessibilityActions={[
+              { name: 'activate' },
+              { name: 'next', label: 'Next prompt' },
+              { name: 'previous', label: 'Previous prompt' },
+            ]}
+            onAccessibilityAction={e => {
+              if (e.nativeEvent.actionName === 'next') handleSkip();
+              else handleBack();
+            }}
           >
-            <Feather name="x" size={22} color={colors.iconDefault} />
+            <Feather name="rotate-ccw" size={22} color={colors.iconDefault} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -537,7 +841,7 @@ export const PromptScreen = () => {
               },
               !hasTwists && localStyles.disabled,
             ]}
-            accessibilityLabel={showTwists ? 'Hide twists' : 'Add a twist'}
+            accessibilityLabel={showTwists ? 'Show the prompt' : 'Flip to twists'}
           >
             <Feather name="shuffle" size={20} color={showTwists ? '#fff' : accent} />
             <Text style={[localStyles.twistLabel, { color: showTwists ? '#fff' : accent }]}>
@@ -648,6 +952,236 @@ export const PromptScreen = () => {
  * The inside of a prompt card. Used for the live top card and, without handlers,
  * for the next prompt peeking out underneath it.
  */
+// Every prompt card is the same height. Prompt text starts at the title size and
+// shrinks to fit, down to a floor that's still easy to read aloud; text that doesn't
+// fit even then is cut off (see TESTFLIGHT_CHECKLIST.md on long prompts).
+// The card grows upward only: CARD_GROW is added to the height and to the padding
+// under the deck, which keeps the bottom edge where a 340pt card's would be while the
+// top reaches toward the filter pills.
+const CARD_GROW = 40;
+const CARD_HEIGHT = 340 + CARD_GROW;
+const PROMPT_FONT_MAX = Typography.title1;
+const PROMPT_FONT_MIN = Typography.title3;
+// Inset of everything on the card from its edges: tighter top and bottom than sides.
+const CARD_PADDING_X = Spacing.lg;
+const CARD_PADDING_Y = Spacing.md;
+// Fixed gap between the follow-up question and the Listen / Tips row.
+const QUESTION_TO_FOOTER = Spacing.md;
+const promptLineHeight = (fontSize: number) => Math.round(fontSize * 1.25);
+
+/**
+ * Picks the largest prompt font size (between the max and min) at which the prompt
+ * fits its area of the card, between the header and the follow-up question. The text
+ * stays hidden until it fits, so it never visibly resizes. Text area grows with the
+ * square of the font size, so each step jumps close to the answer and it settles in
+ * two or three layouts.
+ */
+const useFitPromptText = (text: string) => {
+  const [fit, setFit] = useState<{
+    text: string;
+    fontSize: number;
+    fitted: boolean;
+    maxLines?: number;
+  }>({ text, fontSize: PROMPT_FONT_MAX, fitted: false });
+  const available = useRef(0);
+  const needed = useRef(0);
+
+  // New text starts over at full size. Reset during render rather than in an effect,
+  // so a layout that arrives first can't be undone by a late reset.
+  let current = fit;
+  if (fit.text !== text) {
+    current = { text, fontSize: PROMPT_FONT_MAX, fitted: false };
+    needed.current = 0;
+    setFit(current);
+  }
+  const { fontSize, fitted, maxLines } = current;
+
+  const check = () => {
+    if (fitted || !available.current || !needed.current) return;
+    if (needed.current <= available.current) {
+      setFit({ text, fontSize, fitted: true });
+      return;
+    }
+    if (fontSize <= PROMPT_FONT_MIN) {
+      // Too long even at the smallest size: cut it off with an ellipsis at the last
+      // line that fits.
+      const lines = Math.floor(available.current / promptLineHeight(fontSize));
+      setFit({ text, fontSize, fitted: true, maxLines: Math.max(1, lines) });
+      return;
+    }
+    const estimate = Math.floor(fontSize * Math.sqrt(available.current / needed.current));
+    needed.current = 0; // wait for the next attempt's own measurement
+    setFit({
+      text,
+      fontSize: Math.max(PROMPT_FONT_MIN, Math.min(fontSize - 1, estimate)),
+      fitted: false,
+    });
+  };
+
+  return {
+    fontSize,
+    fitted,
+    maxLines,
+    /** Remounts the measured text for each attempt, so every attempt gets a layout. */
+    attemptKey: `${text}:${fontSize}`,
+    onAreaLayout: (e: LayoutChangeEvent) => {
+      available.current = e.nativeEvent.layout.height;
+      check();
+    },
+    onPromptLayout: (e: LayoutChangeEvent) => {
+      needed.current = e.nativeEvent.layout.height;
+      check();
+    },
+  };
+};
+
+/** Prompt-sized text, fitted to the space it's given (see useFitPromptText). */
+const FittedPromptText = ({ text, color }: { text: string; color: string }) => {
+  const { fontSize, fitted, maxLines, attemptKey, onAreaLayout, onPromptLayout } =
+    useFitPromptText(text);
+  return (
+    <View style={localStyles.promptArea} onLayout={onAreaLayout}>
+      <Text
+        key={attemptKey}
+        onLayout={onPromptLayout}
+        numberOfLines={maxLines}
+        style={[
+          localStyles.promptText,
+          { color, fontSize, lineHeight: promptLineHeight(fontSize) },
+          !fitted && localStyles.unfitted,
+        ]}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+};
+
+const difficultyLabel = (difficulty: number) =>
+  difficulty <= 1 ? 'Gentle' : difficulty === 2 ? 'Deeper' : 'Challenging';
+
+/**
+ * The back of the top card: one twist at a time, in place of the prompt. The pips
+ * show which twist this is; the arrows (or swiping the card) move between them.
+ * `shift` slides the twist text out and the next one in.
+ */
+const TwistCardContent = ({
+  card,
+  index,
+  count,
+  fullQuestion,
+  accent,
+  shift,
+  onPrev,
+  onNext,
+}: {
+  card: WorldBuildingCard;
+  index: number;
+  count: number;
+  fullQuestion: string;
+  accent: string;
+  shift: SharedValue<number>;
+  onPrev: () => void;
+  onNext: () => void;
+}) => {
+  const { colors } = useTheme();
+  const surface = useSurface();
+  const personalization = usePersonalization();
+  const textStyle = useAnimatedStyle(() => ({
+    opacity: 1 - Math.min(1, Math.abs(shift.value) / TWIST_SLIDE),
+    transform: [{ translateX: shift.value }],
+  }));
+  // The difficulty pill changes width between twists, so it fades out and back in
+  // with the text (without sliding) and resizes while it's invisible.
+  const pillStyle = useAnimatedStyle(() => ({
+    opacity: 1 - Math.min(1, Math.abs(shift.value) / TWIST_SLIDE),
+  }));
+  const hasPrev = index > 0;
+  const hasNext = index < count - 1;
+
+  return (
+    <>
+      <View style={localStyles.cardHeader}>
+        <View style={localStyles.sourceRow}>
+          <Feather name="shuffle" size={14} color={accent} />
+          <Text style={[localStyles.sourceText, { color: accent }]}>Twist</Text>
+        </View>
+        <Animated.View
+          style={[
+            localStyles.categoryPill,
+            localStyles.difficultyPill,
+            { borderColor: surface.border },
+            pillStyle,
+          ]}
+        >
+          {[1, 2, 3].map(level => (
+            <View
+              key={level}
+              style={[
+                localStyles.difficultyDot,
+                { backgroundColor: level <= card.difficulty ? accent : surface.border },
+              ]}
+            />
+          ))}
+          <Text style={[localStyles.categoryText, { color: colors.textSecondary }]}>
+            {difficultyLabel(card.difficulty).toUpperCase()}
+          </Text>
+        </Animated.View>
+      </View>
+
+      <View style={localStyles.cardBody}>
+        <Animated.View style={[localStyles.twistTextSlot, textStyle]}>
+          <FittedPromptText
+            text={applyTokens(card.cardText, personalization)}
+            color={colors.textPrimary}
+          />
+        </Animated.View>
+        <Text style={[localStyles.fullQuestion, { color: colors.textSecondary }]}>
+          {fullQuestion}
+        </Text>
+      </View>
+
+      <View style={localStyles.twistFooter}>
+        <TouchableOpacity
+          onPress={onPrev}
+          disabled={!hasPrev}
+          hitSlop={10}
+          style={!hasPrev && localStyles.disabled}
+          accessibilityLabel="Previous twist"
+        >
+          <Feather name="chevron-left" size={20} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <View
+          style={localStyles.twistPips}
+          accessible
+          accessibilityLabel={`Twist ${index + 1} of ${count}`}
+        >
+          {Array.from({ length: count }, (_, i) => (
+            <View
+              key={i}
+              style={[
+                localStyles.twistPip,
+                i === index
+                  ? { width: 18, backgroundColor: PINK }
+                  : { backgroundColor: colors.iconInactive },
+              ]}
+            />
+          ))}
+        </View>
+        <TouchableOpacity
+          onPress={onNext}
+          disabled={!hasNext}
+          hitSlop={10}
+          style={!hasNext && localStyles.disabled}
+          accessibilityLabel="Next twist"
+        >
+          <Feather name="chevron-right" size={20} color={colors.textPrimary} />
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+};
+
 const PromptCardContent = ({
   prompt,
   category,
@@ -674,6 +1208,7 @@ const PromptCardContent = ({
   const surface = useSurface();
   const personalization = usePersonalization();
   const noTips = tipCount === 0;
+  const text = applyTokens(prompt.text, personalization);
 
   return (
     <>
@@ -699,9 +1234,9 @@ const PromptCardContent = ({
       </View>
 
       <View style={localStyles.cardBody}>
-        <Text style={[localStyles.promptText, { color: colors.textPrimary }]}>
-          {applyTokens(prompt.text, personalization)}
-        </Text>
+        {/* The prompt is centered in the space left above the follow-up question. */}
+        <FittedPromptText text={text} color={colors.textPrimary} />
+        {/* Pinned a fixed distance above the Listen / Tips row on every card. */}
         <Text style={[localStyles.fullQuestion, { color: colors.textSecondary }]}>
           {prompt.fullQuestion}
         </Text>
@@ -960,24 +1495,66 @@ const localStyles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
+    paddingBottom: CARD_GROW,
+  },
+  tapZones: {
+    // Spans the scroll content edge to edge, including its side padding.
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+  },
+  tapZone: {
+    flex: 1,
+  },
+  tapFlash: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '40%',
+  },
+  tapFlashLeft: {
+    left: 0,
+  },
+  tapFlashRight: {
+    right: 0,
+  },
+  cardEdgeZones: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: CARD_EDGE_ZONE_INSET,
+    bottom: CARD_EDGE_ZONE_INSET,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cardEdgeZone: {
+    width: '25%',
   },
   deck: {
+    height: CARD_HEIGHT,
     marginBottom: CARD_MARGIN_BOTTOM,
     zIndex: 2,
   },
+  // A card in the deck behind the top one. The clipping is on an inner layer
+  // (stackCardClip), because clipping the card itself would also cut off its shadow.
   stackCard: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: CARD_CORNER_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.lg,
-    justifyContent: 'space-between',
+  },
+  stackCardClip: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: CARD_CORNER_RADIUS,
     overflow: 'hidden',
+    paddingHorizontal: CARD_PADDING_X,
+    paddingVertical: CARD_PADDING_Y,
+    justifyContent: 'space-between',
   },
   card: {
-    minHeight: 340,
+    height: CARD_HEIGHT,
     borderRadius: CARD_CORNER_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.lg,
+    paddingHorizontal: CARD_PADDING_X,
+    paddingVertical: CARD_PADDING_Y,
     justifyContent: 'space-between',
   },
   cardHeader: {
@@ -1013,18 +1590,66 @@ const localStyles = StyleSheet.create({
     letterSpacing: 1,
   },
   cardBody: {
-    paddingVertical: Spacing.lg,
+    // Fills the card between header and footer.
+    flex: 1,
+    paddingTop: Spacing.md,
+    paddingBottom: QUESTION_TO_FOOTER,
+  },
+  // One side of the top card. Both sides fill the card; the flip shows one at a time.
+  cardFace: {
+    ...StyleSheet.absoluteFillObject,
+    paddingHorizontal: CARD_PADDING_X,
+    paddingVertical: CARD_PADDING_Y,
+    justifyContent: 'space-between',
+  },
+  twistTextSlot: {
+    flex: 1,
+  },
+  difficultyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  difficultyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  twistFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: 4,
+  },
+  twistPips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  twistPip: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  promptArea: {
+    // The prompt text is fitted to this space.
+    flex: 1,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  unfitted: {
+    opacity: 0,
   },
   promptText: {
-    fontSize: Typography.title1,
+    // fontSize and lineHeight are set per card by useFitPromptText.
     fontFamily: 'Inter-SemiBold',
     fontWeight: '700',
-    lineHeight: Math.round(Typography.title1 * 1.25),
   },
   fullQuestion: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
     fontSize: Typography.subheadline,
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Inter-MediumItalic',
     lineHeight: 21,
   },
   cardFooter: {
@@ -1045,11 +1670,6 @@ const localStyles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.35,
-  },
-  drawerClip: {
-    overflow: 'hidden',
-    marginTop: -DRAWER_TUCK,
-    paddingTop: CARD_CORNER_RADIUS,
   },
   actionRow: {
     flexDirection: 'row',
