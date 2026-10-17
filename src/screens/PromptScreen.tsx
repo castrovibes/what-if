@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import Animated, {
   Easing,
+  FadeIn,
   FadeInDown,
   FadeOutUp,
   cancelAnimation,
@@ -60,6 +61,11 @@ const CARD_CORNER_RADIUS = CARD_RADIUS;
 
 // Twists: the Twist button flips the top card over to show them on its back.
 const FLIP_MS = 450;
+// The action buttons' fade-in when a session starts: each one a little after the last.
+const ACTION_FADE_MS = 360;
+const ACTION_STAGGER_MS = 90;
+const actionEntering = (order: number) =>
+  FadeIn.duration(ACTION_FADE_MS).delay(order * ACTION_STAGGER_MS);
 // While flipped, a twist slides this far out (fading) and the next one slides in.
 const TWIST_SLIDE = 40;
 const TWIST_OUT_MS = 110;
@@ -113,16 +119,16 @@ const deckShadow = (slot: number, base: ShadowBase) => {
 
 type DeckSource = 'official' | 'user';
 
+// The title deck before a session: the title card (0), the age options or first prompt
+// (1), the first prompt after the age options (2), and enough below to keep the deck
+// full while it moves up two cards. Deepest first, so the top card draws last.
+const TITLE_DECK_INDEXES = [6, 5, 4, 3, 2, 1, 0];
+
 const SOURCE_LABEL: Record<PromptSource, string> = {
   official: 'What If Originals',
   community: 'Community',
   user: 'My Prompts',
 };
-
-const restingTransform = (slot: number, shadow: ShadowBase) => ({
-  ...deckShadow(slot, shadow),
-  transform: [{ translateY: SLOT_Y[slot] }, { rotate: `${SLOT_ROTATE[slot]}deg` }],
-});
 
 /**
  * One prompt card in the deck. Each card keeps the same prompt for as long as it's
@@ -536,17 +542,161 @@ export const PromptScreen = () => {
     }
   };
 
-  // Picking an age from the menu also starts the session if it hasn't started yet.
-  const handleSelectAge = (id: AgeGroupId) => {
-    setSelectedAge(id);
-    setSessionStarted(true);
-    setAgeMenuOpen(false);
+  // Before a session, the title card sits on a small deck, built from the same cards
+  // as the session's deck and moved by `titleProgress` (card 0 is the title card):
+  //   - With an age group set, card 1 is that age's first prompt. The title card
+  //     leaves (swiped, or Start a session) to reveal it, and the session starts.
+  //   - Without one, card 1 is the age options. Once the title card has gone, picking
+  //     an age puts that age's first prompt on card 2, underneath; the age card then
+  //     leaves too, and the session starts.
+  // The prompt ends where the session's top card sits, so the handover is seamless.
+  const titleProgress = useSharedValue(0);
+  const [coverGone, setCoverGone] = useState(false);
+  const selectedAgeRef = useRef(selectedAge);
+  selectedAgeRef.current = selectedAge;
+  const titleMoving = useRef(false);
+
+  const moveTitleDeck = (to: number, then: () => void) => {
+    titleMoving.current = true;
+    titleProgress.value = withTiming(
+      to,
+      { duration: SWIPE_MS, easing: Easing.in(Easing.quad) },
+      finished => {
+        if (finished) runOnJS(then)();
+      },
+    );
+  };
+  const afterCoverLeft = () => {
+    titleMoving.current = false;
+    if (selectedAgeRef.current) setSessionStarted(true);
+    else setCoverGone(true);
+  };
+  const sendCoverAway = () => {
+    if (titleMoving.current || coverGone) return;
+    moveTitleDeck(1, afterCoverLeft);
+  };
+  const sendAgeCardAway = () => {
+    if (titleMoving.current) return;
+    moveTitleDeck(2, () => {
+      titleMoving.current = false;
+      setSessionStarted(true);
+    });
   };
 
-  const handleStartSession = () => {
-    if (selectedAge) setSessionStarted(true);
-    else setAgeMenuOpen(true);
+  // Picking an age before a session: wait until its first prompt has loaded onto the
+  // card underneath, then send the top card (title or age options) away to reveal it.
+  const [revealWhenReady, setRevealWhenReady] = useState(false);
+  const handleSelectAge = (id: AgeGroupId) => {
+    setSelectedAge(id);
+    setAgeMenuOpen(false);
+    if (sessionStarted) return;
+    selectedAgeRef.current = id;
+    setRevealWhenReady(true);
   };
+
+  // Start a session works like swiping the title card away: it reveals the first
+  // prompt, or the age options when no age group is set yet.
+  const handleStartSession = () => sendCoverAway();
+
+  // The first prompt for the chosen age, once it has loaded (the list briefly still
+  // holds the previous age's prompts right after a pick).
+  const firstPrompt =
+    selectedAge && !loading && prompts[0]?.ageGroup === selectedAge ? prompts[0] : undefined;
+  // Ready once the new age's prompts are in (or there turn out to be none).
+  const firstPromptReady =
+    !!selectedAge && !loading && (prompts.length === 0 || prompts[0]?.ageGroup === selectedAge);
+  useEffect(() => {
+    if (!revealWhenReady || !firstPromptReady) return;
+    setRevealWhenReady(false);
+    if (coverGone) sendAgeCardAway();
+    else sendCoverAway();
+    // Runs when the prompt becomes ready; the send functions read current state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealWhenReady, firstPromptReady]);
+
+  const titleCardContent = (index: number) => {
+    const promptCard = firstPrompt && (
+      <PromptCardContent
+        prompt={firstPrompt}
+        category={categories.find(c => c.id === firstPrompt.categoryId)}
+        accent={accent}
+        showListen={ttsEnabled}
+      />
+    );
+    if (index === 0) {
+      return (
+        <View style={localStyles.titleCard}>
+          <Text style={[localStyles.titleMark, { color: accent }]}>?</Text>
+          <Text style={[localStyles.titleText, { color: accent }]}>What If?</Text>
+          <Text style={[localStyles.titleSubtitle, { color: colors.textSecondary }]}>
+            {currentAgeGroup
+              ? `Start a session to get your first prompt for ages ${currentAgeGroup.label.replace(' years', '').replace('-', ' – ')}.`
+              : "Start a session and choose who you're talking with to get your first prompt."}
+          </Text>
+        </View>
+      );
+    }
+    // The age options stay on card 1 once they've been shown, until that card leaves.
+    const ageCardShown = coverGone || !selectedAge;
+    if (index === 1) return ageCardShown ? renderAgeOptions() : promptCard;
+    if (index === 2 && coverGone) return promptCard;
+    return null;
+  };
+  const renderAgeOptions = () => (
+    <View style={localStyles.agePickCard}>
+      <Text style={[localStyles.agePickTitle, { color: colors.textSecondary }]}>
+        WHO ARE YOU TALKING WITH?
+      </Text>
+      {ageGroups.map((g, i) => (
+        <TouchableOpacity
+          key={g.id}
+          onPress={() => handleSelectAge(g.id)}
+          style={[
+            localStyles.agePickOption,
+            i < ageGroups.length - 1 && {
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: surface.border,
+            },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={`Ages ${g.label}`}
+        >
+          <Dot color={g.bgColor} size={14} />
+          <Text style={[localStyles.agePickText, { color: colors.textPrimary }]}>
+            {g.label.replace('-', ' – ')}
+          </Text>
+          <Feather name="chevron-right" size={18} color={colors.iconInactive} />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const titleGesture = useRef({ move: (_dx: number) => {}, release: (_dx: number, _vx: number) => {} });
+  titleGesture.current = {
+    // Swiping moves the title card; the age options are chosen by tapping.
+    move: dx => {
+      if (coverGone || titleMoving.current) return;
+      const p = -dx / windowWidth;
+      // A rightward tug just rubber-bands.
+      titleProgress.value = p < 0 ? p / 3 : Math.min(1, p);
+    },
+    release: (dx, vx) => {
+      if (coverGone || titleMoving.current) return;
+      const forward = dx < -windowWidth * SWIPE_THRESHOLD || vx < -FLICK_VELOCITY;
+      if (forward) sendCoverAway();
+      else titleProgress.value = withTiming(0, { duration: SWIPE_MS, easing: Easing.out(Easing.quad) });
+    },
+  };
+  const titlePan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderMove: (_, g) => titleGesture.current.move(g.dx),
+      onPanResponderRelease: (_, g) => titleGesture.current.release(g.dx, g.vx),
+      onPanResponderTerminate: () => titleGesture.current.release(0, 0),
+    }),
+  ).current;
 
   // Cards behind the top one are the same color; the top card's drop shadow is what
   // darkens their peeking edges, so nothing changes color when a card moves up.
@@ -573,28 +723,20 @@ export const PromptScreen = () => {
           contentContainerStyle={localStyles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={localStyles.deck}>
-            {[3, 2, 1].map(slot => (
-              <View
-                key={slot}
-                style={[localStyles.stackCard, stackCardStyle, restingTransform(slot, shadowBase)]}
-              />
+          <View style={localStyles.deck} {...titlePan.panHandlers}>
+            {TITLE_DECK_INDEXES.map(index => (
+              <DeckCard
+                key={index}
+                index={index}
+                progress={titleProgress}
+                width={windowWidth}
+                shadow={shadowBase}
+                interactive={index === 1 && coverGone}
+                style={[localStyles.stackCard, stackCardStyle]}
+              >
+                {titleCardContent(index)}
+              </DeckCard>
             ))}
-            <View
-              style={[
-                localStyles.card,
-                localStyles.titleCard,
-                { backgroundColor: surface.card, borderColor: surface.border, ...surface.shadow },
-              ]}
-            >
-              <Text style={[localStyles.titleMark, { color: accent }]}>?</Text>
-              <Text style={[localStyles.titleText, { color: accent }]}>What If?</Text>
-              <Text style={[localStyles.titleSubtitle, { color: colors.textSecondary }]}>
-                {currentAgeGroup
-                  ? `Start a session to get your first prompt for ages ${currentAgeGroup.label.replace(' years', '').replace('-', ' – ')}.`
-                  : "Start a session and choose who you're talking with to get your first prompt."}
-              </Text>
-            </View>
           </View>
         </ScrollView>
       );
@@ -835,74 +977,89 @@ export const PromptScreen = () => {
 
       {renderBody()}
 
+      {/* Once the title card is gone the age options take over, but the button's space
+          is kept so the deck doesn't shift. */}
       {!sessionStarted && (
-        <View style={localStyles.startRow}>
+        <View
+          style={[localStyles.startRow, coverGone && localStyles.hidden]}
+          pointerEvents={coverGone ? 'none' : 'auto'}
+          accessibilityElementsHidden={coverGone}
+          importantForAccessibility={coverGone ? 'no-hide-descendants' : 'auto'}
+        >
           <Button label="Start a session" icon="play" onPress={handleStartSession} />
         </View>
       )}
 
-      {sessionStarted && currentPrompt && !loading && (
+      {sessionStarted && currentPrompt && (
+        // The buttons fade in one after another when the session starts (and stay put
+        // while the deck reloads for new filters).
         <View style={localStyles.actionRow}>
           {/* Back to the previous prompt (swiping the card left skips forward). VoiceOver
               users can't swipe the card, so both directions are also actions here. */}
-          <TouchableOpacity
-            onPress={handleBack}
-            style={[
-              localStyles.circleButton,
-              { borderColor: surface.border, backgroundColor: surface.card },
-              !canGoBack && localStyles.disabled,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Previous prompt"
-            accessibilityHint={
-              canGoBack
-                ? 'Goes back to the prompt before this one. Swipe up or down for more actions.'
-                : 'This is the first prompt. Swipe up or down for more actions.'
-            }
-            accessibilityState={{ disabled: !canGoBack }}
-            accessibilityActions={[
-              { name: 'activate' },
-              { name: 'next', label: 'Next prompt' },
-              { name: 'previous', label: 'Previous prompt' },
-            ]}
-            onAccessibilityAction={e => {
-              if (e.nativeEvent.actionName === 'next') handleSkip();
-              else handleBack();
-            }}
-          >
-            <Feather name="rotate-ccw" size={22} color={colors.iconDefault} />
-          </TouchableOpacity>
+          <Animated.View entering={actionEntering(0)}>
+            <TouchableOpacity
+              onPress={handleBack}
+              style={[
+                localStyles.circleButton,
+                { borderColor: surface.border, backgroundColor: surface.card },
+                !canGoBack && localStyles.disabled,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Previous prompt"
+              accessibilityHint={
+                canGoBack
+                  ? 'Goes back to the prompt before this one. Swipe up or down for more actions.'
+                  : 'This is the first prompt. Swipe up or down for more actions.'
+              }
+              accessibilityState={{ disabled: !canGoBack }}
+              accessibilityActions={[
+                { name: 'activate' },
+                { name: 'next', label: 'Next prompt' },
+                { name: 'previous', label: 'Previous prompt' },
+              ]}
+              onAccessibilityAction={e => {
+                if (e.nativeEvent.actionName === 'next') handleSkip();
+                else handleBack();
+              }}
+            >
+              <Feather name="rotate-ccw" size={22} color={colors.iconDefault} />
+            </TouchableOpacity>
+          </Animated.View>
 
-          <TouchableOpacity
-            onPress={() => setShowTwists(p => !p)}
-            disabled={!hasTwists}
-            style={[
-              localStyles.circleButton,
-              localStyles.twistButton,
-              {
-                borderColor: accent,
-                backgroundColor: showTwists ? accent : surface.card,
-              },
-              !hasTwists && localStyles.disabled,
-            ]}
-            accessibilityLabel={showTwists ? 'Show the prompt' : 'Flip to twists'}
-          >
-            <Feather name="shuffle" size={20} color={showTwists ? '#fff' : accent} />
-            <Text style={[localStyles.twistLabel, { color: showTwists ? '#fff' : accent }]}>
-              Twist
-            </Text>
-          </TouchableOpacity>
+          <Animated.View entering={actionEntering(1)}>
+            <TouchableOpacity
+              onPress={() => setShowTwists(p => !p)}
+              disabled={!hasTwists}
+              style={[
+                localStyles.circleButton,
+                localStyles.twistButton,
+                {
+                  borderColor: accent,
+                  backgroundColor: showTwists ? accent : surface.card,
+                },
+                !hasTwists && localStyles.disabled,
+              ]}
+              accessibilityLabel={showTwists ? 'Show the prompt' : 'Flip to twists'}
+            >
+              <Feather name="shuffle" size={20} color={showTwists ? '#fff' : accent} />
+              <Text style={[localStyles.twistLabel, { color: showTwists ? '#fff' : accent }]}>
+                Twist
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
 
-          <TouchableOpacity
-            onPress={() => toggleFavorite(promptId)}
-            style={[
-              localStyles.circleButton,
-              { borderColor: PINK, backgroundColor: favorited ? PINK : surface.card },
-            ]}
-            accessibilityLabel={favorited ? 'Remove from favorites' : 'Save to favorites'}
-          >
-            <Feather name="heart" size={22} color={favorited ? '#fff' : PINK} />
-          </TouchableOpacity>
+          <Animated.View entering={actionEntering(2)}>
+            <TouchableOpacity
+              onPress={() => toggleFavorite(promptId)}
+              style={[
+                localStyles.circleButton,
+                { borderColor: PINK, backgroundColor: favorited ? PINK : surface.card },
+              ]}
+              accessibilityLabel={favorited ? 'Remove from favorites' : 'Save to favorites'}
+            >
+              <Feather name="heart" size={22} color={favorited ? '#fff' : PINK} />
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       )}
 
@@ -1015,13 +1172,24 @@ const promptLineHeight = (fontSize: number) => Math.round(fontSize * 1.25);
  * square of the font size, so each step jumps close to the answer and it settles in
  * two or three layouts.
  */
+// Fitted sizes by text, so a prompt that moves to a new card (e.g. from the title deck
+// into the session deck) shows at once instead of being hidden while it's measured.
+const fitCache = new Map<string, { fontSize: number; maxLines?: number }>();
+
+const startFit = (text: string) => {
+  const cached = fitCache.get(text);
+  return cached
+    ? { text, fontSize: cached.fontSize, fitted: true, maxLines: cached.maxLines }
+    : { text, fontSize: PROMPT_FONT_MAX, fitted: false };
+};
+
 const useFitPromptText = (text: string) => {
   const [fit, setFit] = useState<{
     text: string;
     fontSize: number;
     fitted: boolean;
     maxLines?: number;
-  }>({ text, fontSize: PROMPT_FONT_MAX, fitted: false });
+  }>(() => startFit(text));
   const available = useRef(0);
   const needed = useRef(0);
 
@@ -1029,7 +1197,7 @@ const useFitPromptText = (text: string) => {
   // so a layout that arrives first can't be undone by a late reset.
   let current = fit;
   if (fit.text !== text) {
-    current = { text, fontSize: PROMPT_FONT_MAX, fitted: false };
+    current = startFit(text);
     needed.current = 0;
     setFit(current);
   }
@@ -1038,14 +1206,16 @@ const useFitPromptText = (text: string) => {
   const check = () => {
     if (fitted || !available.current || !needed.current) return;
     if (needed.current <= available.current) {
+      fitCache.set(text, { fontSize });
       setFit({ text, fontSize, fitted: true });
       return;
     }
     if (fontSize <= PROMPT_FONT_MIN) {
       // Too long even at the smallest size: cut it off with an ellipsis at the last
       // line that fits.
-      const lines = Math.floor(available.current / promptLineHeight(fontSize));
-      setFit({ text, fontSize, fitted: true, maxLines: Math.max(1, lines) });
+      const lines = Math.max(1, Math.floor(available.current / promptLineHeight(fontSize)));
+      fitCache.set(text, { fontSize, maxLines: lines });
+      setFit({ text, fontSize, fitted: true, maxLines: lines });
       return;
     }
     const estimate = Math.floor(fontSize * Math.sqrt(available.current / needed.current));
@@ -1483,6 +1653,32 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: 14,
   },
+  // The age options on the card under the title card (no age group set yet).
+  hidden: {
+    opacity: 0,
+  },
+  agePickCard: {
+    flex: 1,
+  },
+  agePickTitle: {
+    fontSize: Typography.caption,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    marginBottom: Spacing.sm,
+  },
+  agePickOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  agePickText: {
+    flex: 1,
+    fontSize: Typography.title3,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
+  },
   ageOptionText: {
     flex: 1,
     fontSize: Typography.body,
@@ -1494,6 +1690,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.15)',
   },
   titleCard: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
