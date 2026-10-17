@@ -1,7 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { PromptsStackParamList } from './types';
-import { PromptScreen } from '../screens/PromptScreen';
+import { PromptScreen } from '../screens/prompt/PromptScreen';
 import { useStackScreenOptions } from './transitions';
 
 const Stack = createStackNavigator<PromptsStackParamList>();

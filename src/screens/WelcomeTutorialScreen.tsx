@@ -1,12 +1,6 @@
-import React, { useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  PanResponder,
-  Pressable,
-  useWindowDimensions,
-} from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   SharedValue,
@@ -56,7 +50,7 @@ const DECK_HEIGHT = 360;
 const SWIPE_MS = 320;
 // Fraction of the screen width a drag must cover to change slides (or a quick flick).
 const SWIPE_THRESHOLD = 0.22;
-const FLICK_VELOCITY = 0.5;
+const FLICK_VELOCITY = 500; // px/s (Gesture Handler reports velocity per second)
 
 // Resting offsets of each slot in the deck, top card first. The first two match the
 // prompt screen's stack; each card left to read adds another peeking edge, so the
@@ -196,24 +190,42 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
     );
   };
 
-  // Rebuilt each render so the handlers see the current width and goTo.
-  const pan = PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
-    onPanResponderMove: (_, g) => {
-      let p = indexRef.current - g.dx / width;
+  // The drag runs on the UI thread; the decision at release comes back to JS through
+  // a ref, so it always sees the current goTo / swipeOffLast without rebuilding.
+  const onRelease = useRef((_forward: boolean, _back: boolean) => {});
+  onRelease.current = (forward, back) => {
+    if (forward && indexRef.current === LAST) swipeOffLast();
+    else goTo(indexRef.current + (forward ? 1 : back ? -1 : 0));
+  };
+  const release = useCallback((forward: boolean, back: boolean) => onRelease.current(forward, back), []);
+  const dragStart = useSharedValue(0);
+  const dragging = useSharedValue(false);
+  const pan = Gesture.Pan()
+    .activeOffsetX([-8, 8])
+    .failOffsetY([-12, 12])
+    .onStart(() => {
+      dragging.value = true;
+      dragStart.value = progress.value;
+    })
+    .onUpdate(e => {
+      let p = dragStart.value - e.translationX / width;
       // Rubber-band past the first and last tips.
       if (p < 0) p = p / 3;
       if (p > LAST) p = LAST + (p - LAST) / 3;
       progress.value = p;
-    },
-    onPanResponderRelease: (_, g) => {
-      const forward = g.dx < -width * SWIPE_THRESHOLD || g.vx < -FLICK_VELOCITY;
-      const back = g.dx > width * SWIPE_THRESHOLD || g.vx > FLICK_VELOCITY;
-      if (forward && indexRef.current === LAST) swipeOffLast();
-      else goTo(indexRef.current + (forward ? 1 : back ? -1 : 0));
-    },
-    onPanResponderTerminate: () => goTo(indexRef.current),
-  });
+    })
+    .onEnd(e => {
+      dragging.value = false;
+      const forward = e.translationX < -width * SWIPE_THRESHOLD || e.velocityX < -FLICK_VELOCITY;
+      const back = e.translationX > width * SWIPE_THRESHOLD || e.velocityX > FLICK_VELOCITY;
+      runOnJS(release)(forward, back);
+    })
+    .onFinalize((_, success) => {
+      if (!success && dragging.value) {
+        dragging.value = false;
+        runOnJS(release)(false, false);
+      }
+    });
 
   const current = index > 0 ? STEPS[index - 1] : null;
   const onLast = index === LAST;
@@ -239,33 +251,34 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
     <Screen edges={['top', 'bottom']}>
       <ScreenHeader title="Getting started" onBack={() => navigation.goBack()} />
       <View style={local.body}>
-        <View
-          style={local.deck}
-          {...pan.panHandlers}
-          accessible
-          accessibilityRole="adjustable"
-          accessibilityLabel={
-            current
-              ? `Tip ${index} of ${STEPS.length}: ${current.title}. ${current.description}`
-              : `Welcome. ${INTRO}`
-          }
-          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-          onAccessibilityAction={e =>
-            goTo(indexRef.current + (e.nativeEvent.actionName === 'increment' ? 1 : -1))
-          }
-        >
-          <Animated.View style={[StyleSheet.absoluteFill, deckStyle]} pointerEvents="none">
-            {STEPS.map((step, i) => (
-              <TipCard key={step.title} index={i} progress={progress} width={width} />
-            ))}
-          </Animated.View>
-          <Animated.View style={[local.intro, introStyle]} pointerEvents="none">
-            <Text style={[local.introTitle, { color: surface.accent }]} accessibilityRole="header">
-              Welcome
-            </Text>
-            <Text style={[local.introText, { color: colors.textSecondary }]}>{INTRO}</Text>
-          </Animated.View>
-        </View>
+        <GestureDetector gesture={pan}>
+          <View
+            style={local.deck}
+            accessible
+            accessibilityRole="adjustable"
+            accessibilityLabel={
+              current
+                ? `Tip ${index} of ${STEPS.length}: ${current.title}. ${current.description}`
+                : `Welcome. ${INTRO}`
+            }
+            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+            onAccessibilityAction={e =>
+              goTo(indexRef.current + (e.nativeEvent.actionName === 'increment' ? 1 : -1))
+            }
+          >
+            <Animated.View style={[StyleSheet.absoluteFill, deckStyle]} pointerEvents="none">
+              {STEPS.map((step, i) => (
+                <TipCard key={step.title} index={i} progress={progress} width={width} />
+              ))}
+            </Animated.View>
+            <Animated.View style={[local.intro, introStyle]} pointerEvents="none">
+              <Text style={[local.introTitle, { color: surface.accent }]} accessibilityRole="header">
+                Welcome
+              </Text>
+              <Text style={[local.introText, { color: colors.textSecondary }]}>{INTRO}</Text>
+            </Animated.View>
+          </View>
+        </GestureDetector>
 
         <View style={local.pips}>
           {Array.from({ length: PAGES }, (_, i) => (
