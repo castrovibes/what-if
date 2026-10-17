@@ -151,13 +151,13 @@ const SCHEMA = `
 
 // --- Placeholder seed content (clearly flagged with is_placeholder = 1) ---
 
-const placeholderPrompts: Array<{
+const placeholderPrompts: {
   id: string;
   ageGroup: '3-5' | '6-8' | '9-12' | '13-15';
   text: string;
   category: string;
   liminalSpace: string | null;
-}> = [
+}[] = [
   // 3-5
   { id: 'ph-3-5-001', ageGroup: '3-5', text: 'What if you really want a toy that another kid is playing with? What could you do?', category: 'cat-ethics', liminalSpace: null },
   { id: 'ph-3-5-002', ageGroup: '3-5', text: 'What if you accidentally spill your juice on the floor? What could you do?', category: 'cat-ethics', liminalSpace: 'ls-mealtime' },
@@ -176,7 +176,7 @@ const placeholderPrompts: Array<{
   { id: 'ph-13-15-003', ageGroup: '13-15', text: 'What if you disagree strongly with something your parents decided? What could you do?', category: 'cat-emotions', liminalSpace: 'ls-car-ride' },
 ];
 
-const placeholderTipsPerPrompt: Array<{ kind: 'kickstarter' | 'discussion' | 'follow_up'; body: string }> = [
+const placeholderTipsPerPrompt: { kind: 'kickstarter' | 'discussion' | 'follow_up'; body: string }[] = [
   { kind: 'kickstarter', body: '[PLACEHOLDER] Try opening with: "I wonder what you\'d do..."' },
   { kind: 'discussion',  body: '[PLACEHOLDER] Listen for feelings underneath the answer.' },
   { kind: 'follow_up',   body: '[PLACEHOLDER] Ask: "What else could someone try?"' },

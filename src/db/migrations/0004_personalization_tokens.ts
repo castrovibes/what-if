@@ -5,7 +5,7 @@
 
 import * as SQLite from 'expo-sqlite';
 
-const REWRITES: Array<{ id: string; text: string }> = [
+const REWRITES: { id: string; text: string }[] = [
   {
     id: 'ph-6-8-001',
     text: 'What if you see someone being mean to {name} at school? What could you do?',

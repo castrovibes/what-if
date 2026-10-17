@@ -37,7 +37,9 @@
             "backgroundColor": "#0b0b0d"
           }
         }
-      ]
-    ]
+      ],
+      "expo-font"
+    ],
+    "newArchEnabled": true
   }
 }

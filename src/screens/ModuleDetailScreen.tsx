@@ -23,7 +23,7 @@ export const ModuleDetailScreen = () => {
   const moduleId = route.params.moduleId;
 
   const [module, setModule] = useState<Module | null>(null);
-  const [steps, setSteps] = useState<Array<ModuleStep & { prompt: Prompt | null }>>([]);
+  const [steps, setSteps] = useState<(ModuleStep & { prompt: Prompt | null })[]>([]);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
 
   const syncVersion = useSyncVersion();

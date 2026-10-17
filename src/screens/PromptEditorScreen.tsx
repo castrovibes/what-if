@@ -131,7 +131,7 @@ export const PromptEditorScreen = () => {
           </Text>
         </View>
 
-        <SectionLabel>Who it's for</SectionLabel>
+        <SectionLabel>Who it’s for</SectionLabel>
         <View style={styles.pills}>
           {ageGroups.map(g => (
             <Pill

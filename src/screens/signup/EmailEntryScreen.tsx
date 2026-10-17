@@ -46,8 +46,8 @@ export const EmailEntryScreen = () => {
         />
       }
     >
-      <SignupTitle>What's your email?</SignupTitle>
-      <SignupText>We'll email you a link to sign in. No password needed.</SignupText>
+      <SignupTitle>What’s your email?</SignupTitle>
+      <SignupText>We’ll email you a link to sign in. No password needed.</SignupText>
       <FieldLabel>Email</FieldLabel>
       <SignupField
         value={email}

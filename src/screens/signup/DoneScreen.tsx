@@ -28,7 +28,7 @@ export const DoneScreen = () => {
         <Animated.View entering={ZoomIn.springify().damping(12)} style={styles.check}>
           <Feather name="check" size={40} color="#fff" />
         </Animated.View>
-        <Text style={[styles.title, { color: surface.accent }]}>You're all set!</Text>
+        <Text style={[styles.title, { color: surface.accent }]}>You’re all set!</Text>
         <Text style={[styles.text, { color: colors.textSecondary }]}>
           Taking you back to where you left off.
         </Text>
