@@ -1,42 +1,42 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import * as Font from 'expo-font';
+import { View, Image, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSurface } from '../ui/surface';
-import { Typography, Spacing } from '../utils/deviceHelpers';
 
-// Shown before fonts and providers are ready, so it only relies on ThemeProvider and
-// falls back to the system font until Inter has loaded.
+// Same image, size and position as the native launch screen
+// (ios/WhatCouldYouDo/SplashScreen.storyboard), so the hand-off from it is seamless:
+// "What If?" in Rock Salt above the sticky-note question mark. Both are built by
+// tools/graphics/make_splash.py.
+const SPLASH = {
+  light: require('../../assets/graphics/splash-light.png'),
+  dark: require('../../assets/graphics/splash-dark.png'),
+};
+const SPLASH_WIDTH = 280;
+const SPLASH_HEIGHT = (SPLASH_WIDTH * 997) / 840;
+
+/**
+ * Shown while the app starts up (database, account, fonts). It only relies on
+ * ThemeProvider.
+ */
 export const LoadingScreen = () => {
-  const { colors } = useTheme();
+  const { isDark } = useTheme();
   const surface = useSurface();
-  const fontFamily = Font.isLoaded('Inter-SemiBold') ? 'Inter-SemiBold' : undefined;
-
   return (
-    <View style={[local.container, { backgroundColor: surface.screen }]}>
-      <Text style={[local.mark, { color: surface.accent, fontFamily }]}>?</Text>
-      <Text style={[local.title, { color: colors.textPrimary, fontFamily }]}>What If?</Text>
+    <View style={[styles.container, { backgroundColor: surface.screen }]}>
+      <Image
+        source={isDark ? SPLASH.dark : SPLASH.light}
+        style={{ width: SPLASH_WIDTH, height: SPLASH_HEIGHT }}
+        accessibilityRole="image"
+        accessibilityLabel="What If?"
+      />
     </View>
   );
 };
 
-const local = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-  },
-  mark: {
-    fontSize: 96,
-    lineHeight: 110,
-    fontWeight: '700',
-    opacity: 0.15,
-    marginBottom: Spacing.sm,
-  },
-  title: {
-    fontSize: Typography.title2,
-    fontWeight: '700',
-    textAlign: 'center',
   },
 });
