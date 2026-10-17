@@ -214,8 +214,7 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
 
   return (
     <Screen edges={['top', 'bottom']}>
-      {/* Back arrow only; the empty title keeps it at the usual header position. */}
-      <ScreenHeader title="" onBack={() => navigation.goBack()} />
+      <ScreenHeader title="Getting started" onBack={() => navigation.goBack()} />
       <View style={local.body}>
         <View
           style={local.deck}
