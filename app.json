@@ -24,7 +24,20 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/graphics/splash-light.png",
+          "imageWidth": 280,
+          "resizeMode": "contain",
+          "backgroundColor": "#f9fafb",
+          "dark": {
+            "image": "./assets/graphics/splash-dark.png",
+            "backgroundColor": "#0b0b0d"
+          }
+        }
+      ]
     ]
   }
 }

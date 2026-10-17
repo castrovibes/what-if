@@ -7,6 +7,7 @@
  * @module App
  */
 
+import './src/app/splash';
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';

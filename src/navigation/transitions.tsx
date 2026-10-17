@@ -77,8 +77,9 @@ export const useStackScreenOptions = (): StackNavigationOptions => {
 };
 
 /**
- * Fades its children in once, on mount (e.g. the app appearing after the loading screen),
- * over `backdrop` so the window's default white never shows through.
+ * Fades its children in once, on mount (e.g. the app appearing after the loading
+ * screen), over `backdrop` so the window's default white never shows through: a color,
+ * or something to show underneath (the loading screen, so the app fades in from it).
  */
 export const FadeIn = ({
   children,
@@ -86,7 +87,7 @@ export const FadeIn = ({
   duration = 280,
 }: {
   children: React.ReactNode;
-  backdrop: string;
+  backdrop: string | React.ReactNode;
   duration?: number;
 }) => {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -99,7 +100,12 @@ export const FadeIn = ({
     }).start();
   }, [opacity, duration]);
   return (
-    <View style={[styles.fill, { backgroundColor: backdrop }]}>
+    <View style={[styles.fill, typeof backdrop === 'string' && { backgroundColor: backdrop }]}>
+      {typeof backdrop !== 'string' && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {backdrop}
+        </View>
+      )}
       <Animated.View style={[styles.fill, { opacity }]}>{children}</Animated.View>
     </View>
   );

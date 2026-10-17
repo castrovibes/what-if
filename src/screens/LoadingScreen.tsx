@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSurface } from '../ui/surface';
+import { hideSplash } from '../app/splash';
 
 // Same image, size and position as the native launch screen
 // (ios/WhatCouldYouDo/SplashScreen.storyboard), so the hand-off from it is seamless:
@@ -24,7 +25,8 @@ export const LoadingScreen = () => {
   const { isDark } = useTheme();
   const surface = useSurface();
   return (
-    <View style={[styles.container, { backgroundColor: surface.screen }]}>
+    // Once this has drawn, the native launch screen (identical) can go.
+    <View style={[styles.container, { backgroundColor: surface.screen }]} onLayout={hideSplash}>
       <Image
         source={isDark ? SPLASH.dark : SPLASH.light}
         style={{ width: SPLASH_WIDTH, height: SPLASH_HEIGHT }}
