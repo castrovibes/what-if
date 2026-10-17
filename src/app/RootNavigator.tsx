@@ -10,7 +10,6 @@ import { SignupNavigator } from '../navigation/SignupNavigator';
 import { SettingsNavigator } from '../navigation/SettingsNavigator';
 import { useAuth } from '../auth/AuthProvider';
 import { FadeIn, useTransitions } from '../navigation/transitions';
-import { useSurface } from '../ui/surface';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -19,7 +18,6 @@ export const RootNavigator = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
   const { fade, modal, push } = useTransitions();
-  const surface = useSurface();
 
   useEffect(() => {
     async function loadFonts() {
@@ -70,7 +68,9 @@ export const RootNavigator = () => {
 
   // The app fades in over the loading screen; finishing onboarding cross-fades into it.
   return (
-    <FadeIn backdrop={surface.screen}>
+    // The app fades in over the loading screen (the same image as the launch screen):
+    // on first launch the Welcome screen matches it exactly; otherwise it cross-fades.
+    <FadeIn backdrop={<LoadingScreen />}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isFirstLaunch ? (
           <Stack.Screen name="Onboarding">

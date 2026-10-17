@@ -66,7 +66,9 @@ export const PromptRepo = {
       where.push('parent_askable = 1');
     }
     const rows = await db.getAllAsync<PromptRow>(
-      `SELECT * FROM prompts WHERE ${where.join(' AND ')} ORDER BY id`,
+      // The user's own prompts come newest first; the library in its own order.
+      `SELECT * FROM prompts WHERE ${where.join(' AND ')}
+        ORDER BY ${filter.source === 'user' ? 'created_at DESC' : 'id'}`,
       ...params
     );
     return rows.map(fromRow);

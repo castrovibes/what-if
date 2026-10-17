@@ -27,6 +27,7 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
@@ -36,6 +37,7 @@ import * as Speech from 'expo-speech';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { ageGroups, findAgeGroup, AgeGroupId } from '../data/ageGroups';
+import { DeckRequest, registerDeckHandler } from '../navigation/deckLinks';
 import { usePromptsForAge } from '../hooks/usePromptsForAge';
 import { useFavorites } from '../hooks/useFavorites';
 import { useWorldBuilding } from '../hooks/useWorldBuilding';
@@ -61,6 +63,9 @@ const CARD_CORNER_RADIUS = CARD_RADIUS;
 
 // Twists: the Twist button flips the top card over to show them on its back.
 const FLIP_MS = 450;
+// Arriving from elsewhere ("Play in deck"): the screen fades up as the tab switches in.
+const ARRIVAL_FADE_MS = 200;
+const ARRIVAL_DELAY_MS = 16;
 // The action buttons' fade-in when a session starts: each one a little after the last.
 const ACTION_FADE_MS = 360;
 const ACTION_STAGGER_MS = 90;
@@ -260,17 +265,17 @@ export const PromptScreen = () => {
   const [deckSource, setDeckSource] = useState<DeckSource>(route.params?.source ?? 'official');
   const [reloadKey, setReloadKey] = useState(0);
 
-  // Opened from elsewhere (e.g. "Play in deck" after writing a prompt): show those
-  // prompts, for that age group, in any situation, and load them fresh.
+  // Opened with route params before this screen had registered its deck handler (see
+  // deckLinks.ts): apply the same request.
   const opened = route.params?.opened;
   useEffect(() => {
     if (!opened) return;
     const params = route.params;
-    if (params?.source) setDeckSource(params.source);
-    if (params?.ageGroup) setSelectedAge(params.ageGroup as AgeGroupId);
-    setLiminalSpace(null);
-    setSessionStarted(true);
-    setReloadKey(opened);
+    applyDeckRequest({
+      source: params?.source ?? 'user',
+      ageGroup: (params?.ageGroup as AgeGroupId | undefined) ?? selectedAge ?? '3-5',
+      promptId: params?.promptId,
+    });
     // Only react to a new request, identified by `opened`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened]);
@@ -411,6 +416,63 @@ export const PromptScreen = () => {
 
   const category = categories.find(c => c.id === currentPrompt?.categoryId);
   const favorited = isFavorited(promptId);
+
+  // Sent here from elsewhere ("Play in deck" after writing a prompt, ▶ in My Prompts):
+  // set the deck up while it's out of sight, card face up with no flip animation,
+  // those prompts for that age in any situation, freshly loaded, with the requested
+  // prompt on top; then report ready so the caller switches to this tab.
+  const pendingRequest = useRef<{
+    promptId?: string;
+    before: Prompt[];
+    resolve?: () => void;
+  } | null>(null);
+  const promptsRef = useRef(prompts);
+  promptsRef.current = prompts;
+  const arrival = useSharedValue(1);
+  const arrivalStyle = useAnimatedStyle(() => ({ opacity: arrival.value }));
+
+  const applyDeckRequest = (request: DeckRequest): Promise<void> =>
+    new Promise(resolve => {
+      cancelAnimation(flip);
+      flip.value = 0;
+      setShowTwists(false);
+      setDeckSource(request.source);
+      if (findAgeGroup(request.ageGroup)) setSelectedAge(request.ageGroup);
+      setLiminalSpace(null);
+      setSessionStarted(true);
+      pendingRequest.current = { promptId: request.promptId, before: promptsRef.current, resolve };
+      setReloadKey(k => k + 1);
+    });
+
+  useEffect(() => registerDeckHandler(applyDeckRequest));
+
+  // Once the fresh load is in, put the requested prompt on top, let it draw, then
+  // report ready.
+  useEffect(() => {
+    const pending = pendingRequest.current;
+    if (!pending || loading || prompts === pending.before) return;
+    pendingRequest.current = null;
+    const found = pending.promptId ? prompts.findIndex(p => p.id === pending.promptId) : -1;
+    const start = Math.max(0, found);
+    cancelAnimation(progress);
+    progress.value = start;
+    targetRef.current = start;
+    animatingRef.current = false;
+    setDeckTarget(start);
+    setCurrentPromptIndex(start);
+    // Hidden as the tab switches in, then a quick fade up (only on these arrivals;
+    // tapping the Prompts tab stays instant).
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        arrival.value = 0;
+        pending.resolve?.();
+        arrival.value = withDelay(
+          ARRIVAL_DELAY_MS,
+          withTiming(1, { duration: ARRIVAL_FADE_MS, easing: Easing.out(Easing.quad) }),
+        );
+      }),
+    );
+  }, [loading, prompts, progress, arrival]);
 
   const settle = (index: number) => {
     animatingRef.current = false;
@@ -887,260 +949,263 @@ export const PromptScreen = () => {
   };
 
   return (
-    <Screen>
-      {/* Tap feedback for the page-turn zones: full screen height so it has no hard
-          top or bottom edge. Drawn first, so it sits behind the cards and controls. */}
-      <Animated.View
-        pointerEvents="none"
-        style={[localStyles.tapFlash, localStyles.tapFlashLeft, flashLeftStyle]}
-      >
-        <LinearGradient
-          colors={[flashTint, flashMid, flashClear]}
-          locations={[0, 0.45, 1]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-      <Animated.View
-        pointerEvents="none"
-        style={[localStyles.tapFlash, localStyles.tapFlashRight, flashRightStyle]}
-      >
-        <LinearGradient
-          colors={[flashClear, flashMid, flashTint]}
-          locations={[0, 0.55, 1]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-
-      <ScreenHeader title="What If?" />
-
-      <View style={localStyles.filterArea}>
-        <View style={localStyles.filterRow}>
-          <Pill
-            dropdown
-            onPress={() => setAgeMenuOpen(o => !o)}
-            leading={currentAgeGroup ? <Dot color={currentAgeGroup.bgColor} /> : undefined}
-            icon={currentAgeGroup ? undefined : 'users'}
-            label={currentAgeGroup?.label.replace('-', ' – ') ?? 'Age group'}
-          />
-          <Pill
-            dropdown
-            onPress={() => setSheet('situation')}
-            leading={
-              <Feather
-                name={(currentSpace?.icon as keyof typeof Feather.glyphMap) ?? 'globe'}
-                size={14}
-                color={colors.iconDefault}
-              />
-            }
-            label={currentSpace?.name ?? 'Anywhere'}
-          />
-        </View>
-
-        {/* Age picker that drops down from the age pill, over the card */}
-        {ageMenuOpen && (
-          <Animated.View
-            entering={FadeInDown.duration(180)}
-            exiting={FadeOutUp.duration(120)}
-            style={[
-              localStyles.ageMenu,
-              { backgroundColor: surface.card, borderColor: surface.border, ...surface.shadow },
-            ]}
-          >
-            <Text style={[localStyles.ageMenuTitle, { color: colors.textSecondary }]}>
-              WHO ARE YOU TALKING WITH?
-            </Text>
-            {ageGroups.map((g, i) => (
-              <TouchableOpacity
-                key={g.id}
-                onPress={() => handleSelectAge(g.id)}
-                style={[
-                  localStyles.ageOption,
-                  i < ageGroups.length - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: surface.border,
-                  },
-                ]}
-                accessibilityLabel={`Ages ${g.label}`}
-              >
-                <Dot color={g.bgColor} size={12} />
-                <Text style={[localStyles.ageOptionText, { color: colors.textPrimary }]}>
-                  {g.label.replace('-', ' – ')}
-                </Text>
-                {g.id === selectedAge && <Feather name="check" size={18} color={PINK} />}
-              </TouchableOpacity>
-            ))}
-          </Animated.View>
-        )}
-      </View>
-
-      {renderBody()}
-
-      {/* Once the title card is gone the age options take over, but the button's space
-          is kept so the deck doesn't shift. */}
-      {!sessionStarted && (
-        <View
-          style={[localStyles.startRow, coverGone && localStyles.hidden]}
-          pointerEvents={coverGone ? 'none' : 'auto'}
-          accessibilityElementsHidden={coverGone}
-          importantForAccessibility={coverGone ? 'no-hide-descendants' : 'auto'}
+    // Fades in when arriving from elsewhere ("Play in deck"); see applyDeckRequest.
+    <Animated.View style={[localStyles.arrival, arrivalStyle]}>
+      <Screen>
+        {/* Tap feedback for the page-turn zones: full screen height so it has no hard
+            top or bottom edge. Drawn first, so it sits behind the cards and controls. */}
+        <Animated.View
+          pointerEvents="none"
+          style={[localStyles.tapFlash, localStyles.tapFlashLeft, flashLeftStyle]}
         >
-          <Button label="Start a session" icon="play" onPress={handleStartSession} />
-        </View>
-      )}
+          <LinearGradient
+            colors={[flashTint, flashMid, flashClear]}
+            locations={[0, 0.45, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+        <Animated.View
+          pointerEvents="none"
+          style={[localStyles.tapFlash, localStyles.tapFlashRight, flashRightStyle]}
+        >
+          <LinearGradient
+            colors={[flashClear, flashMid, flashTint]}
+            locations={[0, 0.55, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
 
-      {sessionStarted && currentPrompt && (
-        // The buttons fade in one after another when the session starts (and stay put
-        // while the deck reloads for new filters).
-        <View style={localStyles.actionRow}>
-          {/* Back to the previous prompt (swiping the card left skips forward). VoiceOver
-              users can't swipe the card, so both directions are also actions here. */}
-          <Animated.View entering={actionEntering(0)}>
-            <TouchableOpacity
-              onPress={handleBack}
-              style={[
-                localStyles.circleButton,
-                { borderColor: surface.border, backgroundColor: surface.card },
-                !canGoBack && localStyles.disabled,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Previous prompt"
-              accessibilityHint={
-                canGoBack
-                  ? 'Goes back to the prompt before this one. Swipe up or down for more actions.'
-                  : 'This is the first prompt. Swipe up or down for more actions.'
+        <ScreenHeader title="What If?" />
+
+        <View style={localStyles.filterArea}>
+          <View style={localStyles.filterRow}>
+            <Pill
+              dropdown
+              onPress={() => setAgeMenuOpen(o => !o)}
+              leading={currentAgeGroup ? <Dot color={currentAgeGroup.bgColor} /> : undefined}
+              icon={currentAgeGroup ? undefined : 'users'}
+              label={currentAgeGroup?.label.replace('-', ' – ') ?? 'Age group'}
+            />
+            <Pill
+              dropdown
+              onPress={() => setSheet('situation')}
+              leading={
+                <Feather
+                  name={(currentSpace?.icon as keyof typeof Feather.glyphMap) ?? 'globe'}
+                  size={14}
+                  color={colors.iconDefault}
+                />
               }
-              accessibilityState={{ disabled: !canGoBack }}
-              accessibilityActions={[
-                { name: 'activate' },
-                { name: 'next', label: 'Next prompt' },
-                { name: 'previous', label: 'Previous prompt' },
-              ]}
-              onAccessibilityAction={e => {
-                if (e.nativeEvent.actionName === 'next') handleSkip();
-                else handleBack();
-              }}
-            >
-              <Feather name="rotate-ccw" size={22} color={colors.iconDefault} />
-            </TouchableOpacity>
-          </Animated.View>
+              label={currentSpace?.name ?? 'Anywhere'}
+            />
+          </View>
 
-          <Animated.View entering={actionEntering(1)}>
-            <TouchableOpacity
-              onPress={() => setShowTwists(p => !p)}
-              disabled={!hasTwists}
+          {/* Age picker that drops down from the age pill, over the card */}
+          {ageMenuOpen && (
+            <Animated.View
+              entering={FadeInDown.duration(180)}
+              exiting={FadeOutUp.duration(120)}
               style={[
-                localStyles.circleButton,
-                localStyles.twistButton,
-                {
-                  borderColor: accent,
-                  backgroundColor: showTwists ? accent : surface.card,
-                },
-                !hasTwists && localStyles.disabled,
+                localStyles.ageMenu,
+                { backgroundColor: surface.card, borderColor: surface.border, ...surface.shadow },
               ]}
-              accessibilityLabel={showTwists ? 'Show the prompt' : 'Flip to twists'}
             >
-              <Feather name="shuffle" size={20} color={showTwists ? '#fff' : accent} />
-              <Text style={[localStyles.twistLabel, { color: showTwists ? '#fff' : accent }]}>
-                Twist
+              <Text style={[localStyles.ageMenuTitle, { color: colors.textSecondary }]}>
+                WHO ARE YOU TALKING WITH?
               </Text>
-            </TouchableOpacity>
-          </Animated.View>
-
-          <Animated.View entering={actionEntering(2)}>
-            <TouchableOpacity
-              onPress={() => toggleFavorite(promptId)}
-              style={[
-                localStyles.circleButton,
-                { borderColor: PINK, backgroundColor: favorited ? PINK : surface.card },
-              ]}
-              accessibilityLabel={favorited ? 'Remove from favorites' : 'Save to favorites'}
-            >
-              <Feather name="heart" size={22} color={favorited ? '#fff' : PINK} />
-            </TouchableOpacity>
-          </Animated.View>
+              {ageGroups.map((g, i) => (
+                <TouchableOpacity
+                  key={g.id}
+                  onPress={() => handleSelectAge(g.id)}
+                  style={[
+                    localStyles.ageOption,
+                    i < ageGroups.length - 1 && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: surface.border,
+                    },
+                  ]}
+                  accessibilityLabel={`Ages ${g.label}`}
+                >
+                  <Dot color={g.bgColor} size={12} />
+                  <Text style={[localStyles.ageOptionText, { color: colors.textPrimary }]}>
+                    {g.label.replace('-', ' – ')}
+                  </Text>
+                  {g.id === selectedAge && <Feather name="check" size={18} color={PINK} />}
+                </TouchableOpacity>
+              ))}
+            </Animated.View>
+          )}
         </View>
-      )}
 
-      <BottomSheet visible={sheet === 'source'} title="Show prompts from" onClose={() => setSheet(null)}>
-        <SheetOption
-          label="What If Originals"
-          selected={deckSource === 'official'}
-          leading={<Ionicons name="sparkles-outline" size={16} color={colors.iconDefault} />}
-          onPress={() => chooseSource('official')}
-        />
-        <SheetOption
-          label="My Prompts"
-          selected={deckSource === 'user'}
-          leading={<Ionicons name="folder-outline" size={16} color={colors.iconDefault} />}
-          onPress={() => chooseSource('user')}
-        />
-      </BottomSheet>
+        {renderBody()}
 
-      <BottomSheet visible={sheet === 'situation'} title="Right now we're…" onClose={() => setSheet(null)}>
-        <SheetOption
-          label="Anywhere"
-          selected={liminalSpace === null}
-          leading={<Feather name="globe" size={16} color={colors.iconDefault} />}
-          onPress={() => {
-            setLiminalSpace(null);
-            setSheet(null);
-          }}
-        />
-        {spaces.map(s => (
+        {/* Once the title card is gone the age options take over, but the button's space
+            is kept so the deck doesn't shift. */}
+        {!sessionStarted && (
+          <View
+            style={[localStyles.startRow, coverGone && localStyles.hidden]}
+            pointerEvents={coverGone ? 'none' : 'auto'}
+            accessibilityElementsHidden={coverGone}
+            importantForAccessibility={coverGone ? 'no-hide-descendants' : 'auto'}
+          >
+            <Button label="Start a session" icon="play" onPress={handleStartSession} />
+          </View>
+        )}
+
+        {sessionStarted && currentPrompt && (
+          // The buttons fade in one after another when the session starts (and stay put
+          // while the deck reloads for new filters).
+          <View style={localStyles.actionRow}>
+            {/* Back to the previous prompt (swiping the card left skips forward). VoiceOver
+                users can't swipe the card, so both directions are also actions here. */}
+            <Animated.View entering={actionEntering(0)}>
+              <TouchableOpacity
+                onPress={handleBack}
+                style={[
+                  localStyles.circleButton,
+                  { borderColor: surface.border, backgroundColor: surface.card },
+                  !canGoBack && localStyles.disabled,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Previous prompt"
+                accessibilityHint={
+                  canGoBack
+                    ? 'Goes back to the prompt before this one. Swipe up or down for more actions.'
+                    : 'This is the first prompt. Swipe up or down for more actions.'
+                }
+                accessibilityState={{ disabled: !canGoBack }}
+                accessibilityActions={[
+                  { name: 'activate' },
+                  { name: 'next', label: 'Next prompt' },
+                  { name: 'previous', label: 'Previous prompt' },
+                ]}
+                onAccessibilityAction={e => {
+                  if (e.nativeEvent.actionName === 'next') handleSkip();
+                  else handleBack();
+                }}
+              >
+                <Feather name="rotate-ccw" size={22} color={colors.iconDefault} />
+              </TouchableOpacity>
+            </Animated.View>
+
+            <Animated.View entering={actionEntering(1)}>
+              <TouchableOpacity
+                onPress={() => setShowTwists(p => !p)}
+                disabled={!hasTwists}
+                style={[
+                  localStyles.circleButton,
+                  localStyles.twistButton,
+                  {
+                    borderColor: accent,
+                    backgroundColor: showTwists ? accent : surface.card,
+                  },
+                  !hasTwists && localStyles.disabled,
+                ]}
+                accessibilityLabel={showTwists ? 'Show the prompt' : 'Flip to twists'}
+              >
+                <Feather name="shuffle" size={20} color={showTwists ? '#fff' : accent} />
+                <Text style={[localStyles.twistLabel, { color: showTwists ? '#fff' : accent }]}>
+                  Twist
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+
+            <Animated.View entering={actionEntering(2)}>
+              <TouchableOpacity
+                onPress={() => toggleFavorite(promptId)}
+                style={[
+                  localStyles.circleButton,
+                  { borderColor: PINK, backgroundColor: favorited ? PINK : surface.card },
+                ]}
+                accessibilityLabel={favorited ? 'Remove from favorites' : 'Save to favorites'}
+              >
+                <Feather name="heart" size={22} color={favorited ? '#fff' : PINK} />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        )}
+
+        <BottomSheet visible={sheet === 'source'} title="Show prompts from" onClose={() => setSheet(null)}>
           <SheetOption
-            key={s.id}
-            label={s.name}
-            selected={s.id === liminalSpace}
-            leading={
-              <Feather
-                name={(s.icon as keyof typeof Feather.glyphMap) ?? 'circle'}
-                size={16}
-                color={colors.iconDefault}
-              />
-            }
+            label="What If Originals"
+            selected={deckSource === 'official'}
+            leading={<Ionicons name="sparkles-outline" size={16} color={colors.iconDefault} />}
+            onPress={() => chooseSource('official')}
+          />
+          <SheetOption
+            label="My Prompts"
+            selected={deckSource === 'user'}
+            leading={<Ionicons name="folder-outline" size={16} color={colors.iconDefault} />}
+            onPress={() => chooseSource('user')}
+          />
+        </BottomSheet>
+
+        <BottomSheet visible={sheet === 'situation'} title="Right now we're…" onClose={() => setSheet(null)}>
+          <SheetOption
+            label="Anywhere"
+            selected={liminalSpace === null}
+            leading={<Feather name="globe" size={16} color={colors.iconDefault} />}
             onPress={() => {
-              setLiminalSpace(s.id);
+              setLiminalSpace(null);
               setSheet(null);
             }}
           />
-        ))}
-      </BottomSheet>
+          {spaces.map(s => (
+            <SheetOption
+              key={s.id}
+              label={s.name}
+              selected={s.id === liminalSpace}
+              leading={
+                <Feather
+                  name={(s.icon as keyof typeof Feather.glyphMap) ?? 'circle'}
+                  size={16}
+                  color={colors.iconDefault}
+                />
+              }
+              onPress={() => {
+                setLiminalSpace(s.id);
+                setSheet(null);
+              }}
+            />
+          ))}
+        </BottomSheet>
 
-      <BottomSheet visible={sheet === 'discussion'} title="Discussion tips" onClose={() => setSheet(null)}>
-        <ScrollView style={localStyles.discussionScroll}>
-          <DiscussionTips promptId={promptId} />
-        </ScrollView>
-      </BottomSheet>
+        <BottomSheet visible={sheet === 'discussion'} title="Discussion tips" onClose={() => setSheet(null)}>
+          <ScrollView style={localStyles.discussionScroll}>
+            <DiscussionTips promptId={promptId} />
+          </ScrollView>
+        </BottomSheet>
 
-      <BottomSheet
-        visible={sheet === 'report'}
-        title="What’s wrong with this prompt?"
-        onClose={() => setSheet(null)}
-      >
-        {REPORT_REASONS.map(r => (
-          <SheetOption
-            key={r.reason}
-            label={r.label}
-            leading={<Feather name={r.icon} size={16} color={colors.iconDefault} />}
-            onPress={() => sendReport(r.reason)}
+        <BottomSheet
+          visible={sheet === 'report'}
+          title="What’s wrong with this prompt?"
+          onClose={() => setSheet(null)}
+        >
+          {REPORT_REASONS.map(r => (
+            <SheetOption
+              key={r.reason}
+              label={r.label}
+              leading={<Feather name={r.icon} size={16} color={colors.iconDefault} />}
+              onPress={() => sendReport(r.reason)}
+            />
+          ))}
+        </BottomSheet>
+
+
+        {/* Tap outside the age picker to close it; sits under the pills and menu */}
+        {ageMenuOpen && (
+          <Pressable
+            style={[StyleSheet.absoluteFill, localStyles.menuBackdrop]}
+            onPress={() => setAgeMenuOpen(false)}
+            accessibilityLabel="Close age picker"
           />
-        ))}
-      </BottomSheet>
-
-
-      {/* Tap outside the age picker to close it; sits under the pills and menu */}
-      {ageMenuOpen && (
-        <Pressable
-          style={[StyleSheet.absoluteFill, localStyles.menuBackdrop]}
-          onPress={() => setAgeMenuOpen(false)}
-          accessibilityLabel="Close age picker"
-        />
-      )}
-    </Screen>
+        )}
+      </Screen>
+    </Animated.View>
   );
 };
 
@@ -1746,6 +1811,9 @@ const localStyles = StyleSheet.create({
     lineHeight: 22,
   },
   scroll: {
+    flex: 1,
+  },
+  arrival: {
     flex: 1,
   },
   scrollContent: {

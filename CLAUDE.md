@@ -48,6 +48,7 @@ This phrasing is intentional. It encourages brainstorming over judgment, creativ
   - `Inter-SemiBold` — screen titles (accent purple, title case — not all caps), card titles, prompt text, buttons
   - `Inter-Medium` — body text, labels, descriptions, navigation
   - `Inter-MediumItalic` — the follow-up question on prompt cards ("What are all the things you can think of…"). Use this family rather than `fontStyle: 'italic'`, which iOS ignores for custom fonts.
+- **Rock Salt** (`assets/fonts/RockSalt-Regular.ttf`, `@expo-google-fonts/rock-salt` 0.4.1, Apache-2.0) — the hand-lettered "What If?" on the launch screen only. It's drawn into the launch images (`tools/graphics/make_splash.py`), which the iOS splash and the in-app `LoadingScreen` both show, so the app doesn't load it at runtime.
 - Barrio and Road Rage are no longer used or loaded (the font files remain in `assets/fonts/`).
 
 ### Visual language (set by the prompt card screen)
