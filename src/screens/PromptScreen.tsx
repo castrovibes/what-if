@@ -159,10 +159,9 @@ const DeckCard = ({
   style: StyleProp<ViewStyle>;
   children?: React.ReactNode;
 }) => {
-  // Where the card sits in the deck (see above), before any flip.
-  const deckCardStyle = () => {
+  // Where the card sits in the deck (see above), before any flip, for deck position p.
+  const deckCardStyle = (p: number) => {
     'worklet';
-    const p = progress.value;
     // Tugging the first prompt to the right, with nothing before it: rubber-band.
     if (index === 0 && p < 0) {
       return {
@@ -190,8 +189,11 @@ const DeckCard = ({
     };
   };
   const animated = useAnimatedStyle(() => {
+    // Read the shared values here, at the top level: Reanimated only re-runs this
+    // style for values read directly in it, not inside a helper it calls.
+    const p = progress.value;
     const flipped = flip ? flip.value : 0;
-    const placed = deckCardStyle();
+    const placed = deckCardStyle(p);
     // Turning over: the card narrows to its edge and widens again (the faces swap at
     // the edge), swelling slightly as if picked up and set back down. This is a 2D
     // squeeze rather than a 3D rotation, which on iOS let half the card sink behind
