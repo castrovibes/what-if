@@ -110,4 +110,21 @@ export const ModuleRepo = {
     );
     await SyncService.recordSet('moduleProgress', { contextId, moduleId, promptId, completedAt });
   },
+
+  /** Unchecks a step. Kept as a row with no completion time, which syncs like a check. */
+  async markIncomplete(contextId: string, moduleId: string, promptId: string): Promise<void> {
+    const db = await getDb();
+    await db.runAsync(
+      'UPDATE module_progress SET completed_at = NULL WHERE context_id = ? AND module_id = ? AND prompt_id = ?',
+      contextId,
+      moduleId,
+      promptId
+    );
+    await SyncService.recordSet('moduleProgress', {
+      contextId,
+      moduleId,
+      promptId,
+      completedAt: null,
+    });
+  },
 };

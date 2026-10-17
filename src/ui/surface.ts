@@ -28,7 +28,6 @@ export const useSurface = () => {
     ? {
         screen: '#0b0b0d',
         card: '#2b2b31',
-        underCard: '#24242a',
         border: '#3d3d45',
         shadow: darkCardShadow,
         /** Purple for titles, icons and outlines; lightened in dark mode for contrast. */
@@ -37,7 +36,6 @@ export const useSurface = () => {
     : {
         screen: colors.bgSubtle,
         card: colors.cardBg,
-        underCard: colors.cardBg,
         border: colors.border,
         shadow: cardShadow,
         accent: PURPLE,

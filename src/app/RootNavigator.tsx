@@ -7,7 +7,10 @@ import { OnboardingNavigator } from '../navigation/OnboardingNavigator';
 import { MainTabNavigator } from '../navigation/MainTabNavigator';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { SignupNavigator } from '../navigation/SignupNavigator';
+import { SettingsNavigator } from '../navigation/SettingsNavigator';
 import { useAuth } from '../auth/AuthProvider';
+import { FadeIn, useTransitions } from '../navigation/transitions';
+import { useSurface } from '../ui/surface';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -15,12 +18,15 @@ export const RootNavigator = () => {
   const { setSignupOfferPending } = useAuth();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
+  const { fade, modal, push } = useTransitions();
+  const surface = useSurface();
 
   useEffect(() => {
     async function loadFonts() {
       try {
         await Font.loadAsync({
           'Inter-Medium': require('../../assets/fonts/Inter-Medium.ttf'),
+          'Inter-MediumItalic': require('../../assets/fonts/Inter-MediumItalic.ttf'),
           'Inter-SemiBold': require('../../assets/fonts/Inter-SemiBold.ttf'),
         });
         setFontsLoaded(true);
@@ -62,20 +68,20 @@ export const RootNavigator = () => {
     return <LoadingScreen />;
   }
 
+  // The app fades in over the loading screen; finishing onboarding cross-fades into it.
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isFirstLaunch ? (
-        <Stack.Screen name="Onboarding">
-          {() => <OnboardingNavigator onComplete={completeOnboarding} />}
-        </Stack.Screen>
-      ) : (
-        <Stack.Screen name="MainApp" component={MainTabNavigator} />
-      )}
-      <Stack.Screen
-        name="Signup"
-        component={SignupNavigator}
-        options={{ presentation: 'modal' }}
-      />
-    </Stack.Navigator>
+    <FadeIn backdrop={surface.screen}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isFirstLaunch ? (
+          <Stack.Screen name="Onboarding">
+            {() => <OnboardingNavigator onComplete={completeOnboarding} />}
+          </Stack.Screen>
+        ) : (
+          <Stack.Screen name="MainApp" component={MainTabNavigator} options={fade} />
+        )}
+        <Stack.Screen name="Settings" component={SettingsNavigator} options={push} />
+        <Stack.Screen name="Signup" component={SignupNavigator} options={modal} />
+      </Stack.Navigator>
+    </FadeIn>
   );
 };

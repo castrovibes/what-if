@@ -42,25 +42,6 @@ export const MadLibsRepo = {
     );
     return rows.map(fromRow);
   },
-
-  async saveAsUserPrompt(input: {
-    id: string;
-    ageGroup: string;
-    text: string;
-  }): Promise<void> {
-    const db = await getDb();
-    const now = new Date().toISOString();
-    await db.runAsync(
-      `INSERT INTO prompts
-       (id, age_group, category_id, text, tier, source, parent_askable, is_active, is_placeholder, created_at, updated_at)
-       VALUES (?, ?, NULL, ?, 'free', 'user', 0, 1, 0, ?, ?)`,
-      input.id,
-      input.ageGroup,
-      input.text,
-      now,
-      now
-    );
-  },
 };
 
 export function applyTemplate(template: string, fills: string[]): string {

@@ -5,7 +5,10 @@ import { AgeGroupId } from '../data/ageGroups';
 
 export function usePromptsForAge(
   ageGroup: AgeGroupId,
-  extra?: Omit<PromptFilter, 'ageGroup'>
+  extra?: Omit<PromptFilter, 'ageGroup'> & {
+    /** Change it to load again (e.g. after the user adds a prompt). */
+    reloadKey?: number;
+  }
 ): { prompts: Prompt[]; loading: boolean; error: Error | null } {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +16,8 @@ export function usePromptsForAge(
 
   const liminalSpace = extra?.liminalSpace ?? null;
   const parentAskable = extra?.parentAskable ?? false;
+  const source = extra?.source;
+  const reloadKey = extra?.reloadKey ?? 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -21,6 +26,7 @@ export function usePromptsForAge(
       ageGroup,
       liminalSpace: liminalSpace ?? undefined,
       parentAskable: parentAskable || undefined,
+      source,
     })
       .then(rows => {
         if (cancelled) return;
@@ -35,7 +41,7 @@ export function usePromptsForAge(
     return () => {
       cancelled = true;
     };
-  }, [ageGroup, liminalSpace, parentAskable]);
+  }, [ageGroup, liminalSpace, parentAskable, source, reloadKey]);
 
   return { prompts, loading, error };
 }

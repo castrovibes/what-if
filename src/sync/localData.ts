@@ -7,6 +7,7 @@ import {
   ContextRecord,
   FavoriteRecord,
   ModuleProgressRecord,
+  MyPromptRecord,
   RecordFor,
   ReflectionRecord,
 } from './records';
@@ -44,8 +45,34 @@ export const readAll = async (): Promise<{ [C in UserCollection]: RecordFor[C][]
     prompt_id: string;
     completed_at: string | null;
   }>('SELECT * FROM module_progress');
+  // The user's own prompts, deleted (hidden) ones included.
+  const myPrompts = await db.getAllAsync<{
+    id: string;
+    text: string;
+    age_group: string;
+    is_active: number;
+    created_at: string;
+    updated_at: string;
+    situations: string | null;
+  }>(
+    `SELECT p.id, p.text, p.age_group, p.is_active, p.created_at, p.updated_at,
+            (SELECT GROUP_CONCAT(liminal_space_id) FROM prompt_liminal_spaces
+              WHERE prompt_id = p.id) AS situations
+       FROM prompts p WHERE p.source = 'user'`,
+  );
 
   return {
+    myPrompts: myPrompts.map(
+      (p): MyPromptRecord => ({
+        id: p.id,
+        text: p.text,
+        ageGroup: p.age_group as MyPromptRecord['ageGroup'],
+        situations: p.situations ? p.situations.split(',') : [],
+        deleted: p.is_active !== 1,
+        createdAt: p.created_at,
+        updatedAt: p.updated_at,
+      }),
+    ),
     contexts: contexts.map(
       (c): ContextRecord => ({
         id: c.id,
@@ -96,6 +123,50 @@ export const replaceAll = async (remote: { [C in UserCollection]: RecordFor[C][]
     await db.runAsync('DELETE FROM reflections');
     await db.runAsync('DELETE FROM module_progress');
 
+    const skipBadReferences = async (run: () => Promise<unknown>) => {
+      try {
+        await run();
+      } catch {
+        // Foreign key: unknown prompt/series/context on this device. Keep it in the cloud.
+      }
+    };
+
+    // The user's own prompts first, so favorites and notes can refer to them.
+    for (const p of remote.myPrompts) {
+      await db.runAsync(
+        `INSERT INTO prompts
+           (id, age_group, category_id, text, tier, source, parent_askable, is_active,
+            is_placeholder, created_at, updated_at)
+         VALUES (?, ?, NULL, ?, 'free', 'user', 0, ?, 0, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           age_group = excluded.age_group, text = excluded.text,
+           is_active = excluded.is_active, updated_at = excluded.updated_at`,
+        p.id,
+        p.ageGroup,
+        p.text,
+        p.deleted ? 0 : 1,
+        p.createdAt,
+        p.updatedAt,
+      );
+      await db.runAsync('DELETE FROM prompt_liminal_spaces WHERE prompt_id = ?', p.id);
+      for (const situation of p.situations) {
+        await skipBadReferences(() =>
+          db.runAsync(
+            'INSERT INTO prompt_liminal_spaces (prompt_id, liminal_space_id) VALUES (?, ?)',
+            p.id,
+            situation,
+          ),
+        );
+      }
+    }
+    // Own prompts on this device that the account doesn't have are hidden, not erased.
+    const remoteIds = remote.myPrompts.map(p => p.id);
+    await db.runAsync(
+      `UPDATE prompts SET is_active = 0
+        WHERE source = 'user' AND id NOT IN (${remoteIds.map(() => '?').join(',') || "''"})`,
+      ...remoteIds,
+    );
+
     for (const c of remote.contexts) {
       await db.runAsync(
         `INSERT INTO contexts (id, label, age_group_default, is_anonymous, color_token, created_at, archived_at)
@@ -115,13 +186,6 @@ export const replaceAll = async (remote: { [C in UserCollection]: RecordFor[C][]
         c.archivedAt,
       );
     }
-    const skipBadReferences = async (run: () => Promise<unknown>) => {
-      try {
-        await run();
-      } catch {
-        // Foreign key: unknown prompt/series/context on this device. Keep it in the cloud.
-      }
-    };
     for (const f of remote.favorites) {
       await skipBadReferences(() =>
         db.runAsync(
@@ -171,6 +235,8 @@ export const clearUserData = async () => {
     await db.runAsync('DELETE FROM favorites');
     await db.runAsync('DELETE FROM reflections');
     await db.runAsync('DELETE FROM module_progress');
+    // The user's own prompts (their situations go with them).
+    await db.runAsync("DELETE FROM prompts WHERE source = 'user'");
     await db.runAsync('DELETE FROM contexts WHERE id != ?', DEFAULT_CONTEXT_ID);
     await db.runAsync(
       'UPDATE contexts SET age_group_default = NULL, archived_at = NULL WHERE id = ?',

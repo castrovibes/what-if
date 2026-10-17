@@ -250,6 +250,47 @@ describe('user data subcollections', () => {
     );
   });
 
+  test('a user can sync their own prompts, including deleting one', async () => {
+    const alice = db('alice');
+    const ref = doc(alice, 'users/alice/myPrompts/user-1760000000000-ab12');
+    const prompt = {
+      text: 'What if your dog learned to talk?',
+      ageGroup: '6-8',
+      situations: ['ls-bedtime'],
+      deleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await assertSucceeds(setDoc(ref, prompt));
+    await assertSucceeds(setDoc(ref, { ...prompt, deleted: true, updatedAt: new Date() }));
+    await assertSucceeds(getDoc(ref));
+    await assertFails(getDoc(doc(db('bob'), 'users/alice/myPrompts/user-1760000000000-ab12')));
+    await assertFails(
+      setDoc(doc(db('bob'), 'users/alice/myPrompts/user-1760000000000-cd34'), prompt),
+    );
+  });
+
+  test('own prompts must be well formed', async () => {
+    const ref = (id = 'user-1760000000000-ab12') => doc(db('alice'), `users/alice/myPrompts/${id}`);
+    const ok = {
+      text: 'What if?',
+      ageGroup: '9-12',
+      situations: [],
+      deleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await assertFails(setDoc(ref('ph-3-5-001'), ok)); // not a user prompt id
+    await assertFails(setDoc(ref(), { ...ok, text: '' }));
+    await assertFails(setDoc(ref(), { ...ok, text: 'x'.repeat(501) }));
+    await assertFails(setDoc(ref(), { ...ok, ageGroup: 'adults' }));
+    await assertFails(setDoc(ref(), { ...ok, situations: 'ls-bedtime' }));
+    await assertFails(setDoc(ref(), { ...ok, tier: 'premium' })); // no extra fields
+    const { deleted, ...missingDeleted } = ok;
+    await assertFails(setDoc(ref(), missingDeleted));
+    await assertSucceeds(setDoc(ref(), ok));
+  });
+
   test('personalization is not a synced collection', async () => {
     await assertFails(
       setDoc(doc(db('alice'), 'users/alice/personalization/name'), { value: 'Maya' }),

@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-gesture-handler';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
@@ -17,6 +17,7 @@ import { DbProvider } from './src/providers/DbProvider';
 import { ActiveContextProvider } from './src/providers/ActiveContextProvider';
 import { RootNavigator } from './src/app/RootNavigator';
 import { AuthProvider } from './src/auth/AuthProvider';
+import { useSurface, PINK } from './src/ui/surface';
 
 /**
  * Status bar that follows the app's theme (which can override the device setting),
@@ -25,6 +26,28 @@ import { AuthProvider } from './src/auth/AuthProvider';
 const ThemedStatusBar = () => {
   const { isDark } = useTheme();
   return <StatusBar style={isDark ? 'light' : 'dark'} />;
+};
+
+/**
+ * Gives React Navigation the app's colors, so the backdrop behind screen transitions
+ * matches the screens (no light flash in dark mode).
+ */
+const ThemedNavigationContainer = ({ children }: { children: React.ReactNode }) => {
+  const { isDark, colors } = useTheme();
+  const surface = useSurface();
+  const base = isDark ? DarkTheme : DefaultTheme;
+  const theme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: PINK,
+      background: surface.screen,
+      card: colors.tabBarBg,
+      border: colors.tabBarBorder,
+      text: colors.textPrimary,
+    },
+  };
+  return <NavigationContainer theme={theme}>{children}</NavigationContainer>;
 };
 
 /**
@@ -39,9 +62,9 @@ const ThemedStatusBar = () => {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        {/* App-wide providers (order matters: inner providers depend on outer ones) */}
-        <ThemeProvider>
+      {/* App-wide providers (order matters: inner providers depend on outer ones) */}
+      <ThemeProvider>
+        <ThemedNavigationContainer>
           <DbProvider>
             <ActiveContextProvider>
               <AuthProvider>
@@ -49,9 +72,9 @@ export default function App() {
               </AuthProvider>
             </ActiveContextProvider>
           </DbProvider>
-          <ThemedStatusBar />
-        </ThemeProvider>
-      </NavigationContainer>
+        </ThemedNavigationContainer>
+        <ThemedStatusBar />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

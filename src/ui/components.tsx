@@ -4,7 +4,7 @@
  * Typography is Inter throughout: titles in Inter-SemiBold (accent purple for screen
  * titles), body and labels in Inter-Medium.
  */
-import React, { ReactNode } from 'react';
+import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,9 +15,13 @@ import {
   StyleProp,
   ViewStyle,
   ScrollView,
+  Animated,
+  Easing,
+  useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets, Edge } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK, CARD_RADIUS } from './surface';
@@ -46,6 +50,29 @@ export const Screen = ({
  * Screen header: optional back chevron, a purple title, an optional subtitle and an
  * optional icon action on the right.
  */
+// Screen headers show a ⚙ that opens Settings, except inside Settings itself and in
+// onboarding, which wrap their screens in HideSettingsButton.
+const SettingsButtonContext = createContext(true);
+
+export const HideSettingsButton = ({ children }: { children: ReactNode }) => (
+  <SettingsButtonContext.Provider value={false}>{children}</SettingsButtonContext.Provider>
+);
+
+const SettingsButton = () => {
+  const navigation = useNavigation();
+  const surface = useSurface();
+  return (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('Settings' as never)}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel="Settings"
+    >
+      <Feather name="settings" size={22} color={surface.accent} />
+    </TouchableOpacity>
+  );
+};
+
 export const ScreenHeader = ({
   title,
   subtitle,
@@ -63,6 +90,7 @@ export const ScreenHeader = ({
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
+  const showSettings = useContext(SettingsButtonContext);
   return (
     <View style={ui.header}>
       <View style={ui.headerRow}>
@@ -76,10 +104,15 @@ export const ScreenHeader = ({
             {title}
           </Text>
         </View>
-        {rightIcon && (
-          <TouchableOpacity onPress={onRightPress} hitSlop={8} accessibilityLabel={rightLabel}>
-            <Feather name={rightIcon} size={22} color={surface.accent} />
-          </TouchableOpacity>
+        {(rightIcon || showSettings) && (
+          <View style={ui.headerActions}>
+            {rightIcon && (
+              <TouchableOpacity onPress={onRightPress} hitSlop={8} accessibilityLabel={rightLabel}>
+                <Feather name={rightIcon} size={22} color={surface.accent} />
+              </TouchableOpacity>
+            )}
+            {showSettings && <SettingsButton />}
+          </View>
         )}
       </View>
       {subtitle && (
@@ -308,6 +341,10 @@ export const Button = ({
 
 /* ============ Bottom sheet ============ */
 
+const SHEET_OPEN_MS = 300;
+const SHEET_CLOSE_MS = 220;
+const SHEET_FADE_MS = 250;
+
 export const BottomSheet = ({
   visible,
   title,
@@ -322,18 +359,71 @@ export const BottomSheet = ({
   const { colors } = useTheme();
   const surface = useSurface();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+
+  // The dimmed backdrop fades in place while only the sheet slides up, rather than
+  // the whole modal (dim layer included) sliding in together. The modal stays
+  // mounted until the closing animation has finished.
+  const [mounted, setMounted] = useState(visible);
+  const [sheetHeight, setSheetHeight] = useState(windowHeight);
+  const dim = useRef(new Animated.Value(0)).current;
+  const offset = useRef(new Animated.Value(1)).current; // 1 = below the screen
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.parallel([
+        Animated.timing(dim, { toValue: 1, duration: SHEET_FADE_MS, useNativeDriver: true }),
+        Animated.timing(offset, {
+          toValue: 0,
+          duration: SHEET_OPEN_MS,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (mounted) {
+      Animated.parallel([
+        Animated.timing(dim, { toValue: 0, duration: SHEET_CLOSE_MS, useNativeDriver: true }),
+        Animated.timing(offset, {
+          toValue: 1,
+          duration: SHEET_CLOSE_MS,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) setMounted(false);
+      });
+    }
+    // Only react to visibility changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={ui.sheetBackdrop} onPress={onClose} />
-      <View
-        style={[
-          ui.sheet,
-          { backgroundColor: surface.card, paddingBottom: insets.bottom + Spacing.md },
-        ]}
-      >
-        <View style={[ui.sheetHandle, { backgroundColor: surface.border }]} />
-        <Text style={[ui.sheetTitle, { color: colors.textPrimary }]}>{title}</Text>
-        {children}
+    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
+      <Animated.View style={[StyleSheet.absoluteFill, ui.sheetBackdrop, { opacity: dim }]}>
+        <Pressable style={ui.fill} onPress={onClose} accessibilityLabel="Close" />
+      </Animated.View>
+      <View style={ui.sheetDock} pointerEvents="box-none">
+        <Animated.View
+          onLayout={e => setSheetHeight(e.nativeEvent.layout.height)}
+          style={[
+            ui.sheet,
+            { backgroundColor: surface.card, paddingBottom: insets.bottom + Spacing.md },
+            {
+              transform: [
+                {
+                  translateY: offset.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, sheetHeight],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={[ui.sheetHandle, { backgroundColor: surface.border }]} />
+          <Text style={[ui.sheetTitle, { color: colors.textPrimary }]}>{title}</Text>
+          {children}
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -374,6 +464,11 @@ export const ui = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.md,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.lg,
   },
   headerRow: {
     flexDirection: 'row',
@@ -481,8 +576,15 @@ export const ui = StyleSheet.create({
     opacity: 0.35,
   },
   sheetBackdrop: {
-    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  fill: {
+    flex: 1,
+  },
+  // Holds the sheet against the bottom of the screen, over the backdrop.
+  sheetDock: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   sheet: {
     borderTopLeftRadius: CARD_RADIUS,

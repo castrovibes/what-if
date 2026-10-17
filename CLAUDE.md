@@ -44,9 +44,10 @@ This phrasing is intentional. It encourages brainstorming over judgment, creativ
 ## Design System
 
 ### Typography
-- **Inter** for everything (bundled in `assets/fonts/`):
+- **Inter** for everything (bundled in `assets/fonts/`, all three from the same release: `@expo-google-fonts/inter` 0.4.1, OFL-1.1). Loaded in `src/app/RootNavigator.tsx`:
   - `Inter-SemiBold` — screen titles (accent purple, title case — not all caps), card titles, prompt text, buttons
   - `Inter-Medium` — body text, labels, descriptions, navigation
+  - `Inter-MediumItalic` — the follow-up question on prompt cards ("What are all the things you can think of…"). Use this family rather than `fontStyle: 'italic'`, which iOS ignores for custom fonts.
 - Barrio and Road Rage are no longer used or loaded (the font files remain in `assets/fonts/`).
 
 ### Visual language (set by the prompt card screen)

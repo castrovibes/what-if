@@ -45,10 +45,17 @@ export const ModuleDetailScreen = () => {
     })();
   }, [moduleId, activeContext.id, syncVersion]);
 
+  // Tapping the circle checks a step off, or unchecks it.
   const toggleStep = async (promptId: string) => {
-    if (completed.has(promptId)) return;
-    await ModuleRepo.markComplete(activeContext.id, moduleId, promptId);
-    setCompleted(prev => new Set(prev).add(promptId));
+    const wasDone = completed.has(promptId);
+    setCompleted(prev => {
+      const next = new Set(prev);
+      if (wasDone) next.delete(promptId);
+      else next.add(promptId);
+      return next;
+    });
+    if (wasDone) await ModuleRepo.markIncomplete(activeContext.id, moduleId, promptId);
+    else await ModuleRepo.markComplete(activeContext.id, moduleId, promptId);
   };
 
   if (!module) return null;
@@ -61,8 +68,9 @@ export const ModuleDetailScreen = () => {
   return (
     <Screen>
       <ScreenHeader title="Conversation Series" onBack={() => navigation.goBack()} />
-      <ScreenScroll>
-        <Card accent={accent}>
+      {/* Tighter than other screens so the steps get more of the width. */}
+      <ScreenScroll contentStyle={localStyles.content}>
+        <Card accent={accent} padded={false} style={localStyles.cardBody}>
           <View>
             {module.ageGroup && (
               <View style={localStyles.meta}>
@@ -93,7 +101,7 @@ export const ModuleDetailScreen = () => {
         {steps.map(s => {
           const done = completed.has(s.promptId);
           return (
-            <Card key={s.promptId}>
+            <Card key={s.promptId} padded={false} style={localStyles.cardBody}>
               <View style={localStyles.stepHeader}>
                 <View style={[localStyles.stepPill, { borderColor: surface.border }]}>
                   <Text style={[localStyles.stepNumber, { color: colors.textSecondary }]}>
@@ -103,7 +111,9 @@ export const ModuleDetailScreen = () => {
                 <TouchableOpacity
                   onPress={() => toggleStep(s.promptId)}
                   hitSlop={8}
-                  accessibilityLabel={done ? 'Step complete' : 'Mark step complete'}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: done }}
+                  accessibilityLabel={`Step ${s.stepNumber} done`}
                 >
                   <Feather
                     name={done ? 'check-circle' : 'circle'}
@@ -134,6 +144,12 @@ export const ModuleDetailScreen = () => {
 };
 
 const localStyles = StyleSheet.create({
+  content: {
+    paddingHorizontal: Spacing.md,
+  },
+  cardBody: {
+    padding: Spacing.md,
+  },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',

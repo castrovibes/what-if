@@ -34,7 +34,18 @@ export type ModuleProgressRecord = {
   completedAt: string | null;
 };
 
+export type MyPromptRecord = {
+  id: string;
+  text: string;
+  ageGroup: AgeGroupId;
+  situations: string[];
+  deleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type RecordFor = {
+  myPrompts: MyPromptRecord;
   contexts: ContextRecord;
   favorites: FavoriteRecord;
   reflections: ReflectionRecord;
@@ -45,6 +56,8 @@ export type SyncRecord = RecordFor[UserCollection];
 
 export const docIdOf = <C extends UserCollection>(collection: C, r: RecordFor[C]): string => {
   switch (collection) {
+    case 'myPrompts':
+      return (r as MyPromptRecord).id;
     case 'contexts':
       return (r as ContextRecord).id;
     case 'favorites': {
@@ -69,6 +82,17 @@ const isoOrNull = (t: unknown): string | null => (t instanceof Timestamp ? t.toD
 /** On-device record -> Firestore document data. */
 export const toRemote = (collection: UserCollection, r: SyncRecord): DocumentData => {
   switch (collection) {
+    case 'myPrompts': {
+      const p = r as MyPromptRecord;
+      return {
+        text: p.text,
+        ageGroup: p.ageGroup,
+        situations: p.situations,
+        deleted: p.deleted,
+        createdAt: ts(p.createdAt),
+        updatedAt: ts(p.updatedAt),
+      };
+    }
     case 'contexts': {
       const c = r as ContextRecord;
       return {
@@ -110,6 +134,16 @@ export const toRemote = (collection: UserCollection, r: SyncRecord): DocumentDat
 /** Firestore document -> on-device record. */
 export const fromRemote = (collection: UserCollection, id: string, d: DocumentData): SyncRecord => {
   switch (collection) {
+    case 'myPrompts':
+      return {
+        id,
+        text: d.text,
+        ageGroup: d.ageGroup,
+        situations: Array.isArray(d.situations) ? d.situations : [],
+        deleted: !!d.deleted,
+        createdAt: iso(d.createdAt),
+        updatedAt: iso(d.updatedAt),
+      };
     case 'contexts':
       return {
         id,

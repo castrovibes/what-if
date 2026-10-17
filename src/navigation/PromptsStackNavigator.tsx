@@ -2,25 +2,19 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { PromptsStackParamList } from './types';
 import { PromptScreen } from '../screens/PromptScreen';
-import { ModulesScreen } from '../screens/ModulesScreen';
-import { ModuleDetailScreen } from '../screens/ModuleDetailScreen';
-import { MadLibsScreen } from '../screens/MadLibsScreen';
-import { FAQScreen } from '../screens/FAQScreen';
-import { ImConcernedScreen } from '../screens/ImConcernedScreen';
-import { PersonalizationScreen } from '../screens/PersonalizationScreen';
+import { useStackScreenOptions } from './transitions';
 
 const Stack = createStackNavigator<PromptsStackParamList>();
 
+/**
+ * The Prompts tab: the deck. Series live in Explore, Mad Libs in Create, and Settings
+ * (with FAQ and Personalize) opens from the ⚙ in the header.
+ */
 export const PromptsStackNavigator = () => {
+  const screenOptions = useStackScreenOptions();
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="PromptsMain" component={PromptScreen} />
-      <Stack.Screen name="Modules" component={ModulesScreen} />
-      <Stack.Screen name="ModuleDetail" component={ModuleDetailScreen} />
-      <Stack.Screen name="MadLibs" component={MadLibsScreen} />
-      <Stack.Screen name="FAQ" component={FAQScreen} />
-      <Stack.Screen name="ImConcerned" component={ImConcernedScreen} />
-      <Stack.Screen name="Personalization" component={PersonalizationScreen} />
     </Stack.Navigator>
   );
 };
