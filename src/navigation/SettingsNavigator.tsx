@@ -25,10 +25,11 @@ export const SettingsNavigator = () => {
         <SettingsStack.Screen name="FAQ" component={FAQScreen} />
         <SettingsStack.Screen name="ImConcerned" component={ImConcernedScreen} />
         <SettingsStack.Screen name="Personalization" component={PersonalizationScreen} />
-        {/* "View Welcome Guide" replays onboarding (with its fades); finishing it closes
+        {/* "View Welcome Guide" replays onboarding (Welcome fades in, the tutorial slides
+            in after it); finishing it closes
             Settings on the Prompts tab. */}
         <SettingsStack.Screen name="Welcome" component={WelcomeScreen} options={fade} />
-        <SettingsStack.Screen name="WelcomeTutorial" options={fade}>
+        <SettingsStack.Screen name="WelcomeTutorial">
           {({ navigation }) => (
             <WelcomeTutorialScreen
               onComplete={() => {

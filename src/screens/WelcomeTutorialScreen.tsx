@@ -46,7 +46,12 @@ const STEPS: { title: string; description: string }[] = [
   },
 ];
 
-const LAST = STEPS.length - 1;
+// The tutorial opens on an introduction (page 0), then one page per tip. Pages are
+// what the swipes, the pips and `progress` count; tip i is page i + 1.
+const INTRO =
+  "We wrote thousands of questions that help foster meaningful conversations with children that spark critical thinking and ethical reasoning. We're glad you're here.\n\nSwipe to get started.";
+const PAGES = STEPS.length + 1;
+const LAST = PAGES - 1;
 const DECK_HEIGHT = 360;
 const SWIPE_MS = 320;
 // Fraction of the screen width a drag must cover to change slides (or a quick flick).
@@ -61,9 +66,10 @@ const SLOT_ROTATE = [0, -1.5, 2, -2.5];
 const SLOTS = SLOT_Y.map((_, i) => i);
 
 /**
- * One tip, styled like a prompt card. `progress` is the deck position (0 = first tip
- * on top, fractional while dragging). Cards already read fly off to the left; the
- * rest sit in the stack and slide up a slot as the card above leaves.
+ * One tip, styled like a prompt card. `progress` is the page position (0 = the
+ * introduction, 1 = first tip on top, fractional while dragging). Cards already read
+ * fly off to the left; the rest sit in the stack and slide up a slot as the card above
+ * leaves. Between the introduction and the first tip the deck just fades in.
  */
 const TipCard = ({
   index,
@@ -79,7 +85,7 @@ const TipCard = ({
   const step = STEPS[index];
 
   const style = useAnimatedStyle(() => {
-    const d = index - progress.value;
+    const d = index - Math.max(0, progress.value - 1);
     if (d < 0) {
       // Leaving (or returning) on the left, like a skipped prompt.
       return {
@@ -134,7 +140,11 @@ const Pip = ({
     };
   });
   return (
-    <Pressable onPress={onPress} hitSlop={6} accessibilityLabel={`Go to tip ${index + 1}`}>
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      accessibilityLabel={index === 0 ? 'Go to the introduction' : `Go to tip ${index}`}
+    >
       <Animated.View style={[local.pip, style]} />
     </Pressable>
   );
@@ -142,6 +152,8 @@ const Pip = ({
 
 export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }) => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const surface = useSurface();
   const { width } = useWindowDimensions();
 
   const [index, setIndex] = useState(0);
@@ -203,8 +215,19 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
     onPanResponderTerminate: () => goTo(indexRef.current),
   });
 
-  const current = STEPS[index];
+  const current = index > 0 ? STEPS[index - 1] : null;
   const onLast = index === LAST;
+
+  // The first swipe moves the introduction off to the left while the card deck comes
+  // in from the right, following the finger like a page.
+  const introStyle = useAnimatedStyle(() => {
+    const t = Math.min(1, Math.max(0, progress.value));
+    return { transform: [{ translateX: -t * width }] };
+  });
+  const deckStyle = useAnimatedStyle(() => {
+    const t = Math.min(1, Math.max(0, progress.value));
+    return { transform: [{ translateX: (1 - t) * width }] };
+  });
 
   // The button fades in as the last tip arrives. Its space is always reserved so the
   // deck doesn't shift when it appears.
@@ -221,25 +244,32 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
           {...pan.panHandlers}
           accessible
           accessibilityRole="adjustable"
-          accessibilityLabel={`Tip ${index + 1} of ${STEPS.length}: ${current.title}. ${current.description}`}
+          accessibilityLabel={
+            current
+              ? `Tip ${index} of ${STEPS.length}: ${current.title}. ${current.description}`
+              : `Welcome. ${INTRO}`
+          }
           accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
           onAccessibilityAction={e =>
             goTo(indexRef.current + (e.nativeEvent.actionName === 'increment' ? 1 : -1))
           }
         >
-          {STEPS.map((step, i) => (
-            <TipCard
-              key={step.title}
-              index={i}
-              progress={progress}
-              width={width}
-            />
-          ))}
+          <Animated.View style={[StyleSheet.absoluteFill, deckStyle]} pointerEvents="none">
+            {STEPS.map((step, i) => (
+              <TipCard key={step.title} index={i} progress={progress} width={width} />
+            ))}
+          </Animated.View>
+          <Animated.View style={[local.intro, introStyle]} pointerEvents="none">
+            <Text style={[local.introTitle, { color: surface.accent }]} accessibilityRole="header">
+              Welcome
+            </Text>
+            <Text style={[local.introText, { color: colors.textSecondary }]}>{INTRO}</Text>
+          </Animated.View>
         </View>
 
         <View style={local.pips}>
-          {STEPS.map((step, i) => (
-            <Pip key={step.title} index={i} progress={progress} onPress={() => goTo(i)} />
+          {Array.from({ length: PAGES }, (_, i) => (
+            <Pip key={i} index={i} progress={progress} onPress={() => goTo(i)} />
           ))}
         </View>
       </View>
@@ -286,6 +316,27 @@ const local = StyleSheet.create({
     fontSize: Typography.callout,
     fontFamily: 'Inter-Medium',
     lineHeight: 23,
+  },
+  intro: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+  },
+  introTitle: {
+    fontSize: Typography.title1,
+    fontFamily: 'Inter-SemiBold',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  introText: {
+    fontSize: Typography.callout,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+    lineHeight: Math.round(Typography.callout * 1.5),
+    textAlign: 'center',
+    alignSelf: 'center',
+    maxWidth: 280,
   },
   pips: {
     flexDirection: 'row',
