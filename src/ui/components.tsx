@@ -15,6 +15,9 @@ import {
   StyleProp,
   ViewStyle,
   ScrollView,
+  FlatList,
+  FlatListProps,
+  ListRenderItem,
   Animated,
   Easing,
   useWindowDimensions,
@@ -138,6 +141,40 @@ export const ScreenScroll = ({
     {children}
   </ScrollView>
 );
+
+/**
+ * Scrolling list with the standard side padding. Use this instead of ScreenScroll +
+ * map for anything that can grow without bound (user-created content), so only the
+ * visible rows are mounted.
+ */
+export function ScreenList<T>({
+  data,
+  renderItem,
+  keyExtractor,
+  ListHeaderComponent,
+  ListEmptyComponent,
+  contentStyle,
+}: {
+  data: T[] | null | undefined;
+  renderItem: ListRenderItem<T>;
+  keyExtractor: (item: T, index: number) => string;
+  ListHeaderComponent?: FlatListProps<T>['ListHeaderComponent'];
+  ListEmptyComponent?: FlatListProps<T>['ListEmptyComponent'];
+  contentStyle?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <FlatList
+      style={ui.scroll}
+      contentContainerStyle={[ui.scrollContent, contentStyle]}
+      showsVerticalScrollIndicator={false}
+      data={data ?? []}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      ListHeaderComponent={ListHeaderComponent}
+      ListEmptyComponent={ListEmptyComponent}
+    />
+  );
+}
 
 /* ============ Cards and lists ============ */
 

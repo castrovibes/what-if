@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -21,7 +21,8 @@ import {
   Dot,
   Button,
 } from '../ui/components';
-import { useSurface, PINK } from '../ui/surface';
+import { useSurface, PINK, Surface } from '../ui/surface';
+import { ThemeColors } from '../theme/themes';
 import { FeatureFlags } from '../data/featureFlags';
 
 const PLAN_LABEL: Record<PlanId, string> = {
@@ -37,9 +38,46 @@ const STATS = [
   { value: '2', label: 'Prompts Submitted', color: '#fdfb76' },
 ];
 
+/**
+ * Styles that depend on the theme, built once per theme change (not per render),
+ * so the JSX below uses single style objects instead of `[static, { color }]` arrays.
+ */
+const useThemedStyles = (colors: ThemeColors, surface: Surface) =>
+  useMemo(
+    () =>
+      StyleSheet.create({
+        avatar: { ...local.profileAvatar, backgroundColor: surface.accent },
+        profileName: { ...local.profileName, color: colors.textPrimary },
+        profileRole: { ...local.profileRole, color: colors.textSecondary },
+        editButton: { ...local.editButton, borderColor: surface.accent },
+        editButtonText: { ...local.editButtonText, color: surface.accent },
+        statValue: { ...local.statValue, color: surface.accent },
+        statLabel: { ...local.statLabel, color: colors.textSecondary },
+        sampleNote: { ...local.sampleNote, color: colors.iconInactive },
+        cardTitle: { ...local.cardTitle, color: colors.textPrimary },
+        cardTitleAccent: { ...local.cardTitle, color: surface.accent },
+        cardText: { ...local.cardText, color: colors.textSecondary },
+        divider: { ...local.divider, backgroundColor: surface.border },
+        reflectionDivider: {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: surface.border,
+        },
+        reflectionMeta: { ...local.reflectionMeta, color: colors.textSecondary },
+        reflectionNote: { ...local.reflectionNote, color: colors.textPrimary },
+        radioOuter: { ...local.radioOuter, borderColor: surface.border },
+        radioOuterSelected: { ...local.radioOuter, borderColor: PINK },
+        radioLabel: { ...local.radioLabel, color: colors.textPrimary },
+        radioDescription: { ...local.radioDescription, color: colors.textSecondary },
+        badge: { ...local.badge, borderColor: surface.accent },
+        badgeText: { ...local.badgeText, color: surface.accent },
+      }),
+    [colors, surface],
+  );
+
 export const ProfileScreen = () => {
   const { colors } = useTheme();
   const surface = useSurface();
+  const t = useThemedStyles(colors, surface);
   const { activeContext } = useActiveContext();
   // ProfileScreen is its own stack but we deep-link into PromptsStack screens, which works because the navigator is shared in MainTab
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
@@ -60,7 +98,7 @@ export const ProfileScreen = () => {
         {account ? (
           <Card>
             <View style={local.profileRow}>
-              <View style={[local.profileAvatar, { backgroundColor: surface.accent }]}>
+              <View style={t.avatar}>
                 {account.username ? (
                   <Text style={local.avatarInitial}>{account.username.charAt(0).toUpperCase()}</Text>
                 ) : (
@@ -68,32 +106,32 @@ export const ProfileScreen = () => {
                 )}
               </View>
               <View style={local.flex}>
-                <Text style={[local.profileName, { color: colors.textPrimary }]}>
+                <Text style={t.profileName}>
                   {account.username ? `Welcome back, ${account.username}!` : 'Welcome back!'}
                 </Text>
-                <Text style={[local.profileRole, { color: colors.textSecondary }]}>
+                <Text style={t.profileRole}>
                   {PLAN_LABEL[account.plan]}
                 </Text>
               </View>
             </View>
             <TouchableOpacity
-              style={[local.editButton, { borderColor: surface.accent }]}
+              style={t.editButton}
               activeOpacity={0.85}
               onPress={() => comingSoon('Editing your profile')}
             >
-              <Text style={[local.editButtonText, { color: surface.accent }]}>Edit Profile</Text>
+              <Text style={t.editButtonText}>Edit Profile</Text>
             </TouchableOpacity>
           </Card>
         ) : !FeatureFlags.showSignup ? (
           // Accounts aren't offered yet (beta): a simple welcome instead of sign-up.
           <Card>
             <View style={local.profileRow}>
-              <View style={[local.profileAvatar, { backgroundColor: surface.accent }]}>
+              <View style={t.avatar}>
                 <Feather name="user" size={28} color="#fff" />
               </View>
               <View style={local.flex}>
-                <Text style={[local.profileName, { color: colors.textPrimary }]}>Welcome!</Text>
-                <Text style={[local.profileRole, { color: colors.textSecondary }]}>
+                <Text style={t.profileName}>Welcome!</Text>
+                <Text style={t.profileRole}>
                   Your favorites and settings are saved on this phone.
                 </Text>
               </View>
@@ -102,14 +140,14 @@ export const ProfileScreen = () => {
         ) : (
           <Card>
             <View style={local.profileRow}>
-              <View style={[local.profileAvatar, { backgroundColor: surface.accent }]}>
+              <View style={t.avatar}>
                 <Feather name="user-plus" size={26} color="#fff" />
               </View>
               <View style={local.flex}>
-                <Text style={[local.profileName, { color: colors.textPrimary }]}>
+                <Text style={t.profileName}>
                   Save your progress
                 </Text>
-                <Text style={[local.profileRole, { color: colors.textSecondary }]}>
+                <Text style={t.profileRole}>
                   Create a free account to keep your favorites and reflections, and to unlock Premium.
                 </Text>
               </View>
@@ -126,24 +164,24 @@ export const ProfileScreen = () => {
           {STATS.map(s => (
             <Card key={s.label} style={local.statTile}>
               <View style={local.statTop}>
-                <Text style={[local.statValue, { color: surface.accent }]}>{s.value}</Text>
+                <Text style={t.statValue}>{s.value}</Text>
                 <Dot color={s.color} />
               </View>
-              <Text style={[local.statLabel, { color: colors.textSecondary }]}>{s.label}</Text>
+              <Text style={t.statLabel}>{s.label}</Text>
             </Card>
           ))}
         </View>
         {/* TODO: real activity stats (needs usage tracking). */}
-        <Text style={[local.sampleNote, { color: colors.iconInactive }]}>
+        <Text style={t.sampleNote}>
           Sample numbers for the beta. Activity tracking is coming soon.
         </Text>
 
         <Card>
           <View style={local.filterHeader}>
             <Feather name="shield" size={20} color={surface.accent} />
-            <Text style={[local.cardTitle, { color: colors.textPrimary }]}>Quality & safety</Text>
+            <Text style={t.cardTitle}>Quality & safety</Text>
           </View>
-          <Text style={[local.cardText, { color: colors.textSecondary }]}>
+          <Text style={t.cardText}>
             Control what user-created content appears in your feed
           </Text>
 
@@ -153,7 +191,7 @@ export const ProfileScreen = () => {
             label="Display All User Created Content"
             description="Show all community prompts without filtering"
           />
-          <View style={[local.divider, { backgroundColor: surface.border }]} />
+          <View style={t.divider} />
           <RadioOption
             selected={contentFilter === 'vetted'}
             onPress={() => setContentFilter('vetted')}
@@ -161,7 +199,7 @@ export const ProfileScreen = () => {
             description="Only show prompts reviewed by our moderation team"
             badge="Recommended"
           />
-          <View style={[local.divider, { backgroundColor: surface.border }]} />
+          <View style={t.divider} />
           <RadioOption
             selected={contentFilter === 'friends'}
             onPress={() => setContentFilter('friends')}
@@ -188,19 +226,13 @@ export const ProfileScreen = () => {
               {reflections.map((r, i) => (
                 <View
                   key={r.id}
-                  style={[
-                    local.reflection,
-                    i < reflections.length - 1 && {
-                      borderBottomWidth: StyleSheet.hairlineWidth,
-                      borderBottomColor: surface.border,
-                    },
-                  ]}
+                  style={[local.reflection, i < reflections.length - 1 && t.reflectionDivider]}
                 >
-                  <Text style={[local.reflectionMeta, { color: colors.textSecondary }]}>
+                  <Text style={t.reflectionMeta}>
                     {new Date(r.createdAt).toLocaleDateString()} {r.rating ? `• Rating ${r.rating}/5` : ''}
                   </Text>
                   {r.note && (
-                    <Text style={[local.reflectionNote, { color: colors.textPrimary }]}>{r.note}</Text>
+                    <Text style={t.reflectionNote}>{r.note}</Text>
                   )}
                 </View>
               ))}
@@ -211,9 +243,9 @@ export const ProfileScreen = () => {
         <Card>
           <View style={local.filterHeader}>
             <Feather name="briefcase" size={20} color={surface.accent} />
-            <Text style={[local.cardTitle, { color: surface.accent }]}>Upgrade to Professional</Text>
+            <Text style={t.cardTitleAccent}>Upgrade to Professional</Text>
           </View>
-          <Text style={[local.cardText, { color: colors.textSecondary }]}>
+          <Text style={t.cardText}>
             Access case management, analytics, and specialized prompt libraries
           </Text>
           <Button
@@ -243,19 +275,20 @@ const RadioOption = ({
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
+  const t = useThemedStyles(colors, surface);
   return (
     <TouchableOpacity style={local.radioOption} onPress={onPress} activeOpacity={0.7}>
-      <View style={[local.radioOuter, { borderColor: selected ? PINK : surface.border }]}>
+      <View style={selected ? t.radioOuterSelected : t.radioOuter}>
         {selected && <View style={local.radioInner} />}
       </View>
       <View style={local.flex}>
-        <Text style={[local.radioLabel, { color: colors.textPrimary }]}>{label}</Text>
+        <Text style={t.radioLabel}>{label}</Text>
         {badge && (
-          <View style={[local.badge, { borderColor: surface.accent }]}>
-            <Text style={[local.badgeText, { color: surface.accent }]}>{badge}</Text>
+          <View style={t.badge}>
+            <Text style={t.badgeText}>{badge}</Text>
           </View>
         )}
-        <Text style={[local.radioDescription, { color: colors.textSecondary }]}>{description}</Text>
+        <Text style={t.radioDescription}>{description}</Text>
       </View>
     </TouchableOpacity>
   );

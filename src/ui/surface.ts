@@ -5,6 +5,7 @@
  * reading `colors.bg` / `colors.cardBg` directly: dark mode here deliberately uses
  * lighter cards on a near-black backdrop with heavier shadows so cards read clearly.
  */
+import { useMemo } from 'react';
 import { useTheme } from '../theme/ThemeProvider';
 import { cardShadow } from '../styles/shadows';
 
@@ -22,22 +23,41 @@ const darkCardShadow = {
   elevation: 12,
 };
 
-export const useSurface = () => {
+export type Surface = {
+  screen: string;
+  card: string;
+  border: string;
+  shadow: typeof cardShadow;
+  /** Purple for titles, icons and outlines; lightened in dark mode for contrast. */
+  accent: string;
+};
+
+const DARK_SURFACE: Surface = {
+  screen: '#0b0b0d',
+  card: '#2b2b31',
+  border: '#3d3d45',
+  shadow: darkCardShadow,
+  accent: PURPLE_ON_DARK,
+};
+
+/**
+ * Backgrounds, card colors, borders and shadows for the current theme. The two
+ * results are stable objects, so they're safe to use as effect/memo dependencies
+ * and don't re-render consumers on every call.
+ */
+export const useSurface = (): Surface => {
   const { colors, isDark } = useTheme();
-  return isDark
-    ? {
-        screen: '#0b0b0d',
-        card: '#2b2b31',
-        border: '#3d3d45',
-        shadow: darkCardShadow,
-        /** Purple for titles, icons and outlines; lightened in dark mode for contrast. */
-        accent: PURPLE_ON_DARK,
-      }
-    : {
-        screen: colors.bgSubtle,
-        card: colors.cardBg,
-        border: colors.border,
-        shadow: cardShadow,
-        accent: PURPLE,
-      };
+  return useMemo(
+    () =>
+      isDark
+        ? DARK_SURFACE
+        : {
+            screen: colors.bgSubtle,
+            card: colors.cardBg,
+            border: colors.border,
+            shadow: cardShadow,
+            accent: PURPLE,
+          },
+    [isDark, colors],
+  );
 };

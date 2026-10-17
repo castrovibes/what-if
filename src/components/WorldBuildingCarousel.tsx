@@ -121,6 +121,9 @@ export const WorldBuildingCarousel = ({
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleScrollEnd}
+        // Every page is itemWidth wide, so the list can place and scroll to any index
+        // without measuring (and scrollToOffset never lands between pages).
+        getItemLayout={(_, index) => ({ length: itemWidth, offset: itemWidth * index, index })}
         renderItem={({ item }) => (
           <Card
             card={item}
