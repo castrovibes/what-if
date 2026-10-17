@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { CreateStackParamList, ExploreStackParamList, MainTabParamList } from './types';
+import { CreateStackParamList, ExploreStackParamList, MainTabParamList , RootStackParamList } from './types';
 import { PromptsStackNavigator } from './PromptsStackNavigator';
 import { ExploreScreen } from '../screens/ExploreScreen';
 import { ModuleDetailScreen } from '../screens/ModuleDetailScreen';
@@ -16,11 +17,17 @@ import { PersonalizationScreen } from '../screens/PersonalizationScreen';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../auth/AuthProvider';
-import { RootStackParamList } from './types';
 import { FeatureFlags } from '../data/featureFlags';
 import { useStackScreenOptions } from './transitions';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+// Height of the tab bar's content (icons + labels), above the home indicator /
+// gesture area. The safe-area inset is added per device, so this is right on an
+// iPhone SE, a Dynamic Island iPhone and Android gesture navigation alike.
+const TAB_BAR_CONTENT_HEIGHT = 54;
+// Minimum padding under the icons on devices with no bottom inset.
+const TAB_BAR_MIN_BOTTOM_PADDING = 10;
 
 const ExploreStack = createStackNavigator<ExploreStackParamList>();
 const CreateStack = createStackNavigator<CreateStackParamList>();
@@ -60,8 +67,10 @@ const ProfileStackNavigator = () => {
 
 export const MainTabNavigator = () => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { account, signupOfferPending, setSignupOfferPending } = useAuth();
+  const bottomPadding = Math.max(insets.bottom, TAB_BAR_MIN_BOTTOM_PADDING);
 
   // Right after first-launch onboarding, offer sign-up once (it can be closed).
   useEffect(() => {
@@ -90,8 +99,8 @@ export const MainTabNavigator = () => {
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.tabBarBorder,
           backgroundColor: colors.tabBarBg,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-          height: Platform.OS === 'ios' ? 88 : 60,
+          paddingBottom: bottomPadding,
+          height: TAB_BAR_CONTENT_HEIGHT + bottomPadding,
         },
       })}
     >

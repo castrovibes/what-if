@@ -1,8 +1,14 @@
 /**
- * Device Helpers - iOS-specific styling utilities
+ * Device Helpers - responsive type and spacing scales
  *
- * Provides utilities for responsive design across different iPhone models
- * and screen sizes, following iOS Human Interface Guidelines.
+ * `Typography` and `Spacing` are what the app uses from here (every screen). They
+ * are computed once from the window size at module load, which is safe because the
+ * app is locked to portrait and doesn't support tablets (app.json); if either
+ * changes, these need to become hooks on `useWindowDimensions()`.
+ *
+ * The breakpoints are iPhone widths, but Android phones fall into the same buckets.
+ * For anything that depends on the notch / home indicator, use safe-area insets
+ * (`useSafeAreaInsets()`), not the aspect-ratio guesses in this file.
  */
 
 import { Dimensions, Platform } from 'react-native';
@@ -30,6 +36,7 @@ export const DeviceType = {
 /**
  * Check if device has notch/Dynamic Island
  * Devices with notch: iPhone X and newer (except SE models)
+ * @deprecated A guess from the aspect ratio. Use `useSafeAreaInsets().top/bottom`.
  */
 export const hasNotch = (): boolean => {
   if (Platform.OS !== 'ios') return false;
@@ -60,6 +67,7 @@ export const getSpacing = (baseSpacing: number): number => {
 
 /**
  * Get bottom tab bar height based on device
+ * @deprecated MainTabNavigator sizes the bar from safe-area insets; keep in sync there.
  */
 export const getTabBarHeight = (): number => {
   if (Platform.OS !== 'ios') return 60;
@@ -82,6 +90,7 @@ export const useDeviceSafeArea = () => {
 
 /**
  * Get device-specific padding for bottom elements
+ * @deprecated Use `useSafeAreaInsets().bottom`.
  */
 export const getBottomPadding = (): number => {
   if (Platform.OS !== 'ios') return 16;
