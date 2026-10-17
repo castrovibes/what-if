@@ -8,7 +8,7 @@ SRC, OUT = sys.argv[1], sys.argv[2]
 N = 2000            # note size (px)
 PAD = 220           # transparent margin around the note for its shadow
 SS = 2              # supersampling for smooth curves
-CURL = int(N * 0.17)
+CURL = int(N * 0.10)
 
 photo = ImageOps.exif_transpose(Image.open(SRC)).convert('RGB')
 W, H = photo.size

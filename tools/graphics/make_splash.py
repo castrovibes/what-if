@@ -1,4 +1,4 @@
-"""Builds the launch (splash) images: "What If?" in Rock Salt above the sticky-note
+"""Builds the launch (splash) images: "What If?" in Rock Salt above the hand-drawn
 question mark, in light and dark versions, for the iOS splash and the in-app loading
 screen (src/screens/LoadingScreen.tsx), which shows the same image so the hand-off from
 the splash is seamless.
@@ -14,7 +14,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
-NOTE = ROOT / 'assets/graphics/question-postit.png'      # made by make_postit.py
+DRAWING = ROOT / 'assets/graphics/question-drawing.png'  # made by make_question.py
 FONT = ROOT / 'assets/fonts/RockSalt-Regular.ttf'
 OUT_APP = ROOT / 'assets/graphics'
 OUT_IOS = ROOT / 'ios/WhatCouldYouDo/Images.xcassets/SplashScreen.imageset'
@@ -23,15 +23,16 @@ WIDTH_PT = 280          # the splash image's width on screen, in points
 SCALE = 3
 TITLE = 'What If?'
 COLORS = {'light': (0x49, 0x29, 0x7E), 'dark': (0xA7, 0x8B, 0xDB)}  # surface.accent
-GAP_PT = 6              # between the lettering and the top of the note's shadow margin
+GAP_PT = 14             # between the lettering and the top of the drawing
+DRAWING_HEIGHT_PT = 190 # the question mark's height on screen
 
 
 def build(color):
     w = WIDTH_PT * SCALE
-    note = Image.open(NOTE).convert('RGBA')
-    note = note.resize((w, round(note.height * w / note.width)), Image.LANCZOS)
-    # The note fills ~82% of its image (the rest is shadow margin); size the lettering
-    # to the note's width.
+    note = Image.open(DRAWING).convert('RGBA')
+    note = note.crop(note.getchannel('A').getbbox())
+    nh = DRAWING_HEIGHT_PT * SCALE
+    note = note.resize((round(note.width * nh / note.height), nh), Image.LANCZOS)
     target = w * 0.74
     size = 40
     while True:
@@ -46,7 +47,7 @@ def build(color):
     canvas = Image.new('RGBA', (w, text_h + gap + note.height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(canvas)
     draw.text(((w - (r - l)) / 2 - l, -t), TITLE, font=font, fill=color + (255,))
-    canvas.alpha_composite(note, (0, text_h + gap))
+    canvas.alpha_composite(note, ((w - note.width) // 2, text_h + gap))
     return canvas
 
 
