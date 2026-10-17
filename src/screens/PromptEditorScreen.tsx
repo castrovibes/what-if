@@ -68,8 +68,9 @@ export const PromptEditorScreen = () => {
     if (!canSave || !ageGroup) return;
     setSaving(true);
     const finalText = /[?.!]$/.test(trimmed) ? trimmed : `${trimmed}?`;
+    const id = editingId ?? newUserPromptId();
     await UserPromptRepo.save({
-      id: editingId ?? newUserPromptId(),
+      id,
       text: finalText,
       ageGroup,
       situations,
@@ -83,9 +84,15 @@ export const PromptEditorScreen = () => {
       { text: 'Done', style: 'cancel', onPress: () => navigation.goBack() },
       {
         text: 'Play in deck',
-        onPress: () => {
+        // The deck gets ready with this prompt on top while the editor stays put; the
+        // editor closes after the switch, out of sight.
+        onPress: async () => {
+          await playMyPromptsInDeck(
+            navigation as unknown as NavigationProp<ParamListBase>,
+            ageGroup,
+            id,
+          );
           navigation.goBack();
-          playMyPromptsInDeck(navigation as unknown as NavigationProp<ParamListBase>, ageGroup);
         },
       },
     ]);

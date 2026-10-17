@@ -83,12 +83,13 @@ export const MadLibsScreen = () => {
     if (!selected) return;
     const preview = applyTemplate(selected.templateText, fills);
     const ageGroup = selected.ageGroup as AgeGroupId;
-    await UserPromptRepo.save({ id: newUserPromptId(), ageGroup, text: preview, situations: [] });
+    const id = newUserPromptId();
+    await UserPromptRepo.save({ id, ageGroup, text: preview, situations: [] });
     setSelectedId(null);
     setFills([]);
     Alert.alert('Saved to My Prompts', 'Want to try it now?', [
       { text: 'Done', style: 'cancel' },
-      { text: 'Play in deck', onPress: () => playMyPromptsInDeck(navigation, ageGroup) },
+      { text: 'Play in deck', onPress: () => playMyPromptsInDeck(navigation, ageGroup, id) },
     ]);
   };
 

@@ -89,6 +89,7 @@ export const MyPromptsScreen = () => {
                     playMyPromptsInDeck(
                       navigation as unknown as NavigationProp<ParamListBase>,
                       p.ageGroup,
+                      p.id,
                     )
                   }
                   hitSlop={8}

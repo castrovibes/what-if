@@ -49,8 +49,9 @@ export type PromptsStackParamList = {
     | {
         ageGroup?: string;
         liminalSpace?: string;
-        /** Which prompts the deck shows; see deckLinks.ts. */
+        /** Which prompts the deck shows, and which one goes on top; see deckLinks.ts. */
         source?: 'official' | 'user';
+        promptId?: string;
         /** Makes each request to open the deck distinct. */
         opened?: number;
       }
