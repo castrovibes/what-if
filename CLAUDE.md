@@ -123,44 +123,58 @@ There are 228 unique subcategories spanning topics from `sharing` and `empathy` 
 
 ## App Architecture & Features
 
-### Current Prototype (React Web)
-The current wireframe prototype is built in React with these screens and features:
+### Current App (React Native + Expo)
+The app is a React Native app built with Expo (SDK 54, React Native 0.81, React 19,
+Hermes, New Architecture). It has replaced the earlier React web wireframe; nothing
+from that prototype is in this repo.
 
-**Screens:**
-1. **Welcome** — Splash with "What Could You Do?" branding, gradient background (indigo-50 → purple-50 → pink-50), large background "?" watermark
-2. **Welcome Tutorial** — swipeable card deck of tips for meaningful conversations
-3. **Home** — Age group selection grid (4 colored buttons), "Ready to explore?" prompt, resume last session
-4. **Age Selection** — Grid view of all age groups with prompt counts
-5. **Prompt Display** — Full-screen prompt text, Read Aloud (TTS), Save/Favorite, prompt counter (X of Y), Discussion Tips, Next Prompt navigation
-6. **Community** — Browse/share prompts, filter tabs (All, Favorites, My Submissions), user cards with roles
-7. **Profile** — Activity stats, recent conversations, milestones, favorite prompts, quality/safety settings
-8. **Settings** — Account, preferences, content filters, support info
-9. **Submit Prompt** — User-generated prompt submission form
-
-**Implemented Features:**
-- Favorites system with local storage persistence
-- Text-to-speech accessibility (browser Speech Synthesis API)
-- User prompt submission form (ready for backend integration)
-- Community sharing with quality control settings (3 filter levels: all content, vetted content, friends-only)
-- Comprehensive onboarding flow
-- Activity tracking in profile
-- Bottom tab navigation (Home, Community, Profile, Settings)
-
-### Recommended Production Stack
+**Stack, as installed:**
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React Native + Expo |
-| UI Components | React Native Paper or NativeBase |
-| Navigation | React Navigation |
-| Backend | Firebase or Supabase |
-| Database | Firestore or PostgreSQL |
-| Auth | Firebase Auth or Auth0 |
-| Hosting | Vercel (web) + App Stores |
+| Framework | Expo SDK 54 managed workflow, with `ios/` committed (run `npx expo prebuild --clean` after changing plugins in `app.json`); Android is generated on demand |
+| Navigation | React Navigation 6 (`@react-navigation/stack` + `bottom-tabs`); not Expo Router |
+| State | React Context only (`ThemeProvider`, `DbProvider`, `ActiveContextProvider`, `AuthProvider`), plus module-level services under `src/sync/`. No Redux/Zustand |
+| Local data | `expo-sqlite` is the source of truth (`src/db/`: migrations + repositories); `AsyncStorage` holds small preferences |
+| Backend | Firebase JS SDK (Auth email links, Firestore) via `src/backend/`; local emulators in development, `EXPO_PUBLIC_AUTH_BACKEND=mock` to run without Firebase |
+| Sync | Outbox-based: local writes queue in `sync_outbox` and push when signed in (`src/sync/syncService.ts`) |
+| Animation | Reanimated 4 (needs the New Architecture, which `app.json` turns on explicitly) |
+| UI kit | Our own, in `src/ui/` (no React Native Paper / NativeBase) |
+| TTS | `expo-speech` |
+| Builds | EAS (`eas.json`); see `TESTFLIGHT_CHECKLIST.md` |
 
-Cross-platform (React Native) was chosen because:
+**Source layout (layer-based):**
+```
+App.tsx                      Providers: SafeArea → Theme → ErrorBoundary → Navigation → Db → ActiveContext → Auth
+src/app/                     RootNavigator (fonts, onboarding vs main), splash hand-off
+src/navigation/              Tab + stack navigators, transitions, deck deep links
+src/screens/                 One file per screen; src/screens/prompt/ holds the prompt deck's parts
+src/ui/                      Shared kit (Screen, Card, Pill, Button, BottomSheet, ScreenList…) and surface tokens
+src/components/              Reusable pieces that aren't kit-level (DiscussionTips, carousel, ErrorBoundary)
+src/hooks/                   Data hooks over the repositories (usePromptsForAge, useFavorites…)
+src/db/                      SQLite open/migrate, numbered migrations, repositories, row types
+src/sync/                    Cloud sync (outbox, record conversion, preference sync, change events)
+src/auth/                    AuthProvider and the Firebase / mock auth services
+src/backend/                 Firebase bootstrap, config from EXPO_PUBLIC_* env, Firestore model paths
+src/data/                    Static config (age groups, feature flags, personalization tokens)
+src/theme/, src/styles/      Theme colors, shadows
+src/utils/deviceHelpers.ts   Typography and Spacing scales (computed once; app is portrait-only, no tablets)
+firebase/                    Firestore rules, indexes, and the rules test suite
+```
+
+**Screens:**
+- **Welcome / Welcome Tutorial** — first launch; continues the splash, then a swipeable tips deck
+- **Prompts** (`src/screens/prompt/`) — the deck: title card, age pick, swipeable prompt cards with twists on the back, Listen (TTS), Tips, favorite, report; filters for age group and situation; deck source (originals vs My Prompts)
+- **Explore / Module Detail** — themed modules and series
+- **Create / Prompt Editor / Mad Libs / My Prompts** — user-written prompts, playable in the deck
+- **Profile / Personalization** — activity, child's name/town/interests (never synced)
+- **Settings / FAQ / I'm Concerned** — preferences, help, safety resources
+- **Signup flow** (`src/screens/signup/`) — email-link sign-in, profile, paywall placeholder
+
+**Quality gates:** `npm run typecheck` (strict TS), `npm run lint` (ESLint, expo config), `npm test` (Jest via `jest-expo`), `npm run test:rules` (Firestore rules against the emulator). All run in GitHub Actions (`.github/workflows/ci.yml`).
+
+### Why cross-platform (React Native)
 - Target users (parents, educators, therapists) use both iOS and Android roughly equally
 - App is UI/content-focused — no heavy graphics or device-specific features
-- React prototype can inform React Native development directly
 - Educators often use school-provided Android devices
 - Professional tier needs to reach institutions on either platform
 
@@ -232,14 +246,14 @@ Cross-platform (React Native) was chosen because:
 - Subcategories are granular topic tags (228 unique values) — use them for filtering
 
 ### When Building Features
-- No localStorage in Claude.ai artifacts (use React state or in-memory storage)
-- Favorites and user data should persist via backend when available, fall back to device storage
+- Favorites and user data live in SQLite first and sync to Firestore through the outbox when signed in (`src/sync/`)
 - Community features need quality control filtering (all / vetted / friends-only)
 - Professional features must maintain anonymous organization (no student names ever)
-- TTS uses browser Speech Synthesis API
+- TTS uses `expo-speech` (see `src/screens/prompt/usePromptSpeech.ts`)
 
 ### Code Style
 - React functional components with hooks
-- Single-file components preferred for prototyping
+- Keep a screen file to one component plus its styles; split out pieces into a folder (as `src/screens/prompt/` does) once it passes a few hundred lines
+- Memoize context values (`useMemo`) and handlers passed through context (`useCallback`); use `ScreenList` (FlatList) for anything that can grow without bound
 - React Native `StyleSheet` for styling; colors from `useSurface()` / `useTheme()` applied inline
 - Feather icons from `@expo/vector-icons`
