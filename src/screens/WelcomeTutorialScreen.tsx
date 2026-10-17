@@ -27,7 +27,7 @@ const STEPS: { title: string; description: string }[] = [
   {
     title: 'Pick an Age Group',
     description:
-      "Tap the age pill at the top of the Prompts screen and choose the range that best matches the child you're talking with. Prompts are designed to be developmentally appropriate.",
+      "Tap Start a session (or swipe the cover card away) and choose the range that best matches the child you're talking with. Prompts are designed to be developmentally appropriate.",
   },
   {
     title: 'Read the Prompt Together',
