@@ -7,6 +7,7 @@ import { OnboardingNavigator } from '../navigation/OnboardingNavigator';
 import { MainTabNavigator } from '../navigation/MainTabNavigator';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { SignupNavigator } from '../navigation/SignupNavigator';
+import { SettingsNavigator } from '../navigation/SettingsNavigator';
 import { useAuth } from '../auth/AuthProvider';
 import { FadeIn, useTransitions } from '../navigation/transitions';
 import { useSurface } from '../ui/surface';
@@ -17,7 +18,7 @@ export const RootNavigator = () => {
   const { setSignupOfferPending } = useAuth();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
-  const { fade, modal } = useTransitions();
+  const { fade, modal, push } = useTransitions();
   const surface = useSurface();
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export const RootNavigator = () => {
         ) : (
           <Stack.Screen name="MainApp" component={MainTabNavigator} options={fade} />
         )}
+        <Stack.Screen name="Settings" component={SettingsNavigator} options={push} />
         <Stack.Screen name="Signup" component={SignupNavigator} options={modal} />
       </Stack.Navigator>
     </FadeIn>

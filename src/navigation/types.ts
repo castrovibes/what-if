@@ -3,6 +3,8 @@ export type RootStackParamList = {
   MainApp: undefined;
   /** Sign-up / sign-in flow, presented modally over wherever the user is. */
   Signup: undefined;
+  /** Settings, opened from the ⚙ in any screen's header, above the tabs. */
+  Settings: undefined;
 };
 
 export type SignupStackParamList = {
@@ -24,7 +26,6 @@ export type MainTabParamList = {
   Explore: undefined;
   Create: undefined;
   Profile: undefined;
-  Settings: undefined;
   Prompt: undefined;
   Developer: undefined;
   Loading: undefined;

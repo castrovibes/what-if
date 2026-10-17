@@ -12,27 +12,19 @@ import { MadLibsScreen } from '../screens/MadLibsScreen';
 import { PromptEditorScreen } from '../screens/PromptEditorScreen';
 import { MyPromptsScreen } from '../screens/MyPromptsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
-import { SettingsScreen } from '../screens/SettingsScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
-import { FAQScreen } from '../screens/FAQScreen';
-import { ImConcernedScreen } from '../screens/ImConcernedScreen';
-import { WelcomeScreen } from '../screens/WelcomeScreen';
-import { WelcomeTutorialScreen } from '../screens/WelcomeTutorialScreen';
-import { useNavigation, NavigationProp, getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { RootStackParamList } from './types';
 import { FeatureFlags } from '../data/featureFlags';
-import { useStackScreenOptions, useTransitions } from './transitions';
+import { useStackScreenOptions } from './transitions';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Stack screens that take over the whole screen, with no tab bar.
-const FULL_SCREEN_ROUTES = ['Welcome', 'WelcomeTutorial'];
 const ExploreStack = createStackNavigator<ExploreStackParamList>();
 const CreateStack = createStackNavigator<CreateStackParamList>();
 const ProfileStack = createStackNavigator();
-const SettingsStack = createStackNavigator();
 
 const ExploreStackNavigator = () => {
   const screenOptions = useStackScreenOptions();
@@ -66,32 +58,6 @@ const ProfileStackNavigator = () => {
   );
 };
 
-const SettingsStackNavigator = () => {
-  const screenOptions = useStackScreenOptions();
-  const { fade } = useTransitions();
-  return (
-    <SettingsStack.Navigator screenOptions={screenOptions}>
-      <SettingsStack.Screen name="SettingsMain" component={SettingsScreen} />
-      <SettingsStack.Screen name="FAQ" component={FAQScreen} />
-      <SettingsStack.Screen name="ImConcerned" component={ImConcernedScreen} />
-      <SettingsStack.Screen name="Personalization" component={PersonalizationScreen} />
-      {/* "View Welcome Guide" replays onboarding (with its fades); finishing it opens the Prompts tab. */}
-      <SettingsStack.Screen name="Welcome" component={WelcomeScreen} options={fade} />
-      <SettingsStack.Screen name="WelcomeTutorial" options={fade}>
-        {({ navigation }) => (
-          <WelcomeTutorialScreen
-            onComplete={() => {
-              navigation.popToTop();
-              navigation.getParent()?.navigate('Prompts');
-            }}
-          />
-        )}
-      </SettingsStack.Screen>
-    </SettingsStack.Navigator>
-  );
-};
-
-
 export const MainTabNavigator = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -115,16 +81,12 @@ export const MainTabNavigator = () => {
           else if (route.name === 'Explore') iconName = 'compass';
           else if (route.name === 'Create') iconName = 'plus-circle';
           else if (route.name === 'Profile') iconName = 'user';
-          else if (route.name === 'Settings') iconName = 'settings';
 
           return <Feather name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#e10086',
         tabBarInactiveTintColor: colors.iconInactive,
         tabBarStyle: {
-          display: FULL_SCREEN_ROUTES.includes(getFocusedRouteNameFromRoute(route) ?? '')
-            ? 'none'
-            : 'flex',
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.tabBarBorder,
           backgroundColor: colors.tabBarBg,
@@ -137,7 +99,6 @@ export const MainTabNavigator = () => {
       <Tab.Screen name="Explore" component={ExploreStackNavigator} />
       <Tab.Screen name="Create" component={CreateStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileStackNavigator} />
-      <Tab.Screen name="Settings" component={SettingsStackNavigator} />
     </Tab.Navigator>
   );
 };

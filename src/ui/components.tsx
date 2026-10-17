@@ -4,7 +4,7 @@
  * Typography is Inter throughout: titles in Inter-SemiBold (accent purple for screen
  * titles), body and labels in Inter-Medium.
  */
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets, Edge } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK, CARD_RADIUS } from './surface';
@@ -49,6 +50,29 @@ export const Screen = ({
  * Screen header: optional back chevron, a purple title, an optional subtitle and an
  * optional icon action on the right.
  */
+// Screen headers show a ⚙ that opens Settings, except inside Settings itself and in
+// onboarding, which wrap their screens in HideSettingsButton.
+const SettingsButtonContext = createContext(true);
+
+export const HideSettingsButton = ({ children }: { children: ReactNode }) => (
+  <SettingsButtonContext.Provider value={false}>{children}</SettingsButtonContext.Provider>
+);
+
+const SettingsButton = () => {
+  const navigation = useNavigation();
+  const surface = useSurface();
+  return (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('Settings' as never)}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel="Settings"
+    >
+      <Feather name="settings" size={22} color={surface.accent} />
+    </TouchableOpacity>
+  );
+};
+
 export const ScreenHeader = ({
   title,
   subtitle,
@@ -66,6 +90,7 @@ export const ScreenHeader = ({
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
+  const showSettings = useContext(SettingsButtonContext);
   return (
     <View style={ui.header}>
       <View style={ui.headerRow}>
@@ -79,10 +104,15 @@ export const ScreenHeader = ({
             {title}
           </Text>
         </View>
-        {rightIcon && (
-          <TouchableOpacity onPress={onRightPress} hitSlop={8} accessibilityLabel={rightLabel}>
-            <Feather name={rightIcon} size={22} color={surface.accent} />
-          </TouchableOpacity>
+        {(rightIcon || showSettings) && (
+          <View style={ui.headerActions}>
+            {rightIcon && (
+              <TouchableOpacity onPress={onRightPress} hitSlop={8} accessibilityLabel={rightLabel}>
+                <Feather name={rightIcon} size={22} color={surface.accent} />
+              </TouchableOpacity>
+            )}
+            {showSettings && <SettingsButton />}
+          </View>
         )}
       </View>
       {subtitle && (
@@ -434,6 +464,11 @@ export const ui = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.md,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.lg,
   },
   headerRow: {
     flexDirection: 'row',

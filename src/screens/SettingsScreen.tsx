@@ -97,7 +97,11 @@ export const SettingsScreen = () => {
 
   return (
     <Screen>
-      <ScreenHeader title="Settings" subtitle="Customize your experience" />
+      <ScreenHeader
+        title="Settings"
+        subtitle="Customize your experience"
+        onBack={() => navigation.goBack()}
+      />
 
       <ScreenScroll>
         <SectionLabel>Account</SectionLabel>

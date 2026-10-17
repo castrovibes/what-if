@@ -211,7 +211,7 @@ const DeckCard = ({
   );
 };
 
-type Sheet = 'situation' | 'discussion' | 'more' | 'report' | 'source' | null;
+type Sheet = 'situation' | 'discussion' | 'report' | 'source' | null;
 
 const REPORT_REASONS: { reason: ReportReason; label: string; icon: keyof typeof Feather.glyphMap }[] = [
   { reason: 'inappropriate', label: 'Not appropriate', icon: 'alert-triangle' },
@@ -771,12 +771,7 @@ export const PromptScreen = () => {
         />
       </Animated.View>
 
-      <ScreenHeader
-        title="What If?"
-        rightIcon="menu"
-        rightLabel="More"
-        onRightPress={() => setSheet('more')}
-      />
+      <ScreenHeader title="What If?" />
 
       <View style={localStyles.filterArea}>
         <View style={localStyles.filterRow}>
@@ -977,26 +972,6 @@ export const PromptScreen = () => {
         ))}
       </BottomSheet>
 
-      <BottomSheet visible={sheet === 'more'} title="More ways to talk" onClose={() => setSheet(null)}>
-        <SheetOption
-          label="Series"
-          selected={false}
-          leading={<Feather name="book-open" size={16} color={colors.iconDefault} />}
-          onPress={() => {
-            setSheet(null);
-            navigation.navigate('Modules');
-          }}
-        />
-        <SheetOption
-          label="Mad Libs"
-          selected={false}
-          leading={<Feather name="edit-3" size={16} color={colors.iconDefault} />}
-          onPress={() => {
-            setSheet(null);
-            navigation.navigate('MadLibs');
-          }}
-        />
-      </BottomSheet>
 
       {/* Tap outside the age picker to close it; sits under the pills and menu */}
       {ageMenuOpen && (

@@ -79,12 +79,12 @@ Do these **one at a time**: finish, check and commit each before starting the ne
 
 1. **Settings moves to the top of the screens; the Prompts ☰ menu goes.** Remove the ☰ "More ways to talk" menu from the Prompts screen. Put a ⚙ (gear) button in its place, at the top right, on every tab's main screen; it opens Settings. Settings comes off the tab bar.
    - [x] **You:** Decided: the ⚙ shows on **every** screen, deeper ones included (e.g. a Series, FAQ), alongside their back arrow. Exception: Settings itself and its own deeper screens don't need it.
-   - [ ] **Claude:** Add the ⚙ to the shared screen header. Make Settings a screen it opens (pushed, or a sheet), and remove the Settings tab and the ☰ menu. Check that Settings' own deeper screens (FAQ, Personalize, Welcome Guide replay, and I'm Concerned in dev) still work.
+   - [x] **Claude:** The shared screen header shows a ⚙ (next to any back arrow) that opens **Settings**, which now sits above the tabs and slides in with a back arrow (`src/navigation/SettingsNavigator.tsx`). The ⚙ is hidden inside Settings and its screens and during first-launch onboarding. The Settings tab and the Prompts ☰ menu ("More ways to talk") are gone; the Prompts tab is now just the deck. Checked: Prompts, a Series detail, Help & FAQ, and the Welcome Guide replay (which closes Settings on the Prompts tab).
 2. **Community becomes Explore.** Rename the tab and screen to **Explore**. It's the home for **Series** (today under ☰ → Series), **community** content (today's sample posts), and possibly **written content** like guides and blogs. The detailed design comes later.
    - [x] **Claude:** Renamed the tab and screen to Explore (`compass` icon; `src/screens/ExploreScreen.tsx`). It lists the **Series** (shared `SeriesCard`), each opening its detail screen inside the Explore tab, then a **Community** section with the Preview note, "Share your ideas" and the sample posts. No Guides section yet. The Series list is still also reachable from the Prompts ☰ menu until item 1 removes it.
    - [ ] **You (later):** Design the Explore screen in detail: sections, order, and what guides/blogs are (ties in with Phase 2b item 6, defining Post and Article).
 3. **Profile moves to the far right of the tab bar.**
-   - [ ] **Claude:** Reorder the tabs so Profile is last: **Prompts · Explore · Create · Profile**. The app keeps opening on **Prompts**.
+   - [x] **Claude:** Done as part of item 1: with Settings off the tab bar, the tabs are **Prompts · Explore · Create · Profile**, and the app still opens on Prompts.
 4. **New Create tab.** A tab called **Create** that holds **Mad Libs** (moved from ☰), **notes** (writing a reflection; see Phase 2b item 1), and a **blank prompt creator** (write your own "What if…?").
    - Create sits third, between Explore and Profile.
    - [x] **You:** Decided: the **blank prompt creator is in the beta**.
