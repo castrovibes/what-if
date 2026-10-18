@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
@@ -14,18 +14,103 @@ import {
   Dot,
   Button,
 } from '../ui/components';
+import { Carousel } from '../ui/Carousel';
 import { useSurface, PINK, Surface } from '../ui/surface';
 import { ThemeColors } from '../theme/themes';
 import { comingSoon } from '../ui/comingSoon';
 import { ModuleRepo, Module } from '../db/repositories/modules';
 import { ExploreStackParamList } from '../navigation/types';
 import { SeriesCard } from '../components/SeriesCard';
+import { ARTICLE_STUBS, ArticleStub } from '../data/articles';
 
 /**
- * Explore: things to discover beyond the prompt deck. Today that's the conversation
- * Series and a preview of the community; written content (guides, articles) may join
- * later. The detailed layout is still to be designed (TESTFLIGHT_CHECKLIST.md, 2c).
+ * Explore: things to discover beyond the prompt deck. Each section is a horizontal
+ * carousel: conversation Series, a preview of the Community, and Articles & Guides
+ * (placeholder stubs for now). Opening a section as its own full screen is a
+ * nice-to-have (TESTFLIGHT_CHECKLIST.md).
  */
+
+// Sample community posts; the community isn't built yet.
+type SamplePost = {
+  id: string;
+  name: string;
+  role: string;
+  when: string;
+  ages: string;
+  ageColor: string;
+  avatarColor: string;
+  avatarIcon: string;
+  text: string;
+  likes: number;
+  liked: boolean;
+  comments: number;
+};
+
+const SAMPLE_POSTS: SamplePost[] = [
+  {
+    id: 'post-1',
+    name: 'Sarah M.',
+    role: 'Parent',
+    when: '2 days ago',
+    ages: 'Ages 6-8',
+    ageColor: '#00db96',
+    avatarColor: '#90dcff',
+    avatarIcon: '#49297e',
+    text: 'What if you found a lost wallet with money in it?',
+    likes: 24,
+    liked: false,
+    comments: 8,
+  },
+  {
+    id: 'post-2',
+    name: 'Michael T.',
+    role: 'Educator',
+    when: '5 days ago',
+    ages: 'Ages 9-12',
+    ageColor: '#e10086',
+    avatarColor: '#e10086',
+    avatarIcon: '#fff',
+    text: 'What if you noticed a classmate was always alone at lunch?',
+    likes: 42,
+    liked: true,
+    comments: 15,
+  },
+  {
+    id: 'post-3',
+    name: 'Priya K.',
+    role: 'School counselor',
+    when: '1 week ago',
+    ages: 'Ages 13-15',
+    ageColor: '#fdfb76',
+    avatarColor: '#00db96',
+    avatarIcon: '#49297e',
+    text: 'What if your group chat started making fun of someone who isn’t in it?',
+    likes: 31,
+    liked: false,
+    comments: 11,
+  },
+  {
+    id: 'post-4',
+    name: 'Dan R.',
+    role: 'Parent',
+    when: '2 weeks ago',
+    ages: 'Ages 3-5',
+    ageColor: '#90dcff',
+    avatarColor: '#fdfb76',
+    avatarIcon: '#49297e',
+    text: 'What if your teddy bear could talk for one day?',
+    likes: 18,
+    liked: false,
+    comments: 4,
+  },
+];
+
+type CommunityItem = { kind: 'share' } | { kind: 'post'; post: SamplePost };
+const COMMUNITY_ITEMS: CommunityItem[] = [
+  { kind: 'share' },
+  ...SAMPLE_POSTS.map(post => ({ kind: 'post' as const, post })),
+];
+
 /** Theme-dependent styles, built once per theme change rather than per render. */
 const useThemedStyles = (colors: ThemeColors, surface: Surface) =>
   useMemo(
@@ -41,9 +126,26 @@ const useThemedStyles = (colors: ThemeColors, surface: Surface) =>
         postContent: { ...local.postContent, color: colors.textPrimary },
         postActions: { ...local.postActions, borderTopColor: surface.border },
         postActionText: { ...local.postActionText, color: colors.textSecondary },
+        articleKind: { ...local.articleKind, color: surface.accent },
+        articleIcon: { ...local.articleIcon, borderColor: surface.border },
+        articleTitle: { ...local.articleTitle, color: colors.textPrimary },
+        articleBlurb: { ...local.articleBlurb, color: colors.textSecondary },
+        articleMeta: { ...local.articleMeta, color: colors.textSecondary },
       }),
     [colors, surface],
   );
+
+type ThemedStyles = ReturnType<typeof useThemedStyles>;
+
+/** A small "Preview · coming soon" chip for sections that aren't built yet. */
+const PreviewNote = ({ t, what }: { t: ThemedStyles; what: string }) => (
+  <View style={t.previewNote}>
+    <Feather name="eye" size={13} color={PINK} />
+    <Text style={t.previewNoteText}>
+      <Text style={t.previewNoteStrong}>Preview</Text> · Coming soon; {what} are examples.
+    </Text>
+  </View>
+);
 
 export const ExploreScreen = () => {
   const navigation = useNavigation<NavigationProp<ExploreStackParamList>>();
@@ -56,31 +158,10 @@ export const ExploreScreen = () => {
     ModuleRepo.list().then(setSeries);
   }, []);
 
-  return (
-    <Screen>
-      <ScreenHeader title="Explore" subtitle="Series, community and more" />
-
-      <ScreenScroll>
-        {series.length > 0 && <SectionLabel>Series</SectionLabel>}
-        {series.map(m => (
-          <SeriesCard
-            key={m.id}
-            module={m}
-            onPress={() => navigation.navigate('ModuleDetail', { moduleId: m.id })}
-          />
-        ))}
-
-        <SectionLabel>Community</SectionLabel>
-        {/* The community isn't built yet; a small note makes that clear to beta testers. */}
-        <View style={t.previewNote}>
-          <Feather name="eye" size={13} color={PINK} />
-          <Text style={t.previewNoteText}>
-            <Text style={t.previewNoteStrong}>Preview</Text> · Coming soon; posts below
-            are examples.
-          </Text>
-        </View>
-
-        <Card>
+  const renderCommunity = (item: CommunityItem) => {
+    if (item.kind === 'share') {
+      return (
+        <Card fill>
           <View style={local.promoTitleRow}>
             <Feather name="users" size={20} color={surface.accent} />
             <Text style={t.promoTitle}>Share your ideas</Text>
@@ -89,84 +170,102 @@ export const ExploreScreen = () => {
             Share prompts you’ve created or favorites you’ve discovered. Help other parents,
             educators, and therapists spark meaningful conversations.
           </Text>
-          <Button label="Create New Prompt" icon="plus" onPress={() => comingSoon('Sharing prompts')} />
+          <View style={local.bottom}>
+            <Button label="Create New Prompt" icon="plus" onPress={() => comingSoon('Sharing prompts')} />
+          </View>
         </Card>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={local.filterRow}
-          style={local.filterScroll}
-        >
-          <Pill label="All Prompts" active />
-          <Pill label="My Favorites" />
-          <Pill label="My Submissions" />
-          <Pill label="Trending" />
-        </ScrollView>
-
-        <Card>
-          <View style={local.postHeader}>
-            <View style={local.postUser}>
-              <View style={[local.avatar, local.avatarSky]}>
-                <Feather name="user" size={18} color="#49297e" />
-              </View>
-              <View style={local.postUserText}>
-                <Text style={t.postUserName}>Sarah M.</Text>
-                <Text style={t.postMeta}>Parent • 2 days ago</Text>
-              </View>
+      );
+    }
+    const p = item.post;
+    return (
+      <Card fill>
+        <View style={local.postHeader}>
+          <View style={local.postUser}>
+            <View style={[local.avatar, { backgroundColor: p.avatarColor }]}>
+              <Feather name="user" size={18} color={p.avatarIcon} />
             </View>
-            <Pill label="Ages 6-8" leading={<Dot color="#00db96" />} />
-          </View>
-          <Text style={t.postContent}>
-            What if you found a lost wallet with money in it?
-          </Text>
-          <View style={t.postActions}>
-            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
-              <Feather name="heart" size={18} color={colors.iconDefault} />
-              <Text style={t.postActionText}>24</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
-              <Feather name="message-circle" size={18} color={colors.iconDefault} />
-              <Text style={t.postActionText}>8</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
-              <Feather name="share-2" size={18} color={colors.iconDefault} />
-              <Text style={t.postActionText}>Share</Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-
-        <Card>
-          <View style={local.postHeader}>
-            <View style={local.postUser}>
-              <View style={[local.avatar, local.avatarPink]}>
-                <Feather name="user" size={18} color="#fff" />
-              </View>
-              <View style={local.postUserText}>
-                <Text style={t.postUserName}>Michael T.</Text>
-                <Text style={t.postMeta}>Educator • 5 days ago</Text>
-              </View>
+            <View style={local.postUserText}>
+              <Text style={t.postUserName} numberOfLines={1}>{p.name}</Text>
+              <Text style={t.postMeta}>
+                {p.role} • {p.when}
+              </Text>
             </View>
-            <Pill label="Ages 9-12" leading={<Dot color="#e10086" />} />
           </View>
-          <Text style={t.postContent}>
-            What if you noticed a classmate was always alone at lunch?
-          </Text>
-          <View style={t.postActions}>
-            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
-              <Feather name="heart" size={18} color={PINK} />
-              <Text style={t.postActionText}>42</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
-              <Feather name="message-circle" size={18} color={colors.iconDefault} />
-              <Text style={t.postActionText}>15</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
-              <Feather name="share-2" size={18} color={colors.iconDefault} />
-              <Text style={t.postActionText}>Share</Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
+          <Pill label={p.ages} leading={<Dot color={p.ageColor} />} />
+        </View>
+        <Text style={t.postContent}>{p.text}</Text>
+        <View style={[t.postActions, local.bottom]}>
+          <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
+            <Feather name="heart" size={18} color={p.liked ? PINK : colors.iconDefault} />
+            <Text style={t.postActionText}>{p.likes}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
+            <Feather name="message-circle" size={18} color={colors.iconDefault} />
+            <Text style={t.postActionText}>{p.comments}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
+            <Feather name="share-2" size={18} color={colors.iconDefault} />
+            <Text style={t.postActionText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      </Card>
+    );
+  };
+
+  const renderArticle = (a: ArticleStub) => (
+    <Card fill onPress={() => comingSoon('Articles')}>
+      <View style={local.articleTop}>
+        <View style={t.articleIcon}>
+          <Feather name={a.icon} size={18} color={surface.accent} />
+        </View>
+        <Text style={t.articleKind}>{a.kind.toUpperCase()}</Text>
+      </View>
+      <Text style={t.articleTitle} numberOfLines={3}>
+        {a.title}
+      </Text>
+      <Text style={t.articleBlurb} numberOfLines={3}>
+        {a.blurb}
+      </Text>
+      <View style={[local.articleFooter, local.bottom]}>
+        <Feather name="clock" size={14} color={colors.iconDefault} />
+        <Text style={t.articleMeta}>{a.readMinutes} min read</Text>
+      </View>
+    </Card>
+  );
+
+  return (
+    <Screen>
+      <ScreenHeader title="Explore" subtitle="Series, community and more" />
+
+      <ScreenScroll>
+        {series.length > 0 && (
+          <>
+            <SectionLabel>Series</SectionLabel>
+            <Carousel
+              items={series}
+              keyFor={m => m.id}
+              renderItem={m => (
+                <SeriesCard
+                  fill
+                  module={m}
+                  onPress={() => navigation.navigate('ModuleDetail', { moduleId: m.id })}
+                />
+              )}
+            />
+          </>
+        )}
+
+        <SectionLabel>Community</SectionLabel>
+        <PreviewNote t={t} what="posts" />
+        <Carousel
+          items={COMMUNITY_ITEMS}
+          keyFor={item => (item.kind === 'share' ? 'share' : item.post.id)}
+          renderItem={renderCommunity}
+        />
+
+        <SectionLabel>Articles & Guides</SectionLabel>
+        <PreviewNote t={t} what="articles" />
+        <Carousel items={ARTICLE_STUBS} keyFor={a => a.id} renderItem={renderArticle} />
       </ScreenScroll>
     </Screen>
   );
@@ -187,6 +286,10 @@ const local = StyleSheet.create({
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
   },
+  // Pins a card's last row to its bottom, so cards of different lengths line up.
+  bottom: {
+    marginTop: 'auto',
+  },
   promoTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,14 +305,6 @@ const local = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     lineHeight: 21,
     marginBottom: Spacing.md,
-  },
-  filterScroll: {
-    marginHorizontal: -Spacing.lg,
-    flexGrow: 0,
-  },
-  filterRow: {
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
   },
   postHeader: {
     flexDirection: 'row',
@@ -234,9 +329,6 @@ const local = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Sample community posts use fixed age-group accents.
-  avatarSky: { backgroundColor: '#90dcff' },
-  avatarPink: { backgroundColor: '#e10086' },
   postUserName: {
     fontSize: Typography.callout,
     fontFamily: 'Geomini-SemiBold',
@@ -264,6 +356,46 @@ const local = StyleSheet.create({
     gap: 6,
   },
   postActionText: {
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-Medium',
+  },
+  articleTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  articleIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  articleKind: {
+    fontSize: Typography.caption,
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 1.2,
+  },
+  articleTitle: {
+    fontSize: Typography.title3,
+    fontFamily: 'Geomini-Bold',
+    lineHeight: Math.round(Typography.title3 * 1.25),
+    marginBottom: Spacing.sm,
+  },
+  articleBlurb: {
+    fontSize: Typography.subheadline,
+    fontFamily: 'Inter-Medium',
+    lineHeight: 21,
+    marginBottom: Spacing.md,
+  },
+  articleFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  articleMeta: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
   },

@@ -86,6 +86,7 @@ Do these **one at a time**: finish, check and commit each before starting the ne
 2. **Community becomes Explore.** Rename the tab and screen to **Explore**. It's the home for **Series** (today under ☰ → Series), **community** content (today's sample posts), and possibly **written content** like guides and blogs. The detailed design comes later.
    - [x] **Claude:** Renamed the tab and screen to Explore (`compass` icon; `src/screens/ExploreScreen.tsx`). It lists the **Series** (shared `SeriesCard`), each opening its detail screen inside the Explore tab, then a **Community** section with the Preview note, "Share your ideas" and the sample posts. No Guides section yet. The Series list is still also reachable from the Prompts ☰ menu until item 1 removes it.
    - [ ] **You (later):** Design the Explore screen in detail: sections, order, and what guides/blogs are (ties in with Phase 2b item 6, defining Post and Article).
+   - [x] **Claude (2026-10-18):** Each Explore section is now a horizontal carousel (`src/ui/Carousel.tsx`): **Series**, **Community** (the share card plus sample posts) and **Articles & Guides** (5 placeholder stubs in `src/data/articles.ts`; tapping one shows "coming soon"). The Community filter pills were dropped, since there's no feed to filter yet.
 3. **Profile moves to the far right of the tab bar.**
    - [x] **Claude:** Done as part of item 1: with Settings off the tab bar, the tabs are **Prompts · Explore · Create · Profile**, and the app still opens on Prompts.
 4. **New Create tab.** A tab called **Create** that holds **Mad Libs** (moved from ☰), **notes** (writing a reflection; see Phase 2b item 1), and a **blank prompt creator** (write your own "What if…?").
@@ -132,6 +133,10 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 - [ ] **Claude:** Add profile photo upload (`expo-image-picker` + storage).
 - [ ] **You:** Define **parental consent** for Premium ("Parental consent required").
 - [ ] **You:** Define **professional verification** for Professional ("For verified educators & therapists"): license lookup or manual review.
+
+## Nice to have
+
+- [ ] **Claude:** Open an Explore section as its own full screen: tapping a section's title (or a "See all" link) shows that section's cards, still swipeable horizontally or as a full list. Pairs with the article reader once real articles exist.
 
 ## Done
 
