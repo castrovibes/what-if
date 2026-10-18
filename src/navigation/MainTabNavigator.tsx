@@ -1,6 +1,4 @@
 import React, { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
@@ -23,22 +21,13 @@ import { YouScreen } from '../screens/you/YouScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
 import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
-import { WelcomeScreen } from '../screens/WelcomeScreen';
-import { WelcomeTutorialScreen } from '../screens/WelcomeTutorialScreen';
-import { useTheme } from '../theme/ThemeProvider';
-import { useSurface, PINK } from '../ui/surface';
 import { useAuth } from '../auth/AuthProvider';
 import { FeatureFlags } from '../data/featureFlags';
-import { useStackScreenOptions, useTransitions } from './transitions';
+import { useStackScreenOptions } from './transitions';
+import { FloatingTabBar } from './FloatingTabBar';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Height of the tab bar's content (icons + labels), above the home indicator /
-// gesture area. The safe-area inset is added per device, so this is right on an
-// iPhone SE, a Dynamic Island iPhone and Android gesture navigation alike.
-const TAB_BAR_CONTENT_HEIGHT = 54;
-// Minimum padding under the icons on devices with no bottom inset.
-const TAB_BAR_MIN_BOTTOM_PADDING = 10;
 // Longest the sign-up offer waits for the slide-in from onboarding to report its end.
 const SIGNUP_OFFER_FALLBACK_MS = 900;
 
@@ -76,45 +65,24 @@ const CreateStackNavigator = () => {
 };
 
 /**
- * The You tab: account, preferences and help, plus the screens that hang off them.
- * The Welcome Guide replays the welcome screen (fading in) and the tips deck; finishing
- * it returns to the Prompts tab.
+ * The You tab: account, preferences and help, plus the screens that hang off them. (The
+ * Welcome guide opens above the tabs, from the root stack.)
  */
 const YouStackNavigator = () => {
   const screenOptions = useStackScreenOptions();
-  const { fade } = useTransitions();
   return (
     <YouStack.Navigator screenOptions={screenOptions}>
       <YouStack.Screen name="YouMain" component={YouScreen} />
       <YouStack.Screen name="Personalization" component={PersonalizationScreen} />
       <YouStack.Screen name="FAQ" component={FAQScreen} />
       <YouStack.Screen name="ImConcerned" component={ImConcernedScreen} />
-      <YouStack.Screen name="Welcome" options={fade}>
-        {({ navigation }) => (
-          <WelcomeScreen onContinue={() => navigation.navigate('WelcomeTutorial')} />
-        )}
-      </YouStack.Screen>
-      <YouStack.Screen name="WelcomeTutorial">
-        {({ navigation }) => (
-          <WelcomeTutorialScreen
-            onComplete={() => {
-              navigation.popToTop();
-              navigation.getParent()?.navigate('Prompts');
-            }}
-          />
-        )}
-      </YouStack.Screen>
     </YouStack.Navigator>
   );
 };
 
 export const MainTabNavigator = () => {
-  const { colors } = useTheme();
-  const surface = useSurface();
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { account, signupOfferPending, setSignupOfferPending } = useAuth();
-  const bottomPadding = Math.max(insets.bottom, TAB_BAR_MIN_BOTTOM_PADDING);
 
   // Right after first-launch onboarding, offer sign-up once (it can be closed). Wait for
   // the app's slide-in to finish: a screen pushed mid-transition takes over the card's
@@ -139,20 +107,13 @@ export const MainTabNavigator = () => {
   }, [signupOfferPending, setSignupOfferPending, navigation, account]);
 
   return (
+    // The bar floats over the screens (FloatingTabBar); screens pad their own bottom
+    // edge with useTabBarInset().
     <Tab.Navigator
+      tabBar={props => <FloatingTabBar {...props} />}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size }) => <Feather name={TAB_ICON[route.name]} size={size} color={color} />,
-        tabBarActiveTintColor: PINK,
-        tabBarInactiveTintColor: colors.iconInactive,
-        // The same tokens as the screens, so the bar never shows a different black.
-        tabBarStyle: {
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: surface.border,
-          backgroundColor: surface.screen,
-          paddingBottom: bottomPadding,
-          height: TAB_BAR_CONTENT_HEIGHT + bottomPadding,
-        },
       })}
     >
       <Tab.Screen name="Prompts" component={PromptsStackNavigator} />

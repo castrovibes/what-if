@@ -143,7 +143,7 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 Decisions from the founder/designer critique, recorded here because some reverse earlier items above:
 
 - **Tabs are Prompts · Explore · Create · You.** Profile and Settings merged into **You** (`src/screens/you/`); the ⚙ is gone from every header (reverses 2c item 1's "⚙ on every screen"). An **Explore redesign** is on the to-do list (see 2c item 2's open "You (later)" item).
-- **Onboarding is one screen.** Welcome → Get Started → the deck's age pick. Twist and Tips introduce themselves with one-time in-place hints. The tips deck survives as **Welcome guide** on You.
+- **Onboarding:** Welcome → the Welcome guide (tips deck) → the deck's age pick. (First decided as one screen on 2026-10-17, then restored the same day: the guide triggers on first use.) Twist and Tips also introduce themselves with one-time in-place hints. The guide can be replayed from You.
 - **Returning users skip the cover.** With a preferred age range set, the deck opens on the first prompt.
 - **Twist and Tips hide when a prompt has none** (not dimmed). Prompt cards grow with the system text size.
 - **Haptics** on swipe, flip, favorite, twist change and saves (`expo-haptics`).
@@ -155,3 +155,14 @@ Decisions from the founder/designer critique, recorded here because some reverse
 - [ ] **You:** Decide the Twist button's icon (kept `shuffle` for now; Previous prompt is `corner-up-left`).
 - [ ] **Claude:** Tab-bar mockup with the question-mark glyph for Prompts, before changing it.
 - [ ] **You (later):** Explore redesign.
+
+### Floating tab bar (2026-10-17, later the same day)
+
+- **The tab bar is a floating pill** (`src/navigation/FloatingTabBar.tsx`): a raised card hovering above the bottom edge with the screen showing around it, a pink highlight that springs between tabs, and a scrim that fades content into the screen color underneath. Screens get the full height and pad their own bottom edge with `useTabBarInset()` (`src/navigation/tabBarInset.ts`; 0 outside the tabs). `ScreenScroll`, `ScreenList`, the deck's action row and cover button, the hint bubbles, toasts, Welcome (replayed) and the tips deck all use it.
+- Verified in the iPhone 16e simulator, light and dark: every tab's last card scrolls out from under the pill; the deck's Start button, action row and hints sit above it; toasts sit just above it; bottom sheets cover it; the Welcome guide's buttons clear it. Screenshots were taken with synthetic taps (see the session's scratchpad), not by hand.
+- Found and fixed while testing: the reflection sheet fired after a two-second session, because its dwell clock started when the first prompt loaded behind the cover; it now restarts when the session starts. Also fixed: the Professional card's text ran past its edge (text directly inside an accent `Card` needs a `View` wrapper), and the sign-up card double-padded.
+- **Local simulator builds from this iCloud folder still fail** (the `Mobile Documents` space). What worked: sync the working tree to `~/Developer/what-if-release-check` (`rsync -a --delete --exclude .git --exclude node_modules --exclude ios/Pods --exclude ios/build --exclude .backups`), run `npm install`, then `RCT_USE_PREBUILT_RNCORE=0 npx pod-install` in `ios/` and `RCT_USE_PREBUILT_RNCORE=0 npx expo run:ios --no-bundler` there, with Metro (`npx expo start`) running from this folder. The prebuilt React Native core (the default) failed to link `facebook::react::Sealable` against expo-modules-core; building core from source avoids it. Clear that checkout's DerivedData first if a link error mentions a stale symbol.
+- **Metro and iCloud Drive:** while testing from this folder, Metro's long-lived bundle graph twice kept serving a stale module after a file changed (the watcher missed the write), even across app relaunches, while a fresh request got the new code. If a change doesn't show up after a relaunch, restart Metro with `npx expo start --clear` before suspecting the code.
+
+- **End of deck (2026-10-17):** the deck no longer loops. After the last prompt an end card says the deck is done (count, age range, situation) with "Pick another deck" (a sheet of age groups) and "Start this deck over"; swiping past it rubber-bands, and the action row keeps only the back button so the deck stays put. Verified in the simulator.
+- **Welcome guide from You (2026-10-17):** opens as a root-stack screen above the tabs (`WelcomeGuide` in RootNavigator), so the floating tab bar is gone for the whole flow, exactly like first launch; its back chevron closes it, and finishing lands on the Prompts tab. Verified in the simulator.

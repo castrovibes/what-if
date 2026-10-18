@@ -26,7 +26,7 @@ const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 /** Amber used to flag developer-only tools. */
 const DEV_AMBER = '#ca8a04';
 
-type Nav = NavigationProp<YouStackParamList & Pick<RootStackParamList, 'Signup'>>;
+type Nav = NavigationProp<YouStackParamList & Pick<RootStackParamList, 'Signup' | 'WelcomeGuide'>>;
 
 /**
  * You: account, activity, preferences, community safety, reflections, help and the
@@ -100,7 +100,7 @@ export const YouScreen = () => {
 
         <SectionLabel>Support & info</SectionLabel>
         <Card padded={false}>
-          <ListRow icon="book-open" label="Welcome guide" onPress={() => navigation.navigate('Welcome')} />
+          <ListRow icon="book-open" label="Welcome guide" onPress={() => navigation.navigate('WelcomeGuide')} />
           <ListRow icon="help-circle" label="Help & FAQ" onPress={() => navigation.navigate('FAQ')} />
           {/* Hidden from testers until the content has clinical review. */}
           {FeatureFlags.showImConcerned && (
@@ -126,15 +126,19 @@ export const YouScreen = () => {
           />
         </Card>
 
-        <Card accent={surface.accent} style={styles.upgradeCard}>
-          <View style={styles.upgradeTitleRow}>
-            <Feather name="award" size={20} color={surface.accent} />
-            <Text style={[styles.upgradeTitle, { color: surface.accent }]}>Go Professional</Text>
+        <Card accent={surface.accent}>
+          {/* A View wrapper, as SeriesCard does: text directly inside an accent card's
+              padded view doesn't get a bounded width and runs past the edge. */}
+          <View style={styles.upgradeCard}>
+            <View style={styles.upgradeTitleRow}>
+              <Feather name="award" size={20} color={surface.accent} />
+              <Text style={[styles.upgradeTitle, { color: surface.accent }]}>Go Professional</Text>
+            </View>
+            <Text style={[styles.upgradeDescription, { color: colors.textSecondary }]}>
+              Case management, analytics and specialized prompt libraries for educators and therapists.
+            </Text>
+            <Button label="Learn more" variant="secondary" onPress={() => comingSoon('Professional plans')} />
           </View>
-          <Text style={[styles.upgradeDescription, { color: colors.textSecondary }]}>
-            Case management, analytics and specialized prompt libraries for educators and therapists.
-          </Text>
-          <Button label="Learn more" variant="secondary" onPress={() => comingSoon('Professional plans')} />
         </Card>
 
         <SectionLabel>Account</SectionLabel>

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -9,12 +9,17 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSurface, PINK, CARD_RADIUS } from '../ui/surface';
 import { Screen, ScreenHeader, Button } from '../ui/components';
+import { useTabBarInset } from '../navigation/tabBarInset';
+import { useReduceMotion } from '../navigation/transitions';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
 const STEPS: { title: string; description: string }[] = [
@@ -43,7 +48,7 @@ const STEPS: { title: string; description: string }[] = [
 // The tutorial opens on an introduction (page 0), then one page per tip. Pages are
 // what the swipes, the pips and `progress` count; tip i is page i + 1.
 const INTRO =
-  "We wrote thousands of questions that help foster meaningful conversations with children that spark critical thinking and ethical reasoning. We're glad you're here.\n\nSwipe to get started.";
+  "We wrote thousands of questions that help foster meaningful conversations with children that spark critical thinking and ethical reasoning. We're glad you're here.\n\nLet's get started.";
 const PAGES = STEPS.length + 1;
 const LAST = PAGES - 1;
 const DECK_HEIGHT = 360;
@@ -246,6 +251,32 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
   const ctaStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [LAST - 1, LAST], [0, 1], 'clamp'),
   }));
+  // Replayed from the You tab, the button must clear the floating tab bar.
+  const tabInset = useTabBarInset();
+
+  // On the introduction the page pips are hidden; a right-pointing arrow under the text
+  // invites the first swipe instead (and can be tapped). The arrow is part of the intro,
+  // so it slides off with the text; the pips fade in as the first page moves.
+  const onIntro = index === 0;
+  const pipsStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.max(0, progress.value)),
+  }));
+  const nudge = useSharedValue(0);
+  const reduceMotion = useReduceMotion();
+  useEffect(() => {
+    nudge.value = reduceMotion
+      ? 0
+      : withRepeat(
+          withSequence(
+            withTiming(6, { duration: 650, easing: Easing.inOut(Easing.quad) }),
+            withTiming(0, { duration: 650, easing: Easing.inOut(Easing.quad) }),
+          ),
+          -1,
+        );
+  }, [nudge, reduceMotion]);
+  const arrowStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: nudge.value }],
+  }));
 
   return (
     <Screen edges={['top', 'bottom']}>
@@ -271,24 +302,43 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
                 <TipCard key={step.title} index={i} progress={progress} width={width} />
               ))}
             </Animated.View>
-            <Animated.View style={[local.intro, introStyle]} pointerEvents="none">
+            <Animated.View
+              style={[local.intro, introStyle]}
+              pointerEvents={onIntro ? 'box-none' : 'none'}
+            >
               <Text style={[local.introTitle, { color: surface.accent }]} accessibilityRole="header">
                 Welcome
               </Text>
               <Text style={[local.introText, { color: colors.textSecondary }]}>{INTRO}</Text>
+              <Animated.View style={[local.arrowWrap, arrowStyle]}>
+                <Pressable
+                  onPress={() => goTo(1)}
+                  style={local.arrow}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next: the first tip"
+                >
+                  <Feather name="arrow-right" size={22} color="#fff" />
+                </Pressable>
+              </Animated.View>
             </Animated.View>
           </View>
         </GestureDetector>
 
-        <View style={local.pips}>
+        <Animated.View
+          style={[local.pips, pipsStyle]}
+          pointerEvents={onIntro ? 'none' : 'auto'}
+          accessibilityElementsHidden={onIntro}
+          importantForAccessibility={onIntro ? 'no-hide-descendants' : 'auto'}
+        >
           {Array.from({ length: PAGES }, (_, i) => (
             <Pip key={i} index={i} progress={progress} onPress={() => goTo(i)} />
           ))}
-        </View>
+        </Animated.View>
       </View>
 
       <Animated.View
-        style={[local.cta, ctaStyle]}
+        style={[local.cta, { paddingBottom: Spacing.md + tabInset }, ctaStyle]}
         pointerEvents={onLast ? 'auto' : 'none'}
         accessibilityElementsHidden={!onLast}
         importantForAccessibility={onLast ? 'auto' : 'no-hide-descendants'}
@@ -354,6 +404,20 @@ const local = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginTop: Spacing.xl,
+    height: 44,
+  },
+  // Under the introduction text; moves with it.
+  arrowWrap: {
+    alignItems: 'center',
+    marginTop: Spacing.xl,
+  },
+  arrow: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: PINK,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pip: {
     height: 8,

@@ -79,7 +79,7 @@ export const deckShadow = (slot: number, base: ShadowBase) => {
 export type DeckSource = 'official' | 'user';
 
 /** Which bottom sheet is open on the prompt screen. */
-export type Sheet = 'situation' | 'discussion' | 'report' | 'source' | null;
+export type Sheet = 'situation' | 'discussion' | 'report' | 'source' | 'deck' | null;
 
 // The title deck before a session: the title card (0), the age options or first prompt
 // (1), the first prompt after the age options (2), and enough below to keep the deck

@@ -76,10 +76,12 @@ import { usePromptSpeech } from './usePromptSpeech';
 import { AgeMenu, AgeMenuBackdrop, AgePickCard } from './AgeMenu';
 import { PromptSheets } from './PromptSheets';
 import { ReflectionSheet, REFLECT_AFTER_MS } from './ReflectionSheet';
+import { EndOfDeckCard } from './EndOfDeckCard';
 import { toast } from '../../ui/toast';
 import { haptic } from '../../ui/haptics';
 import { HintBubble } from '../../ui/HintBubble';
 import { useOneTimeHint } from '../../hooks/useOneTimeHint';
+import { useTabBarInset } from '../../navigation/tabBarInset';
 
 // A horizontal drag becomes a swipe after this much movement; more vertical than
 // that and the scroll view keeps it. (Replaces the old responder's dx > dy * 1.5.)
@@ -114,6 +116,8 @@ export const PromptScreen = () => {
   const surface = useSurface();
   const { width: windowWidth } = useWindowDimensions();
   const accent = surface.accent;
+  // The floating tab bar covers the bottom of the screen; the action row stays above it.
+  const tabInset = useTabBarInset();
 
   const { activeContext } = useActiveContext();
   // With a preferred age range (Settings), or sent here for a specific age, the deck
@@ -178,9 +182,16 @@ export const PromptScreen = () => {
   const currentAgeGroup = findAgeGroup(selectedAge);
   const currentSpace = spaces.find(s => s.id === liminalSpace);
 
-  const safeIndex = prompts.length > 0 ? currentPromptIndex % prompts.length : 0;
-  const currentPrompt = prompts[safeIndex];
-  const promptAt = (index: number) => prompts[index % prompts.length];
+  // The deck runs from the first prompt to an end card one past the last (index
+  // prompts.length); `promptAt` is undefined there. The deck never wraps around.
+  const endIndex = prompts.length;
+  const promptAt = (index: number) => (index < prompts.length ? prompts[index] : undefined);
+  const currentPrompt = promptAt(currentPromptIndex);
+  // Mirror for the drag worklet, which rubber-bands past the end card.
+  const endSV = useSharedValue(0);
+  useEffect(() => {
+    endSV.value = endIndex;
+  }, [endIndex, endSV]);
   // Swiping right goes back through prompts already seen this session.
   const canGoBack = deckTarget > 0;
   const promptId = currentPrompt?.id ?? '';
@@ -363,10 +374,12 @@ export const PromptScreen = () => {
   // Reflections: a prompt that was on top long enough to have been talked about gets
   // a "How did that go?" once it's swiped away (once per prompt per session). The
   // offer waits for the card to finish leaving.
+  // The clock starts when the prompt is actually in front of someone: on each new
+  // prompt, and when the session starts (the first prompt loads behind the cover card).
   const shownAt = useRef(Date.now());
   useEffect(() => {
     shownAt.current = Date.now();
-  }, [promptId]);
+  }, [promptId, sessionStarted]);
   const reflectedIds = useRef(new Set<string>());
   const pendingReflection = useRef<Prompt | null>(null);
   const [reflectFor, setReflectFor] = useState<Prompt | null>(null);
@@ -392,7 +405,8 @@ export const PromptScreen = () => {
    * flying retargets the same animation, so quick swipes are never dropped.
    */
   const goTo = (target: number) => {
-    const t = Math.max(0, target);
+    // Never past the end card.
+    const t = Math.max(0, Math.min(target, endIndex));
     if (prompts.length === 0) return;
     if (t !== targetRef.current) {
       setShowTwists(false);
@@ -453,8 +467,10 @@ export const PromptScreen = () => {
         return;
       }
       let p = dragStart.value - e.translationX / windowWidth;
-      // Rubber-band before the first prompt, and never more than one card ahead.
+      // Rubber-band before the first prompt and past the end card, and never more than
+      // one card ahead.
       if (p < 0) p = p / 3;
+      if (p > endSV.value) p = endSV.value + (p - endSV.value) / 3;
       progress.value = Math.min(p, targetSV.value + 1);
     })
     .onEnd(e => {
@@ -571,6 +587,30 @@ export const PromptScreen = () => {
     setRevealWhenReady(true);
   };
 
+  // From the end card: back to this deck's first prompt (a hard reset with a quick fade,
+  // rather than every card flying back in), or another age group's deck.
+  const restartDeck = () => {
+    cancelAnimation(progress);
+    setShowTwists(false);
+    arrival.value = 0;
+    progress.value = 0;
+    targetRef.current = 0;
+    targetSV.value = 0;
+    animatingRef.current = false;
+    setDeckTarget(0);
+    setCurrentPromptIndex(0);
+    haptic.light();
+    arrival.value = withDelay(
+      ARRIVAL_DELAY_MS,
+      withTiming(1, { duration: ARRIVAL_FADE_MS, easing: Easing.out(Easing.quad) }),
+    );
+  };
+  const chooseDeckAge = (id: AgeGroupId) => {
+    setSheet(null);
+    if (id === selectedAge) restartDeck();
+    else handleSelectAge(id);
+  };
+
   // Start a session works like swiping the title card away: it reveals the first
   // prompt, or the age options when no age group is set yet.
   const handleStartSession = () => sendCoverAway();
@@ -672,8 +712,9 @@ export const PromptScreen = () => {
   // Cards mounted in the deck: the one to go back to, the top card, and the slots
   // below it plus one invisible spare at the bottom. While cards are flying, this
   // spans both where the deck has settled and where it's heading.
+  // Nothing is mounted past the end card, so the stack thins out as the deck runs down.
   const deckFirst = Math.max(0, Math.min(currentPromptIndex, deckTarget) - 1);
-  const deckLast = Math.max(currentPromptIndex, deckTarget) + SPAWN_DEPTH;
+  const deckLast = Math.min(Math.max(currentPromptIndex, deckTarget) + SPAWN_DEPTH, endIndex);
   const deckIndexes: number[] = [];
   for (let i = deckLast; i >= deckFirst; i--) deckIndexes.push(i);
 
@@ -707,7 +748,7 @@ export const PromptScreen = () => {
       );
     }
 
-    if (loading || !currentPrompt) {
+    if (loading || prompts.length === 0) {
       return (
         <View style={styles.emptyState}>
           {loading ? (
@@ -764,6 +805,29 @@ export const PromptScreen = () => {
             {deckIndexes.map(index => {
               const prompt = promptAt(index);
               const isCurrent = index === currentPromptIndex;
+              if (!prompt) {
+                // The end card, one past the last prompt.
+                return (
+                  <DeckCard
+                    key={index}
+                    index={index}
+                    progress={progress}
+                    width={windowWidth}
+                    shadow={shadowBase}
+                    interactive={isCurrent}
+                    style={[styles.stackCard, stackCardStyle]}
+                  >
+                    <EndOfDeckCard
+                      count={prompts.length}
+                      ageLabel={currentAgeGroup?.label.replace(' years', '').replace('-', ' – ') ?? null}
+                      spaceName={currentSpace?.name ?? null}
+                      accent={accent}
+                      onChooseDeck={() => setSheet('deck')}
+                      onStartOver={restartDeck}
+                    />
+                  </DeckCard>
+                );
+              }
               return (
                 <DeckCard
                   key={index}
@@ -892,7 +956,7 @@ export const PromptScreen = () => {
             is kept so the deck doesn't shift. */}
         {!sessionStarted && (
           <View
-            style={[styles.startRow, coverGone && styles.hidden]}
+            style={[styles.startRow, { paddingBottom: Spacing.md + tabInset }, coverGone && styles.hidden]}
             pointerEvents={coverGone ? 'none' : 'auto'}
             accessibilityElementsHidden={coverGone}
             importantForAccessibility={coverGone ? 'no-hide-descendants' : 'auto'}
@@ -901,10 +965,11 @@ export const PromptScreen = () => {
           </View>
         )}
 
-        {sessionStarted && currentPrompt && (
+        {sessionStarted && !loading && prompts.length > 0 && (
           // The buttons fade in one after another when the session starts (and stay put
-          // while the deck reloads for new filters).
-          <View style={styles.actionRow}>
+          // while the deck reloads for new filters). Padded clear of the floating tab bar.
+          // On the end card only the back button remains, so the deck doesn't shift.
+          <View style={[styles.actionRow, { paddingBottom: Spacing.md + tabInset }]}>
             {/* Back to the previous prompt (swiping the card left skips forward). VoiceOver
                 users can't swipe the card, so both directions are also actions here. */}
             <Animated.View
@@ -942,7 +1007,7 @@ export const PromptScreen = () => {
 
             {/* Only for prompts that have twists; the other buttons slide together when
                 it goes. */}
-            {showTwistButton && (
+            {currentPrompt && showTwistButton && (
               <Animated.View
                 entering={actionEntering(1)}
                 exiting={FadeOut.duration(ACTION_FADE_MS / 2)}
@@ -968,24 +1033,27 @@ export const PromptScreen = () => {
               </Animated.View>
             )}
 
-            <Animated.View
-              entering={actionEntering(2)}
-              layout={LinearTransition.duration(ACTION_FADE_MS / 2)}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  haptic.selection();
-                  toggleFavorite(promptId);
-                }}
-                style={[
-                  styles.circleButton,
-                  { borderColor: PINK, backgroundColor: favorited ? PINK : surface.card },
-                ]}
-                accessibilityLabel={favorited ? 'Remove from favorites' : 'Save to favorites'}
+            {currentPrompt && (
+              <Animated.View
+                entering={actionEntering(2)}
+                exiting={FadeOut.duration(ACTION_FADE_MS / 2)}
+                layout={LinearTransition.duration(ACTION_FADE_MS / 2)}
               >
-                <Feather name="heart" size={22} color={favorited ? '#fff' : PINK} />
-              </TouchableOpacity>
-            </Animated.View>
+                <TouchableOpacity
+                  onPress={() => {
+                    haptic.selection();
+                    toggleFavorite(promptId);
+                  }}
+                  style={[
+                    styles.circleButton,
+                    { borderColor: PINK, backgroundColor: favorited ? PINK : surface.card },
+                  ]}
+                  accessibilityLabel={favorited ? 'Remove from favorites' : 'Save to favorites'}
+                >
+                  <Feather name="heart" size={22} color={favorited ? '#fff' : PINK} />
+                </TouchableOpacity>
+              </Animated.View>
+            )}
           </View>
         )}
 
@@ -996,14 +1064,14 @@ export const PromptScreen = () => {
                 icon="shuffle"
                 text="Tap Twist to turn the card over: a new angle on the same question."
                 onDismiss={twistHint.dismiss}
-                bottom={HINT_BOTTOM}
+                bottom={HINT_BOTTOM + tabInset}
               />
             ) : tipCount > 0 && tipsHint.ready ? (
               <HintBubble
                 icon="info"
                 text="Tips has ideas for getting the conversation going."
                 onDismiss={tipsHint.dismiss}
-                bottom={HINT_BOTTOM}
+                bottom={HINT_BOTTOM + tabInset}
               />
             ) : null}
           </>
@@ -1017,6 +1085,8 @@ export const PromptScreen = () => {
           spaces={spaces}
           liminalSpace={liminalSpace}
           onChooseSpace={chooseSpace}
+          selectedAge={selectedAge}
+          onChooseAge={chooseDeckAge}
           promptId={promptId}
           onReport={sendReport}
         />

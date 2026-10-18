@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK, INPUT_RADIUS } from './surface';
+import { tabBarOverlayHeight } from '../navigation/tabBarInset';
 
 type IconName = keyof typeof Feather.glyphMap;
 
@@ -32,8 +33,6 @@ type ActiveToast = ToastOptions & { id: number };
 
 const DEFAULT_MS = 2400;
 const WITH_ACTION_MS = 4500;
-// Clears the tab bar (content height + safe-area inset are added by the host).
-const ABOVE_TAB_BAR = 54 + Spacing.sm;
 
 let nextId = 1;
 let listener: ((t: ActiveToast | null) => void) | null = null;
@@ -81,7 +80,9 @@ export const ToastHost = () => {
 
   return (
     <View
-      style={[styles.dock, { bottom: insets.bottom + ABOVE_TAB_BAR }]}
+      // Just above the floating tab bar (the host sits outside the tabs, so it uses the
+      // bar's geometry directly rather than the inset hook).
+      style={[styles.dock, { bottom: tabBarOverlayHeight(insets.bottom) }]}
       pointerEvents="box-none"
     >
       <Animated.View

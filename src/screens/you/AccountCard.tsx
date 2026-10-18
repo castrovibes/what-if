@@ -54,7 +54,7 @@ export const AccountCard = ({ onSignUp }: { onSignUp: () => void }) => {
   if (!FeatureFlags.showSignup) {
     // Accounts aren't offered yet (beta): a simple welcome instead of sign-up.
     return (
-      <Card>
+      <Card padded={false}>
         <View style={styles.row}>
           <View style={[styles.avatar, { backgroundColor: surface.accent }]}>
             <Feather name="user" size={28} color="#fff" />
@@ -71,7 +71,7 @@ export const AccountCard = ({ onSignUp }: { onSignUp: () => void }) => {
   }
 
   return (
-    <Card>
+    <Card padded={false}>
       <View style={styles.row}>
         <View style={[styles.avatar, { backgroundColor: surface.accent }]}>
           <Feather name="user-plus" size={26} color="#fff" />

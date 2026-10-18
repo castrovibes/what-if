@@ -16,7 +16,7 @@ export const RootNavigator = () => {
   const { setSignupOfferPending } = useAuth();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
-  const { enter, modal } = useTransitions();
+  const { enter, modal, fade } = useTransitions();
 
   useEffect(() => {
     async function loadFonts() {
@@ -84,6 +84,19 @@ export const RootNavigator = () => {
           <Stack.Screen name="MainApp" component={MainTabNavigator} options={enter} />
         )}
         <Stack.Screen name="Signup" component={SignupNavigator} options={modal} />
+        {/* The Welcome guide replayed from the You tab: the same Welcome + tips deck as
+            first launch, presented above the tabs so the tab bar is out of the way.
+            Finishing it returns to the Prompts tab. */}
+        <Stack.Screen name="WelcomeGuide" options={fade}>
+          {({ navigation }) => (
+            <OnboardingNavigator
+              onComplete={() => {
+                navigation.goBack();
+                navigation.navigate('MainApp', { screen: 'Prompts' });
+              }}
+            />
+          )}
+        </Stack.Screen>
       </Stack.Navigator>
     </FadeIn>
   );

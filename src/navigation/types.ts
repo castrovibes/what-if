@@ -1,8 +1,12 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Onboarding: undefined;
-  MainApp: undefined;
+  MainApp: NavigatorScreenParams<MainTabParamList> | undefined;
   /** Sign-up / sign-in flow, presented modally over wherever the user is. */
   Signup: undefined;
+  /** The Welcome guide replayed from the You tab: full screen, above the tabs. */
+  WelcomeGuide: undefined;
 };
 
 export type SignupStackParamList = {
@@ -16,6 +20,7 @@ export type SignupStackParamList = {
 
 export type OnboardingStackParamList = {
   Welcome: undefined;
+  WelcomeTutorial: undefined;
 };
 
 export type MainTabParamList = {
@@ -31,9 +36,6 @@ export type YouStackParamList = {
   Personalization: undefined;
   FAQ: undefined;
   ImConcerned: undefined;
-  /** The Welcome Guide: the welcome screen, then the tips deck. */
-  Welcome: undefined;
-  WelcomeTutorial: undefined;
 };
 
 export type ExploreStackParamList = {

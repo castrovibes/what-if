@@ -2,13 +2,17 @@ import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeProvider';
-import { BottomSheet, SheetOption } from '../../ui/components';
+import { BottomSheet, SheetOption, Dot } from '../../ui/components';
 import { DiscussionTips } from '../../components/DiscussionTips';
 import { ReportReason } from '../../backend/reports';
 import { LiminalSpace } from '../../db/types';
+import { ageGroups, AgeGroupId } from '../../data/ageGroups';
 import { DeckSource, REPORT_REASONS, Sheet } from './deck';
 
-/** The prompt screen's bottom sheets: deck source, situation, discussion tips, report. */
+/**
+ * The prompt screen's bottom sheets: deck source, situation, discussion tips, report,
+ * and "pick another deck" (from the card at the end of a deck).
+ */
 export const PromptSheets = ({
   sheet,
   onClose,
@@ -17,6 +21,8 @@ export const PromptSheets = ({
   spaces,
   liminalSpace,
   onChooseSpace,
+  selectedAge,
+  onChooseAge,
   promptId,
   onReport,
 }: {
@@ -27,6 +33,8 @@ export const PromptSheets = ({
   spaces: LiminalSpace[];
   liminalSpace: string | null;
   onChooseSpace: (id: string | null) => void;
+  selectedAge: AgeGroupId | null;
+  onChooseAge: (id: AgeGroupId) => void;
   promptId: string;
   onReport: (reason: ReportReason) => void;
 }) => {
@@ -46,6 +54,18 @@ export const PromptSheets = ({
           leading={<Ionicons name="folder-outline" size={16} color={colors.iconDefault} />}
           onPress={() => onChooseSource('user')}
         />
+      </BottomSheet>
+
+      <BottomSheet visible={sheet === 'deck'} title="Pick another deck" onClose={onClose}>
+        {ageGroups.map(g => (
+          <SheetOption
+            key={g.id}
+            label={`Ages ${g.label.replace('-', ' – ')}`}
+            selected={g.id === selectedAge}
+            leading={<Dot color={g.bgColor} />}
+            onPress={() => onChooseAge(g.id)}
+          />
+        ))}
       </BottomSheet>
 
       <BottomSheet visible={sheet === 'situation'} title="Right now we're…" onClose={onClose}>
