@@ -8,18 +8,29 @@ import { findAgeGroup } from '../data/ageGroups';
 import { Card, Dot } from '../ui/components';
 import { useSurface } from '../ui/surface';
 
-/** A conversation series, as listed on Explore and the Series screen. */
-export const SeriesCard = ({ module: m, onPress }: { module: Module; onPress: () => void }) => {
+/**
+ * A conversation series, as listed on Explore and the Series screen. `fill` stretches it
+ * to its container's height with the footer at the bottom (Explore's carousel).
+ */
+export const SeriesCard = ({
+  module: m,
+  onPress,
+  fill = false,
+}: {
+  module: Module;
+  onPress: () => void;
+  fill?: boolean;
+}) => {
   const { colors } = useTheme();
   const surface = useSurface();
   const accent = m.coverColor ?? findAgeGroup(m.ageGroup)?.bgColor ?? surface.accent;
   const ageDot = findAgeGroup(m.ageGroup)?.bgColor ?? accent;
   return (
-    <Card accent={accent} onPress={onPress}>
-      <View>
+    <Card accent={accent} onPress={onPress} fill={fill}>
+      <View style={fill && styles.fill}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{m.title}</Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>{m.description}</Text>
-        <View style={styles.footer}>
+        <View style={[styles.footer, fill && styles.footerBottom]}>
           <View style={styles.meta}>
             <Feather name="calendar" size={14} color={surface.accent} />
             <Text style={[styles.metaText, { color: colors.textSecondary }]}>
@@ -49,6 +60,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     lineHeight: 21,
     marginBottom: Spacing.md,
+  },
+  fill: {
+    flex: 1,
+  },
+  footerBottom: {
+    marginTop: 'auto',
   },
   footer: {
     flexDirection: 'row',

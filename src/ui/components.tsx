@@ -161,9 +161,10 @@ export function ScreenList<T>({
 
 /**
  * White (light) / raised gray (dark) rounded card with hairline border and shadow.
- * `accent` draws a thin colored stripe across the top, clipped to the rounded corners
+ * `accent` draws a colored stripe across the top, clipped to the rounded corners
  * (e.g. an age-group or series color). With `accent`, `style` applies to the content
- * below the stripe.
+ * below the stripe. `fill` stretches the card to its container's height (e.g. so the
+ * cards in a carousel row line up).
  */
 export const Card = ({
   children,
@@ -171,26 +172,29 @@ export const Card = ({
   onPress,
   padded = true,
   accent,
+  fill = false,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
   padded?: boolean;
   accent?: string;
+  fill?: boolean;
 }) => {
   const surface = useSurface();
   const frame = [
     ui.card,
     { backgroundColor: surface.card, borderColor: surface.border, ...surface.shadow },
+    fill && ui.cardFill,
   ];
 
   if (accent) {
     // The shadow lives on the outer view; clipping happens on an inner one so
     // iOS doesn't clip the shadow away along with the stripe's corners.
     const inner = (
-      <View style={ui.cardClip}>
+      <View style={[ui.cardClip, fill && ui.cardFill]}>
         <View style={[ui.cardStripe, { backgroundColor: accent }]} />
-        <View style={[padded && ui.cardPadded, style]}>{children}</View>
+        <View style={[padded && ui.cardPadded, fill && ui.cardFill, style]}>{children}</View>
       </View>
     );
     return onPress ? (
@@ -525,12 +529,17 @@ export const ui = StyleSheet.create({
   cardPadded: {
     padding: Spacing.lg,
   },
+  cardFill: {
+    flex: 1,
+  },
   cardClip: {
     borderRadius: CARD_RADIUS,
     overflow: 'hidden',
   },
+  // As tall as the corner radius, so the stripe runs down to where the card's sides
+  // straighten out instead of ending partway around the curve.
   cardStripe: {
-    height: 5,
+    height: CARD_RADIUS,
   },
   sectionLabel: {
     fontSize: Typography.caption,
