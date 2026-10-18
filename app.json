@@ -17,7 +17,7 @@
       "package": "com.whatcouldyoudo.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#bcd901"
+        "backgroundColor": "#49297e"
       }
     },
     "web": {

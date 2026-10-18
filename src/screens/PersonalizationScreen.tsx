@@ -6,7 +6,7 @@ import { usePersonalizationEditor } from '../hooks/usePersonalization';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { Screen, ScreenHeader, ScreenScroll, Card, SectionLabel } from '../ui/components';
-import { useSurface } from '../ui/surface';
+import { useSurface, INPUT_RADIUS } from '../ui/surface';
 
 export const PersonalizationScreen = () => {
   const navigation = useNavigation();
@@ -96,12 +96,11 @@ const local = StyleSheet.create({
   fieldLabel: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     marginBottom: 6,
   },
   fieldInput: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: INPUT_RADIUS,
     paddingHorizontal: Spacing.md,
     paddingVertical: 12,
     fontSize: Typography.body,
@@ -109,8 +108,7 @@ const local = StyleSheet.create({
   },
   previewText: {
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-SemiBold',
     lineHeight: 28,
   },
 });

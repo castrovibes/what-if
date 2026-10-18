@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
-import { useSurface, PINK } from '../../ui/surface';
+import { useSurface, PINK, CARD_RADIUS } from '../../ui/surface';
 import { Button } from '../../ui/components';
 import { useAuth } from '../../auth/AuthProvider';
+import { toast } from '../../ui/toast';
 import { Plan } from '../../auth/types';
 import { FeatureFlags } from '../../data/featureFlags';
 import { SignupStackParamList } from '../../navigation/types';
@@ -34,7 +35,7 @@ export const PaywallScreen = () => {
       await run();
       navigation.navigate('Done');
     } catch {
-      Alert.alert('Something went wrong', 'Please try again.');
+      toast.show({ message: 'Something went wrong. Please try again.', icon: 'alert-circle' });
     } finally {
       setBusy(false);
     }
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   plan: {
-    borderRadius: 16,
+    borderRadius: CARD_RADIUS,
     padding: Spacing.md,
     marginBottom: Spacing.md,
     gap: 6,
@@ -145,7 +146,6 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: Typography.callout,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
   },
   planPrice: {
     fontSize: Typography.footnote,
@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
   planTagline: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     marginTop: 4,
   },
   radio: {
@@ -187,6 +186,5 @@ const styles = StyleSheet.create({
   freeText: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
 });

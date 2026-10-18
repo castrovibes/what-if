@@ -21,7 +21,7 @@ const STEPS: { title: string; description: string }[] = [
   {
     title: 'Pick an Age Group',
     description:
-      "Tap Start a session (or swipe the cover card away) and choose the range that best matches the child you're talking with. Prompts are designed to be developmentally appropriate.",
+      "Choose who you're talking with and the deck opens on your first prompt. Prompts are written to be developmentally appropriate, and you can change the age range any time from the pill above the card.",
   },
   {
     title: 'Read the Prompt Together',
@@ -320,8 +320,7 @@ const local = StyleSheet.create({
   },
   title: {
     fontSize: Typography.title1,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-Bold',
     lineHeight: Math.round(Typography.title1 * 1.25),
   },
   description: {
@@ -337,15 +336,13 @@ const local = StyleSheet.create({
   },
   introTitle: {
     fontSize: Typography.title1,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-ExtraBold',
     textAlign: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   introText: {
     fontSize: Typography.callout,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
     lineHeight: Math.round(Typography.callout * 1.5),
     textAlign: 'center',
     alignSelf: 'center',

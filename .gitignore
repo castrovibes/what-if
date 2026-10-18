@@ -35,3 +35,6 @@ flutter/
 # Local environment (Firebase config etc.). Copy .env.example to .env.
 .env
 .env.local
+
+# Physical backups taken before refactors (git tags mark the same points)
+.backups/

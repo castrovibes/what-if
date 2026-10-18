@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Button } from '../../ui/components';
 import { useAuth } from '../../auth/AuthProvider';
+import { toast } from '../../ui/toast';
 import { SignupStackParamList } from '../../navigation/types';
 import {
   SignupHeader,
@@ -28,7 +28,7 @@ export const EmailEntryScreen = () => {
       await auth.sendSignInLink(email.trim());
       navigation.navigate('CheckEmail', { email: email.trim() });
     } catch {
-      Alert.alert("Couldn't send the link", 'Check the address and your connection, then try again.');
+      toast.show({ message: "Couldn't send the link. Check the address and your connection.", icon: 'alert-circle' });
     } finally {
       setSending(false);
     }

@@ -49,8 +49,21 @@ service cloud.firestore {
             && getAfter(usernamePath(data.usernameLower)).data.uid == uid);
     }
 
+    // Display name: free text up to 40 characters, not blank once set. The adult
+    // confirmation is a timestamp set by the server clock when the profile is saved.
+    function validDisplayName(name) {
+      return name == null
+        || (name is string && name.size() >= 1 && name.size() <= 40 && name.trim().size() >= 1);
+    }
+
+    function validAgeConfirmedAt(v) {
+      return v == null || v is timestamp;
+    }
+
     function validProfileFields(data, uid) {
       return validUsername(data, uid)
+        && validDisplayName(data.get('displayName', null))
+        && validAgeConfirmedAt(data.get('ageConfirmedAt', null))
         && (data.birthdate == null || isAdultBirthdate(data.birthdate))
         && isNullableString(data.photoUrl, 2048)
         && validPreferences(data.preferences)
@@ -64,8 +77,9 @@ service cloud.firestore {
 
       allow create: if isOwner(uid)
         && request.resource.data.keys().hasOnly([
-             'schemaVersion', 'username', 'usernameLower', 'email', 'authProvider',
-             'birthdate', 'photoUrl', 'plan', 'preferences', 'createdAt', 'updatedAt'])
+             'schemaVersion', 'displayName', 'ageConfirmedAt', 'username', 'usernameLower',
+             'email', 'authProvider', 'birthdate', 'photoUrl', 'plan', 'preferences',
+             'createdAt', 'updatedAt'])
         && request.resource.data.schemaVersion == 1
         && request.resource.data.authProvider in ['apple', 'google', 'email']
         && request.resource.data.email == request.auth.token.get('email', null)
@@ -76,7 +90,8 @@ service cloud.firestore {
 
       allow update: if isOwner(uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-             'username', 'usernameLower', 'birthdate', 'photoUrl', 'preferences', 'updatedAt'])
+             'displayName', 'ageConfirmedAt', 'username', 'usernameLower', 'birthdate',
+             'photoUrl', 'preferences', 'updatedAt'])
         && validProfileFields(request.resource.data, uid);
 
       // Account deletion: the app deletes the subcollections first, then this document

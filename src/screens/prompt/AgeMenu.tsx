@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-nativ
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeProvider';
-import { useSurface, PINK } from '../../ui/surface';
+import { useSurface, PINK, CARD_RADIUS } from '../../ui/surface';
 import { Dot } from '../../ui/components';
 import { ageGroups, AgeGroupId } from '../../data/ageGroups';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
@@ -105,14 +105,13 @@ const styles = StyleSheet.create({
     top: 40,
     left: Spacing.lg,
     width: 270,
-    borderRadius: 16,
+    borderRadius: CARD_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     paddingTop: Spacing.sm,
   },
   ageMenuTitle: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1.2,
     paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.xs,
@@ -140,7 +139,6 @@ const styles = StyleSheet.create({
   agePickTitle: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1.2,
     marginBottom: Spacing.sm,
   },
@@ -153,7 +151,6 @@ const styles = StyleSheet.create({
   agePickText: {
     flex: 1,
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-SemiBold',
   },
 });

@@ -21,6 +21,7 @@ import { RootNavigator } from './src/app/RootNavigator';
 import { AuthProvider } from './src/auth/AuthProvider';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { useSurface, PINK } from './src/ui/surface';
+import { ToastHost } from './src/ui/toast';
 
 /**
  * Status bar that follows the app's theme (which can override the device setting),
@@ -46,8 +47,8 @@ const ThemedNavigationContainer = ({ children }: { children: React.ReactNode }) 
         ...base.colors,
         primary: PINK,
         background: surface.screen,
-        card: colors.tabBarBg,
-        border: colors.tabBarBorder,
+        card: surface.screen,
+        border: surface.border,
         text: colors.textPrimary,
       },
     };
@@ -83,6 +84,8 @@ export default function App() {
                 </ActiveContextProvider>
               </DbProvider>
             </ThemedNavigationContainer>
+            {/* Toasts draw over every screen, above the tab bar. */}
+            <ToastHost />
           </ErrorBoundary>
           <ThemedStatusBar />
         </ThemeProvider>

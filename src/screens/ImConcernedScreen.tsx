@@ -129,7 +129,6 @@ const localStyles = StyleSheet.create({
     color: PINK,
     fontSize: Typography.subheadline,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
   emptyText: {
     fontSize: Typography.subheadline,
@@ -142,13 +141,11 @@ const localStyles = StyleSheet.create({
   resourceKind: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1.2,
   },
   resourceTitle: {
     fontSize: Typography.body,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
   resourceDescription: {
     fontSize: Typography.subheadline,

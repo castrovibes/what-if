@@ -3,6 +3,7 @@
  * Timing, slot geometry and card sizing live here so every piece of the deck
  * animates and lays out from the same numbers.
  */
+import { PixelRatio } from 'react-native';
 import { interpolate, FadeIn } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { ReportReason } from '../../backend/reports';
@@ -109,9 +110,16 @@ export const REPORT_REASONS: {
 // under the deck, which keeps the bottom edge where a 340pt card's would be while the
 // top reaches toward the filter pills.
 export const CARD_GROW = 40;
-export const CARD_HEIGHT = 340 + CARD_GROW;
-export const PROMPT_FONT_MAX = Typography.title1;
-export const PROMPT_FONT_MIN = Typography.title3;
+// Larger system text sizes (Dynamic Type / font scale) get a proportionally taller
+// card, capped so it still fits a small phone with the deck scrolling, so prompts
+// aren't cut off at the floor size just because the reader needs bigger text.
+const FONT_SCALE = Math.min(Math.max(PixelRatio.getFontScale(), 1), 1.6);
+export const CARD_HEIGHT = Math.round((340 + CARD_GROW) * FONT_SCALE);
+// Geomini sets wider than Inter, so prompts run about 10% under the title sizes to keep
+// wrapping down (e.g. 23 to 18 pt on a standard iPhone, instead of 26 to 20).
+const PROMPT_FONT_SCALE = 0.9;
+export const PROMPT_FONT_MAX = Math.round(Typography.title1 * PROMPT_FONT_SCALE);
+export const PROMPT_FONT_MIN = Math.round(Typography.title3 * PROMPT_FONT_SCALE);
 // Inset of everything on the card from its edges: tighter top and bottom than sides.
 export const CARD_PADDING_X = Spacing.lg;
 export const CARD_PADDING_Y = Spacing.md;

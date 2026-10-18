@@ -30,6 +30,7 @@
     "expo": "~54.0.37",
     "expo-constants": "~18.0.14",
     "expo-font": "~14.0.12",
+    "expo-haptics": "~15.0.8",
     "expo-linear-gradient": "~15.0.8",
     "expo-speech": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
@@ -71,6 +72,7 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/ios/",
+      "/\\.backups/",
       "/\\..*-backup-.*/"
     ],
     "modulePathIgnorePatterns": [

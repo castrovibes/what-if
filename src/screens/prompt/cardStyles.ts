@@ -27,7 +27,6 @@ export const cardStyles = StyleSheet.create({
   sourceText: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
   },
   cardHeaderRight: {
     flexDirection: 'row',
@@ -43,7 +42,6 @@ export const cardStyles = StyleSheet.create({
   categoryText: {
     fontSize: 10,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1,
   },
   cardBody: {
@@ -100,8 +98,7 @@ export const cardStyles = StyleSheet.create({
   },
   promptText: {
     // fontSize and lineHeight are set per card by useFitPromptText.
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-SemiBold',
   },
   fullQuestion: {
     marginTop: Spacing.sm,
@@ -123,7 +120,6 @@ export const cardStyles = StyleSheet.create({
   footerText: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
   },
   disabled: {
     opacity: 0.35,

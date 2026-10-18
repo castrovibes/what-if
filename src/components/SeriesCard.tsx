@@ -41,8 +41,7 @@ export const SeriesCard = ({ module: m, onPress }: { module: Module; onPress: ()
 const styles = StyleSheet.create({
   title: {
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-Bold',
     marginBottom: 6,
   },
   description: {
@@ -64,7 +63,6 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
   },
   spacer: {
     flex: 1,

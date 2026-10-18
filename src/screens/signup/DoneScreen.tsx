@@ -55,8 +55,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.title2,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-ExtraBold',
     marginBottom: Spacing.sm,
   },
   text: {

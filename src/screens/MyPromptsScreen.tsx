@@ -17,7 +17,7 @@ import { UserPromptRepo, UserPrompt } from '../db/repositories/userPrompts';
 import { CreateStackParamList } from '../navigation/types';
 import { playMyPromptsInDeck } from '../navigation/deckLinks';
 
-/** Prompts you've made (Write a prompt and Mad Libs): edit, delete, or play them. */
+/** Prompts you've made (Write a prompt and the Prompt Builder): edit, delete, or play them. */
 export const MyPromptsScreen = () => {
   const navigation = useNavigation<NavigationProp<CreateStackParamList>>();
   const { colors } = useTheme();
@@ -90,7 +90,7 @@ export const MyPromptsScreen = () => {
     <Screen>
       <ScreenHeader
         title="My Prompts"
-        subtitle="Prompts you've written or built with Mad Libs."
+        subtitle="Prompts you've written or built with the Prompt Builder."
         onBack={() => navigation.goBack()}
       />
       {/* A FlatList: the user's prompts can grow without bound. Nothing shows until
@@ -121,8 +121,7 @@ export const MyPromptsScreen = () => {
 const styles = StyleSheet.create({
   text: {
     fontSize: Typography.body,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-SemiBold',
     lineHeight: 23,
   },
   footer: {

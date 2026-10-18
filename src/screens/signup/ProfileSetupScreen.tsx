@@ -1,158 +1,67 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-  Platform,
-} from 'react-native';
-import DateTimePicker, {
-  DateTimePickerAndroid,
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
-import { useSurface } from '../../ui/surface';
-import { Button, BottomSheet } from '../../ui/components';
+import { useSurface, PINK, INPUT_RADIUS } from '../../ui/surface';
+import { Button } from '../../ui/components';
+import { toast } from '../../ui/toast';
+import { haptic } from '../../ui/haptics';
 import { useAuth } from '../../auth/AuthProvider';
-import { UsernameStatus } from '../../auth/types';
+import { DISPLAY_NAME_MAX_LENGTH } from '../../auth/types';
 import { SignupStackParamList } from '../../navigation/types';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
-import {
-  SignupHeader,
-  SignupLayout,
-  SignupTitle,
-  FieldLabel,
-  SignupField,
-} from './SignupChrome';
+import { SignupHeader, SignupLayout, SignupTitle, SignupText, FieldLabel, SignupField } from './SignupChrome';
 
-// Accounts are for the adults facilitating conversations. The exact minimum age
-// (and what happens below it) is a policy decision — see the sign-up notes.
+// Accounts are for the adults facilitating conversations; the profile step asks them to
+// confirm that rather than for a birthdate. (Policy: see the sign-up notes.)
 const MIN_ACCOUNT_AGE = 18;
-const TEAL = '#00a676';
 
-const MIN_DATE = new Date(1900, 0, 1);
-// Where the wheel starts before anything is picked.
-const DEFAULT_PICKER_DATE = new Date(1990, 0, 1);
-
-const toIso = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-const formatLong = (d: Date) =>
-  d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-const ageOn = (birth: Date, today = new Date()) => {
-  let age = today.getFullYear() - birth.getFullYear();
-  const beforeBirthday =
-    today.getMonth() < birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate());
-  return beforeBirthday ? age - 1 : age;
-};
-
+/**
+ * The profile step: what to call them, and the adult confirmation. No usernames, no
+ * availability checks: there's nothing social for a handle to be unique in.
+ */
 export const ProfileSetupScreen = () => {
   const navigation = useNavigation<NavigationProp<SignupStackParamList>>();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const surface = useSurface();
   const { auth, account, setAccount } = useAuth();
-  const [username, setUsername] = useState(account?.username ?? '');
-  const [status, setStatus] = useState<UsernameStatus | 'checking' | null>(null);
-  const [birthdate, setBirthdate] = useState<Date | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [name, setName] = useState(account?.displayName ?? '');
+  const [isAdult, setIsAdult] = useState(account?.ageConfirmed ?? false);
   const [saving, setSaving] = useState(false);
 
-  // Check availability once typing pauses.
-  useEffect(() => {
-    if (!username.trim()) {
-      setStatus(null);
-      return;
-    }
-    setStatus('checking');
-    let cancelled = false;
-    const t = setTimeout(async () => {
-      const result = await auth.checkUsername(username);
-      if (!cancelled) setStatus(result);
-    }, 400);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [username, auth]);
-
-  const tooYoung = birthdate !== null && ageOn(birthdate) < MIN_ACCOUNT_AGE;
-  const birthdateError = tooYoung
-    ? `You need to be ${MIN_ACCOUNT_AGE} or older to create an account.`
-    : null;
-  const canFinish = status === 'available' && birthdate !== null && !tooYoung && !saving;
-
-  // iOS: a wheel inside a bottom sheet. Android: the system date dialog.
-  const openPicker = () => {
-    if (Platform.OS === 'android') {
-      DateTimePickerAndroid.open({
-        value: birthdate ?? DEFAULT_PICKER_DATE,
-        mode: 'date',
-        minimumDate: MIN_DATE,
-        maximumDate: new Date(),
-        onChange: (event, date) => {
-          if (event.type === 'set' && date) setBirthdate(date);
-        },
-      });
-    } else {
-      if (!birthdate) setBirthdate(DEFAULT_PICKER_DATE);
-      setPickerOpen(true);
-    }
-  };
-
-  const onIosChange = (_: DateTimePickerEvent, date?: Date) => {
-    if (date) setBirthdate(date);
-  };
-
-  const initial = (username.trim() || account?.email || '?').charAt(0).toUpperCase();
+  const trimmed = name.trim();
+  const canFinish = trimmed.length > 0 && isAdult && !saving;
+  const initial = (trimmed || account?.email || '?').charAt(0).toUpperCase();
 
   const finish = async () => {
-    if (!account || !birthdate) return;
+    if (!account || !canFinish) return;
     setSaving(true);
     try {
       setAccount(
-        await auth.saveProfile(account.id, {
-          username: username.trim(),
-          birthdate: toIso(birthdate),
-          photoUri: null,
-        }),
+        await auth.saveProfile(account.id, { displayName: trimmed, ageConfirmed: true, photoUri: null }),
       );
+      haptic.success();
       navigation.navigate('Paywall');
     } catch {
-      Alert.alert("Couldn't save your profile", 'Please try again.');
+      toast.show({ message: "Couldn't save your profile. Please try again.", icon: 'alert-circle' });
     } finally {
       setSaving(false);
     }
   };
-
-  const usernameRight =
-    status === 'checking' ? (
-      <ActivityIndicator size="small" color={colors.iconInactive} />
-    ) : status === 'available' ? (
-      <View style={styles.status}>
-        <Feather name="check" size={14} color={TEAL} />
-        <Text style={[styles.statusText, { color: TEAL }]}>Available</Text>
-      </View>
-    ) : status === 'taken' ? (
-      <Text style={[styles.statusText, styles.bad]}>Taken</Text>
-    ) : null;
 
   return (
     <SignupLayout
       header={<SignupHeader step={3} onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} />}
       footer={<Button label={saving ? 'Saving…' : 'Finish'} onPress={finish} disabled={!canFinish} />}
     >
-      <SignupTitle>Set up your profile</SignupTitle>
+      <SignupTitle>What should we call you?</SignupTitle>
+      <SignupText>Just a first name or a nickname is fine. You can change it later.</SignupText>
 
       {/* TODO: photo upload needs expo-image-picker + file storage on the backend. */}
       <TouchableOpacity
         style={styles.photoRow}
-        onPress={() => Alert.alert('Coming soon', 'Adding a profile photo is coming soon.')}
+        onPress={() => toast.beta('Profile photos')}
         accessibilityLabel="Add a photo"
       >
         <View style={styles.avatar}>
@@ -160,66 +69,55 @@ export const ProfileSetupScreen = () => {
         </View>
         <View>
           <Text style={[styles.photoTitle, { color: surface.accent }]}>Add a photo</Text>
-          <Text style={[styles.photoHint, { color: colors.textSecondary }]}>Skip for now</Text>
+          <Text style={[styles.photoHint, { color: colors.textSecondary }]}>Optional</Text>
         </View>
       </TouchableOpacity>
 
-      <FieldLabel>Username</FieldLabel>
+      <FieldLabel>Your name</FieldLabel>
       <SignupField
-        value={username}
-        onChangeText={t => setUsername(t.replace(/\s/g, ''))}
-        placeholder="riverwalker32"
-        autoCapitalize="none"
+        value={name}
+        onChangeText={setName}
+        placeholder="e.g. Sam"
+        autoCapitalize="words"
         autoCorrect={false}
-        textContentType="username"
-        active={status === 'available'}
-        right={usernameRight}
+        maxLength={DISPLAY_NAME_MAX_LENGTH}
+        textContentType="givenName"
+        autoComplete="given-name"
+        returnKeyType="done"
+        active={trimmed.length > 0}
       />
-      {status === 'invalid' && (
-        <Text style={[styles.help, styles.bad]}>Use 3–20 letters, numbers, periods or underscores.</Text>
-      )}
 
-      <FieldLabel>Your birthdate</FieldLabel>
       <TouchableOpacity
-        onPress={openPicker}
+        onPress={() => {
+          haptic.selection();
+          setIsAdult(v => !v);
+        }}
         activeOpacity={0.85}
-        accessibilityLabel="Your birthdate"
-        accessibilityHint="Opens a date picker"
         style={[
-          styles.dateField,
-          {
-            backgroundColor: surface.card,
-            borderColor: birthdate && !tooYoung ? surface.accent : surface.border,
-          },
+          styles.confirmRow,
+          { backgroundColor: surface.card, borderColor: isAdult ? surface.accent : surface.border },
         ]}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isAdult }}
+        accessibilityLabel={`I'm ${MIN_ACCOUNT_AGE} or older`}
       >
-        <Text
+        <View
           style={[
-            styles.dateText,
-            { color: birthdate ? colors.textPrimary : colors.iconInactive },
+            styles.checkbox,
+            isAdult ? { backgroundColor: PINK, borderColor: PINK } : { borderColor: surface.border },
           ]}
         >
-          {birthdate ? formatLong(birthdate) : 'Select your birthdate'}
-        </Text>
-        <Feather name="calendar" size={18} color={colors.iconDefault} />
+          {isAdult && <Feather name="check" size={14} color="#fff" />}
+        </View>
+        <View style={styles.confirmText}>
+          <Text style={[styles.confirmLabel, { color: colors.textPrimary }]}>
+            I’m {MIN_ACCOUNT_AGE} or older
+          </Text>
+          <Text style={[styles.confirmHint, { color: colors.textSecondary }]}>
+            Accounts are for the adults leading the conversation.
+          </Text>
+        </View>
       </TouchableOpacity>
-      {birthdateError && <Text style={[styles.help, styles.bad]}>{birthdateError}</Text>}
-
-      {Platform.OS === 'ios' && (
-        <BottomSheet visible={pickerOpen} title="Your birthdate" onClose={() => setPickerOpen(false)}>
-          <DateTimePicker
-            value={birthdate ?? DEFAULT_PICKER_DATE}
-            mode="date"
-            display="spinner"
-            minimumDate={MIN_DATE}
-            maximumDate={new Date()}
-            onChange={onIosChange}
-            themeVariant={isDark ? 'dark' : 'light'}
-            style={styles.picker}
-          />
-          <Button label="Done" onPress={() => setPickerOpen(false)} />
-        </BottomSheet>
-      )}
     </SignupLayout>
   );
 };
@@ -241,55 +139,46 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: Typography.title1,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-Bold',
     color: '#fff',
   },
   photoTitle: {
     fontSize: Typography.callout,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
   photoHint: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
     marginTop: 2,
   },
-  status: {
+  confirmRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-  },
-  statusText: {
-    fontSize: Typography.footnote,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
-  },
-  bad: {
-    color: '#dc2626',
-  },
-  dateField: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    gap: Spacing.md,
     borderWidth: 1.5,
-    borderRadius: 14,
+    borderRadius: INPUT_RADIUS,
     paddingHorizontal: Spacing.md,
-    minHeight: 52,
-    marginBottom: Spacing.md,
+    paddingVertical: 12,
   },
-  dateText: {
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmText: {
     flex: 1,
-    fontSize: Typography.body,
-    fontFamily: 'Inter-Medium',
   },
-  picker: {
-    alignSelf: 'stretch',
-    marginBottom: Spacing.md,
+  confirmLabel: {
+    fontSize: Typography.callout,
+    fontFamily: 'Inter-SemiBold',
   },
-  help: {
+  confirmHint: {
+    marginTop: 2,
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.md,
+    lineHeight: 18,
   },
 });

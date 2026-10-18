@@ -44,18 +44,28 @@ This phrasing is intentional. It encourages brainstorming over judgment, creativ
 ## Design System
 
 ### Typography
-- **Inter** for everything (bundled in `assets/fonts/`, all three from the same release: `@expo-google-fonts/inter` 0.4.1, OFL-1.1). Loaded in `src/app/RootNavigator.tsx`:
-  - `Inter-SemiBold` — screen titles (accent purple, title case — not all caps), card titles, prompt text, buttons
+- **Inter** for everything except headings (bundled in `assets/fonts/`, all three from the same release: `@expo-google-fonts/inter` 0.4.1, OFL-1.1). Loaded in `src/app/RootNavigator.tsx`:
+  - `Inter-SemiBold` — list-row titles
   - `Inter-Medium` — body text, labels, descriptions, navigation
   - `Inter-MediumItalic` — the follow-up question on prompt cards ("What are all the things you can think of…"). Use this family rather than `fontStyle: 'italic'`, which iOS ignores for custom fonts.
-- **Rock Salt** (`assets/fonts/RockSalt-Regular.ttf`, `@expo-google-fonts/rock-salt` 0.4.1, Apache-2.0) — the hand-lettered "What If?" on the launch screen only. It's drawn into the launch images (`tools/graphics/make_splash.py`), which the iOS splash and the in-app `LoadingScreen` both show, so the app doesn't load it at runtime.
+- **Geomini** for all headings (`assets/fonts/`, both from `@expo-google-fonts/geomini` 0.4.0, OFL-1.1; the package has every weight from 200 to 800 if another is needed). Don't also set `fontWeight`; iOS may then substitute a system font.
+  - `Geomini-ExtraBold` — page-level headings: screen titles (`ScreenHeader`; accent purple, title case — not all caps), the sign-up step titles and "You're all set", the tutorial's "Welcome", the module cover title, modal titles, and the startup error title.
+  - `Geomini-Bold` — the lighter heading weight, for titles on cards and sheets (bottom sheets, tutorial tips, series and promo cards, You-tab cards, sign-up slides, upsells) and big numbers (activity stats, avatar initials).
+  - `Geomini-SemiBold` — lighter still, for display text that isn't a heading: prompt text (the deck's prompt and twist cards, module steps, the Personalize and Mad Libs previews, My Prompts, and the prompt editor), button labels (the kit `Button`), the age options on the deck's age card, the Create screen's card titles, and user names on community posts.
+  - Still Inter: other list-row titles, field labels, tags and badges, the small uppercase micro-labels (`SectionLabel`, Tips groups, the age menus, sign-up field labels: all `Inter-SemiBold`, tracked — a rounded display face gets blobby at 11 pt), and the Apple / Google sign-in buttons (their brand rules govern that text).
+- Never pair `fontWeight` or `fontStyle` with a custom `fontFamily`: pick the family that already has the weight or slant (`Inter-SemiBold`, `Inter-MediumItalic`). Android fakes the weight and iOS ignores the slant.
+- **Launch screen:** "What If?" in Geomini ExtraBold, curved in a gentle arch over the question mark, is drawn into the launch images (`tools/graphics/make_splash.py`; `ARC_RADIUS` sets the curve, and `--preview` compares strengths), which the iOS splash, the in-app `LoadingScreen`, the Welcome screen and the deck's title card all show (light and dark versions). Rerun the script after changing the font or lettering; it also updates the size in `SplashScreen.storyboard`.
+- Rock Salt (`assets/fonts/RockSalt-Regular.ttf`) was the launch lettering before Geomini; it's no longer used.
 - Barrio and Road Rage are no longer used or loaded (the font files remain in `assets/fonts/`).
 
 ### Visual language (set by the prompt card screen)
-- Soft gray screen background (light) / near-black (dark); content sits on white rounded cards (radius 20, hairline border, soft shadow). Dark mode uses lighter raised cards and heavier shadows for contrast.
+- Soft purple-tinted gray screen background (light) / near-black with a purple cast (dark); content sits on white rounded cards (radius 20, hairline border, soft shadow). Dark mode uses lighter raised cards and heavier shadows for contrast. The neutrals in `src/theme/themes.ts` are deliberately tinted toward the brand purple, not a stock gray scale; the tab bar and navigation chrome use the same `useSurface()` tokens so every background in a theme matches.
 - Hot pink for primary actions and active/selected states; deep purple (lightened in dark mode) for titles, icons and outlines.
 - Age-group colors are accents only — a dot, small pill or thin stripe — never full card backgrounds.
-- Filters are pills; secondary choices open bottom sheets.
+- Two radii: `CARD_RADIUS` (20) for cards, sheets, menus and plan cards; `INPUT_RADIUS` (14) for text fields, buttons, toasts and banners. Both in `src/ui/surface.ts`.
+- Filters are pills; secondary choices open bottom sheets. Confirmations are toasts (`toast.show()` in `src/ui/toast.tsx`, drawn by `ToastHost` in App.tsx); a native `Alert` is kept only for destructive confirms (log out, delete). Controls that aren't built yet say so inline ("Coming soon") and, if tapped, show `toast.beta()` rather than an alert.
+- Haptics (`src/ui/haptics.ts`): light on a swipe commit or page-turn, medium on the card flip, selection on toggles and twist changes, success on a save.
+- One-time hints (`useOneTimeHint` + `HintBubble`) introduce Twist and Tips in place the first time they appear; there's no multi-page tutorial on first launch (the tips deck remains as the Welcome Guide on the You tab).
 - Build screens from the shared kit: `src/ui/surface.ts` (`useSurface()` tokens) and `src/ui/components.tsx` (Screen, ScreenHeader, Card, ListRow, Pill, Button, BottomSheet, …).
 
 ### Color Palette (5 colors)
@@ -147,8 +157,8 @@ from that prototype is in this repo.
 App.tsx                      Providers: SafeArea → Theme → ErrorBoundary → Navigation → Db → ActiveContext → Auth
 src/app/                     RootNavigator (fonts, onboarding vs main), splash hand-off
 src/navigation/              Tab + stack navigators, transitions, deck deep links
-src/screens/                 One file per screen; src/screens/prompt/ holds the prompt deck's parts
-src/ui/                      Shared kit (Screen, Card, Pill, Button, BottomSheet, ScreenList…) and surface tokens
+src/screens/                 One file per screen; src/screens/prompt/ holds the prompt deck's parts, src/screens/you/ the You tab's
+src/ui/                      Shared kit (Screen, Card, Pill, Button, BottomSheet, ScreenList…), surface tokens, toast, haptics, HintBubble
 src/components/              Reusable pieces that aren't kit-level (DiscussionTips, carousel, ErrorBoundary)
 src/hooks/                   Data hooks over the repositories (usePromptsForAge, useFavorites…)
 src/db/                      SQLite open/migrate, numbered migrations, repositories, row types
@@ -162,13 +172,12 @@ firebase/                    Firestore rules, indexes, and the rules test suite
 ```
 
 **Screens:**
-- **Welcome / Welcome Tutorial** — first launch; continues the splash, then a swipeable tips deck
-- **Prompts** (`src/screens/prompt/`) — the deck: title card, age pick, swipeable prompt cards with twists on the back, Listen (TTS), Tips, favorite, report; filters for age group and situation; deck source (originals vs My Prompts)
-- **Explore / Module Detail** — themed modules and series
-- **Create / Prompt Editor / Mad Libs / My Prompts** — user-written prompts, playable in the deck
-- **Profile / Personalization** — activity, child's name/town/interests (never synced)
-- **Settings / FAQ / I'm Concerned** — preferences, help, safety resources
-- **Signup flow** (`src/screens/signup/`) — email-link sign-in, profile, paywall placeholder
+- **Welcome** — first launch; continues the splash, and Get Started goes straight into the app (the deck opens on the age pick). The swipeable tips deck (**Welcome Tutorial**) is the Welcome Guide on the You tab.
+- **Prompts** (`src/screens/prompt/`) — the deck: title card and age pick (skipped when a preferred age range is set), swipeable prompt cards with twists on the back, Listen (TTS), Tips, favorite, report; filters for age group and situation; deck source (originals vs My Prompts); Twist and Tips are hidden (not dimmed) for prompts without them; a "How did that go?" reflection sheet is offered when a prompt that was on top for 45 s+ is swiped away
+- **Explore / Module Detail** — themed modules and series (community posts are labeled samples until the community exists)
+- **Create / Prompt Editor / Prompt Builder (`MadLibs*` in code) / My Prompts** — user-written prompts, playable in the deck
+- **You** (`src/screens/you/`) — Profile and Settings merged into one tab: account, activity (sample numbers, labeled), personalization (child's name/town/interests, never synced), preferences, the community content filter (shown, not live during testing), reflections, Welcome Guide / FAQ / I'm Concerned, the Professional upsell, account actions. There is no ⚙ in any header.
+- **Signup flow** (`src/screens/signup/`) — email-link sign-in, profile (a display name and an "I'm 18 or older" confirmation; no username or birthdate), plan choice (kept for demos; free during beta)
 
 **Quality gates:** `npm run typecheck` (strict TS), `npm run lint` (ESLint, expo config), `npm test` (Jest via `jest-expo`), `npm run test:rules` (Firestore rules against the emulator). All run in GitHub Actions (`.github/workflows/ci.yml`).
 
@@ -231,13 +240,15 @@ firebase/                    Firestore rules, indexes, and the rules test suite
 ## Development Guidelines
 
 ### When Building UI
-- Use Inter for all text (see Typography); no Barrio or Road Rage
+- Use Inter for text and Geomini for headings: ExtraBold for page-level titles, Bold for card, sheet and section titles, SemiBold for prompt text, buttons and other display text (see Typography); no Barrio, Road Rage or Rock Salt
 - Start from the shared kit in `src/ui/` and `useSurface()` for backgrounds, cards, borders and shadows, rather than raw theme colors
 - Age groups keep their distinct assigned colors, shown as accents (dot, pill, stripe)
 - Deep purple (`#49297e`, or `surface.accent`) for titles, icons and outlines
 - Hot pink (`#e10086`) for primary CTAs and active states
-- Check every screen in both light and dark mode
+- Check every screen in both light and dark mode, and the deck at the largest accessibility text size (the card height scales with the font scale, capped at 1.6×)
+- Hide a control that has nothing to do (no twists, no tips) rather than dimming it; a dimmed button looks broken
 - Welcome screen uses a soft gradient background, NOT the full color palette gradient
+- The app icon (`tools/graphics/make_icon.py`) is the white hand-drawn mark on deep purple, filling ~80% of the tile; rerun the script after changing the mark
 
 ### When Working with Prompts
 - Every prompt follows the format: "What if [scenario]? What are all the things you can think of that you could do?"
@@ -257,3 +268,4 @@ firebase/                    Firestore rules, indexes, and the rules test suite
 - Memoize context values (`useMemo`) and handlers passed through context (`useCallback`); use `ScreenList` (FlatList) for anything that can grow without bound
 - React Native `StyleSheet` for styling; colors from `useSurface()` / `useTheme()` applied inline
 - Feather icons from `@expo/vector-icons`
+- Backups taken before a refactor go in `.backups/` at the repo root (git-ignored), never next to the source; pair them with a git tag

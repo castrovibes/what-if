@@ -41,6 +41,8 @@ const db = (uid, email = `${uid}@example.com`) =>
 
 const newUser = (uid, overrides = {}) => ({
   schemaVersion: 1,
+  displayName: null,
+  ageConfirmedAt: null,
   username: null,
   usernameLower: null,
   email: `${uid}@example.com`,
@@ -124,6 +126,31 @@ describe('users/{uid}', () => {
         birthdate: '1990-03-14',
         updatedAt: serverTimestamp(),
       }),
+    );
+  });
+
+  test('the profile step sets a display name and the adult confirmation', async () => {
+    const alice = db('alice');
+    await setDoc(doc(alice, 'users/alice'), newUser('alice'));
+    await assertSucceeds(
+      updateDoc(doc(alice, 'users/alice'), {
+        displayName: 'Alice W.',
+        ageConfirmedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // Blank, over-long, or non-string names are rejected; so is a non-timestamp confirmation.
+    await assertFails(
+      updateDoc(doc(alice, 'users/alice'), { displayName: '   ', updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(doc(alice, 'users/alice'), {
+        displayName: 'x'.repeat(41),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(alice, 'users/alice'), { ageConfirmedAt: true, updatedAt: serverTimestamp() }),
     );
   });
 

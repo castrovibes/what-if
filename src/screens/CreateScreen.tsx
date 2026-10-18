@@ -86,7 +86,7 @@ export const CreateScreen = () => {
         />
         <ToolCard
           icon="type"
-          title="Mad Libs"
+          title="Prompt Builder"
           description="Fill in the blanks of a ready-made template."
           onPress={() => navigation.navigate('MadLibs')}
         />
@@ -127,8 +127,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.body,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-SemiBold',
   },
   description: {
     fontSize: Typography.subheadline,

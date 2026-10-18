@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
@@ -9,6 +9,8 @@ import { Typography, Spacing } from '../utils/deviceHelpers';
 import { findAgeGroup, AgeGroupId } from '../data/ageGroups';
 import { UserPromptRepo, newUserPromptId } from '../db/repositories/userPrompts';
 import { playMyPromptsInDeck } from '../navigation/deckLinks';
+import { toast } from '../ui/toast';
+import { haptic } from '../ui/haptics';
 import {
   Screen,
   ScreenHeader,
@@ -19,7 +21,7 @@ import {
   Dot,
   Button,
 } from '../ui/components';
-import { useSurface } from '../ui/surface';
+import { useSurface, INPUT_RADIUS } from '../ui/surface';
 
 /** Dot + "Ages 3-5" meta line, matching the prompt screen's age pill. */
 const AgeMeta = ({ ageGroup }: { ageGroup: string }) => {
@@ -54,7 +56,7 @@ export const MadLibsScreen = () => {
   if (!FeatureFlags.isPremium) {
     return (
       <Screen>
-        <ScreenHeader title="Mad Libs Builder" onBack={() => navigation.goBack()} />
+        <ScreenHeader title="Prompt Builder" onBack={() => navigation.goBack()} />
         <ScreenScroll>
           <Card style={localStyles.paywall}>
             <View style={[localStyles.lockBadge, { borderColor: surface.border }]}>
@@ -64,7 +66,7 @@ export const MadLibsScreen = () => {
               Premium feature
             </Text>
             <Text style={[localStyles.paywallText, { color: colors.textSecondary }]}>
-              The Mad Libs builder lets you craft custom prompts from age-appropriate templates.
+              The Prompt Builder lets you craft custom prompts from age-appropriate templates.
               Available with Premium.
             </Text>
             {FeatureFlags.showSignup && (
@@ -87,10 +89,12 @@ export const MadLibsScreen = () => {
     await UserPromptRepo.save({ id, ageGroup, text: preview, situations: [] });
     setSelectedId(null);
     setFills([]);
-    Alert.alert('Saved to My Prompts', 'Want to try it now?', [
-      { text: 'Done', style: 'cancel' },
-      { text: 'Play in deck', onPress: () => playMyPromptsInDeck(navigation, ageGroup, id) },
-    ]);
+    haptic.success();
+    toast.show({
+      message: 'Saved to My Prompts',
+      icon: 'check',
+      action: { label: 'Play in deck', onPress: () => void playMyPromptsInDeck(navigation, ageGroup, id) },
+    });
   };
 
   const setFill = (i: number, v: string) => {
@@ -102,7 +106,7 @@ export const MadLibsScreen = () => {
   return (
     <Screen>
       <ScreenHeader
-        title="Mad Libs Builder"
+        title="Prompt Builder"
         subtitle="Pick a template, fill the slots, save it as a custom prompt."
         onBack={() => navigation.goBack()}
       />
@@ -198,8 +202,7 @@ const localStyles = StyleSheet.create({
   },
   paywallTitle: {
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-Bold',
   },
   paywallText: {
     fontSize: Typography.body,
@@ -215,7 +218,6 @@ const localStyles = StyleSheet.create({
   metaText: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
   },
   templateHeader: {
     flexDirection: 'row',
@@ -231,8 +233,7 @@ const localStyles = StyleSheet.create({
   previewText: {
     marginTop: Spacing.md,
     fontSize: Typography.title2,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-SemiBold',
     lineHeight: Math.round(Typography.title2 * 1.3),
   },
   slotGroup: {
@@ -240,7 +241,7 @@ const localStyles = StyleSheet.create({
   },
   slotInput: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: INPUT_RADIUS,
     paddingHorizontal: Spacing.md,
     paddingVertical: 12,
     fontSize: Typography.body,

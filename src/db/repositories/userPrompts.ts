@@ -3,7 +3,7 @@ import { AgeGroupId } from '../../data/ageGroups';
 import { SyncService } from '../../sync/syncService';
 
 /**
- * Prompts the user made (the blank creator and Mad Libs). They're ordinary prompts
+ * Prompts the user made (the blank creator and the Prompt Builder). They're ordinary prompts
  * with source 'user', so the deck can show them; situations go in
  * prompt_liminal_spaces like the library's. Deleting hides a prompt (is_active = 0)
  * rather than removing the row, so notes and favorites that point at it stay valid.

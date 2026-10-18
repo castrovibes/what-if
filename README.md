@@ -128,7 +128,7 @@ what-if/
 2. **Home Screen**: Main navigation with age group selection
 3. **Prompt Screen**: Interactive scenario presentation
 4. **Favorites**: Saved prompts for quick access
-5. **Settings**: Customize app behavior and preferences
+5. **You**: Account, activity, preferences and help in one tab
 6. **Developer Tools**: Testing and development utilities
 
 ## 🤝 Contributing

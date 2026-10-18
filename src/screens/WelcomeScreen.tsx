@@ -12,12 +12,11 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSurface } from '../ui/surface';
 import { Button } from '../ui/components';
 import { Typography, Spacing } from '../utils/deviceHelpers';
-import { OnboardingStackParamList } from '../navigation/types';
 
 // The first onboarding screen picks up where the launch screen leaves off: the same
 // "What If?" question-mark graphic, at the same size and place (see LoadingScreen and
@@ -33,8 +32,10 @@ const SPLASH_WIDTH = 280;
 const splashAsset = Image.resolveAssetSource(SPLASH.light);
 const SPLASH_HEIGHT = (SPLASH_WIDTH * splashAsset.height) / splashAsset.width;
 
-const ACTIONS_DELAY_MS = 600;
-const ACTIONS_FADE_MS = 1000;
+// The launch screen has already held the eye; the button should be usable almost at
+// once, so the whole fade is under half a second.
+const ACTIONS_DELAY_MS = 150;
+const ACTIONS_FADE_MS = 250;
 
 const fadeIn = (value: Animated.Value, delay: number, duration: number) =>
   Animated.timing(value, {
@@ -45,15 +46,19 @@ const fadeIn = (value: Animated.Value, delay: number, duration: number) =>
     useNativeDriver: true,
   });
 
-export const WelcomeScreen = () => {
-  const navigation = useNavigation<NavigationProp<OnboardingStackParamList>>();
+/**
+ * First launch: Get Started goes straight into the app (the deck opens on the age
+ * pick). Replayed from the You tab's Welcome Guide, it leads into the tips deck instead.
+ */
+export const WelcomeScreen = ({ onContinue }: { onContinue: () => void }) => {
+  const navigation = useNavigation();
   const { colors, isDark } = useTheme();
   const surface = useSurface();
 
-  // Swiping left moves on to the tutorial, like Get Started (which slides it in).
+  // Swiping left continues, like Get Started.
   const { width } = useWindowDimensions();
   const goNext = useRef(() => {});
-  goNext.current = () => navigation.navigate('WelcomeTutorial');
+  goNext.current = onContinue;
   const swipe = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => g.dx < -12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,

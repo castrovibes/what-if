@@ -104,15 +104,19 @@ export const PromptCardContent = ({
         ) : (
           <View />
         )}
-        <TouchableOpacity
-          style={[cardStyles.footerButton, noTips && cardStyles.disabled]}
-          onPress={onDiscussion}
-          disabled={noTips}
-          accessibilityLabel="Discussion tips"
-        >
-          <Feather name="info" size={16} color={colors.textPrimary} />
-          <Text style={[cardStyles.footerText, { color: colors.textPrimary }]}>Tips</Text>
-        </TouchableOpacity>
+        {/* Hidden, not dimmed, when a prompt has no tips: a dimmed control looks broken. */}
+        {noTips ? (
+          <View />
+        ) : (
+          <TouchableOpacity
+            style={cardStyles.footerButton}
+            onPress={onDiscussion}
+            accessibilityLabel="Discussion tips"
+          >
+            <Feather name="info" size={16} color={colors.textPrimary} />
+            <Text style={[cardStyles.footerText, { color: colors.textPrimary }]}>Tips</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </>
   );

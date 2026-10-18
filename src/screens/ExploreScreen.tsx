@@ -195,8 +195,7 @@ const local = StyleSheet.create({
   },
   promoTitle: {
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-Bold',
   },
   promoText: {
     fontSize: Typography.subheadline,
@@ -240,8 +239,7 @@ const local = StyleSheet.create({
   avatarPink: { backgroundColor: '#e10086' },
   postUserName: {
     fontSize: Typography.callout,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-SemiBold',
   },
   postMeta: {
     marginTop: 2,

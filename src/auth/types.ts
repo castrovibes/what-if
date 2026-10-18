@@ -15,12 +15,20 @@ export type Account = {
   id: string;
   provider: AuthProvider;
   email: string | null;
+  /** What the app calls them; free text. Null until the profile step is finished. */
+  displayName: string | null;
+  /** The account holder confirmed they're an adult (18+) when setting up the profile. */
+  ageConfirmed: boolean;
+  /** Legacy unique handle; no longer collected, kept for accounts that have one. */
   username: string | null;
-  /** ISO date (YYYY-MM-DD). */
+  /** Legacy ISO date (YYYY-MM-DD); no longer collected. */
   birthdate: string | null;
   photoUri: string | null;
   plan: PlanId;
 };
+
+/** Longest display name the profile step accepts (the rules enforce the same). */
+export const DISPLAY_NAME_MAX_LENGTH = 40;
 
 export type SignInResult = {
   account: Account;
@@ -57,9 +65,10 @@ export interface AuthService {
    */
   devLatestSignInLink?(email: string): Promise<string | null>;
   checkUsername(username: string): Promise<UsernameStatus>;
+  /** The profile step: a display name and the adult confirmation. */
   saveProfile(
     accountId: string,
-    profile: { username: string; birthdate: string; photoUri: string | null },
+    profile: { displayName: string; ageConfirmed: true; photoUri: string | null },
   ): Promise<Account>;
   /** The signed-in account restored from the device, if any. */
   restoreSession(): Promise<Account | null>;

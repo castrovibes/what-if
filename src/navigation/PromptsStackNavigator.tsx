@@ -7,8 +7,8 @@ import { useStackScreenOptions } from './transitions';
 const Stack = createStackNavigator<PromptsStackParamList>();
 
 /**
- * The Prompts tab: the deck. Series live in Explore, Mad Libs in Create, and Settings
- * (with FAQ and Personalize) opens from the ⚙ in the header.
+ * The Prompts tab: the deck. Series live in Explore, the Prompt Builder in Create, and Settings
+ * live on the You tab (with FAQ and Personalize).
  */
 export const PromptsStackNavigator = () => {
   const screenOptions = useStackScreenOptions();

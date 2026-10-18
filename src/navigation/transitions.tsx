@@ -5,16 +5,22 @@
  *          right with the iOS spring, swipe back from the edge.
  * - modal: a flow layered over the app (Sign-up). iOS card sheet that pushes the app back;
  *          slides up from the bottom on Android. Swipe down to close.
- * - fade:  a change of scene rather than a step deeper (Welcome → Tutorial, finishing
- *          onboarding). A soft cross-fade.
+ * - fade:  a change of scene rather than a step deeper (Welcome → Tutorial). A soft
+ *          cross-fade.
+ * - enter: finishing onboarding. The app slides in from the left while the tutorial
+ *          slides off to the right, the opposite of a push, so it reads as arriving
+ *          home rather than drilling deeper.
  *
- * With the system's Reduce Motion setting on, push and modal become the fade, as iOS does.
+ * With the system's Reduce Motion setting on, push, modal and enter become the fade, as
+ * iOS does.
  * Switching tabs is instant.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 import {
   CardStyleInterpolators,
+  StackCardInterpolatedStyle,
+  StackCardInterpolationProps,
   StackNavigationOptions,
   TransitionPresets,
   TransitionSpecs,
@@ -60,12 +66,42 @@ const modal: StackNavigationOptions = {
   transitionSpec: { open: TransitionSpecs.TransitionIOSSpec, close: TransitionSpecs.TransitionIOSSpec },
 };
 
+/**
+ * The incoming screen slides in from the left edge; the screen it covers (which the stack
+ * animates with the incoming screen's options) slides off to the right.
+ */
+const forSlideFromLeft = ({
+  current,
+  next,
+  layouts: { screen },
+}: StackCardInterpolationProps): StackCardInterpolatedStyle => {
+  const entering = current.progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-screen.width, 0],
+    extrapolate: 'clamp',
+  });
+  const translateX = next
+    ? Animated.add(
+        entering,
+        next.progress.interpolate({ inputRange: [0, 1], outputRange: [0, screen.width], extrapolate: 'clamp' }),
+      )
+    : entering;
+  return { cardStyle: { transform: [{ translateX }] } };
+};
+
+const enter: StackNavigationOptions = {
+  cardStyleInterpolator: forSlideFromLeft,
+  transitionSpec: { open: TransitionSpecs.TransitionIOSSpec, close: TransitionSpecs.TransitionIOSSpec },
+  gestureEnabled: false,
+};
+
 /** Stack options for each kind of transition, adjusted for Reduce Motion. */
 export const useTransitions = () => {
   const reduceMotion = useReduceMotion();
   return {
     push: reduceMotion ? { ...fade, gestureEnabled: true } : push,
     modal: reduceMotion ? { ...fade, presentation: 'modal' as const } : modal,
+    enter: reduceMotion ? fade : enter,
     fade,
   };
 };

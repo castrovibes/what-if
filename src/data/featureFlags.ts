@@ -12,7 +12,7 @@ export const FeatureFlags = {
   /** Plans are shown as "Free during beta" and everyone gets Premium. */
   betaFreeAccess,
 
-  // Acts as a Premium user (unlocks Mad Libs builder, Premium prompts, etc.).
+  // Acts as a Premium user (unlocks the Prompt Builder, Premium prompts, etc.).
   // TODO: replace with the billing entitlement once purchases are real.
   isPremium: betaFreeAccess,
 

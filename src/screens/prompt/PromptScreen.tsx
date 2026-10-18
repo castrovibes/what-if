@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  Alert,
   Pressable,
   useWindowDimensions,
 } from 'react-native';
@@ -14,6 +14,8 @@ import {
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
+  FadeOut,
+  LinearTransition,
   cancelAnimation,
   runOnJS,
   useAnimatedStyle,
@@ -42,6 +44,7 @@ import { useSurface, PINK } from '../../ui/surface';
 import { useReduceMotion } from '../../navigation/transitions';
 import { Screen, ScreenHeader, Pill, Dot, Button } from '../../ui/components';
 import {
+  ACTION_FADE_MS,
   ARRIVAL_DELAY_MS,
   ARRIVAL_FADE_MS,
   CARD_CORNER_RADIUS,
@@ -72,11 +75,28 @@ import { TapFlash, useTapFlash } from './TapFlash';
 import { usePromptSpeech } from './usePromptSpeech';
 import { AgeMenu, AgeMenuBackdrop, AgePickCard } from './AgeMenu';
 import { PromptSheets } from './PromptSheets';
+import { ReflectionSheet, REFLECT_AFTER_MS } from './ReflectionSheet';
+import { toast } from '../../ui/toast';
+import { haptic } from '../../ui/haptics';
+import { HintBubble } from '../../ui/HintBubble';
+import { useOneTimeHint } from '../../hooks/useOneTimeHint';
 
 // A horizontal drag becomes a swipe after this much movement; more vertical than
 // that and the scroll view keeps it. (Replaces the old responder's dx > dy * 1.5.)
 const SWIPE_ACTIVATE_PX = 8;
 const SWIPE_FAIL_Y_PX = 12;
+
+// The title card shows the launch graphic: "What If?" arched over the hand-drawn question
+// mark (built by tools/graphics/make_splash.py, also on the Welcome and loading screens).
+const TITLE_ART = {
+  light: require('../../../assets/graphics/splash-light.png'),
+  dark: require('../../../assets/graphics/splash-dark.png'),
+};
+const TITLE_ART_WIDTH = 220;
+const titleArtAsset = Image.resolveAssetSource(TITLE_ART.light);
+const TITLE_ART_HEIGHT = (TITLE_ART_WIDTH * titleArtAsset.height) / titleArtAsset.width;
+// First-time hints float just above the action row (its 76pt Twist button plus padding).
+const HINT_BOTTOM = 76 + Spacing.md * 2 + Spacing.sm;
 
 /**
  * The prompt deck: a title card before a session, then prompt cards the user swipes
@@ -90,18 +110,21 @@ const SWIPE_FAIL_Y_PX = 12;
 export const PromptScreen = () => {
   const navigation = useNavigation<NavigationProp<PromptsStackParamList>>();
   const route = useRoute<RouteProp<PromptsStackParamList, 'PromptsMain'>>();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const surface = useSurface();
   const { width: windowWidth } = useWindowDimensions();
   const accent = surface.accent;
 
   const { activeContext } = useActiveContext();
-  // Each app launch starts on the title card. The age group starts as the user's
-  // preferred range (Settings), if any; otherwise they pick one when starting.
+  // With a preferred age range (Settings), or sent here for a specific age, the deck
+  // opens straight onto the first prompt. Otherwise it opens on the title card and
+  // the user picks who they're talking with.
   const [selectedAge, setSelectedAge] = useState<AgeGroupId | null>(
     (route.params?.ageGroup as AgeGroupId | undefined) ?? activeContext.ageGroupDefault ?? null,
   );
-  const [sessionStarted, setSessionStarted] = useState(!!route.params?.ageGroup);
+  const [sessionStarted, setSessionStarted] = useState(
+    !!route.params?.ageGroup || !!activeContext.ageGroupDefault,
+  );
 
   // A preference changed in Settings before the session starts applies right away.
   const preferredAge = activeContext.ageGroupDefault;
@@ -161,9 +184,18 @@ export const PromptScreen = () => {
   // Swiping right goes back through prompts already seen this session.
   const canGoBack = deckTarget > 0;
   const promptId = currentPrompt?.id ?? '';
-  const { cards: twistCards } = useWorldBuilding(promptId);
+  const { cards: twistCards, loading: twistsLoading } = useWorldBuilding(promptId);
   const hasTwists = twistCards.length > 0;
+  // The Twist button is hidden (not dimmed) for prompts without twists. While a new
+  // prompt's twists load it stays put, so it doesn't blink out and back on every swipe.
+  const showTwistButton = hasTwists || twistsLoading;
   const twist = twistCards[Math.min(twistIndex, twistCards.length - 1)];
+  const toggleTwists = () => {
+    if (!hasTwists) return;
+    haptic.medium();
+    twistHint.dismiss();
+    setShowTwists(p => !p);
+  };
 
   // Flip the top card over to its twists, and back. With Reduce Motion on, the faces
   // just swap.
@@ -193,6 +225,7 @@ export const PromptScreen = () => {
       twistShift.value = withTiming(0, { duration: TWIST_IN_MS });
       return;
     }
+    haptic.selection();
     twistShift.value = withTiming(
       -dir * TWIST_SLIDE,
       { duration: TWIST_OUT_MS, easing: Easing.in(Easing.quad) },
@@ -202,6 +235,16 @@ export const PromptScreen = () => {
     );
   };
   const { total: tipCount } = useTipsForPrompt(promptId);
+
+  // First-time hints, in place of a tutorial: Twist introduces itself the first time a
+  // prompt with twists is on top, then Tips the first time a prompt has tips. Each
+  // shows once per install and goes when tapped or when the feature is used.
+  const twistHint = useOneTimeHint('twist');
+  const tipsHint = useOneTimeHint('tips');
+  const openDiscussion = () => {
+    tipsHint.dismiss();
+    setSheet('discussion');
+  };
 
   // The deck position, in prompt indexes: whole numbers at rest, fractional while a
   // card is moving. Every card's motion is derived from it, so no card ever swaps
@@ -317,9 +360,31 @@ export const PromptScreen = () => {
     );
   }, [loading, prompts, progress, arrival, targetSV]);
 
+  // Reflections: a prompt that was on top long enough to have been talked about gets
+  // a "How did that go?" once it's swiped away (once per prompt per session). The
+  // offer waits for the card to finish leaving.
+  const shownAt = useRef(Date.now());
+  useEffect(() => {
+    shownAt.current = Date.now();
+  }, [promptId]);
+  const reflectedIds = useRef(new Set<string>());
+  const pendingReflection = useRef<Prompt | null>(null);
+  const [reflectFor, setReflectFor] = useState<Prompt | null>(null);
+  const noteLeaving = () => {
+    const p = currentPrompt;
+    if (!p || reflectedIds.current.has(p.id)) return;
+    if (Date.now() - shownAt.current < REFLECT_AFTER_MS) return;
+    reflectedIds.current.add(p.id);
+    pendingReflection.current = p;
+  };
+
   const settle = (index: number) => {
     animatingRef.current = false;
     setCurrentPromptIndex(index);
+    if (pendingReflection.current) {
+      setReflectFor(pendingReflection.current);
+      pendingReflection.current = null;
+    }
   };
 
   /**
@@ -329,7 +394,11 @@ export const PromptScreen = () => {
   const goTo = (target: number) => {
     const t = Math.max(0, target);
     if (prompts.length === 0) return;
-    if (t !== targetRef.current) setShowTwists(false);
+    if (t !== targetRef.current) {
+      setShowTwists(false);
+      haptic.light();
+      if (t > targetRef.current) noteLeaving();
+    }
     // From rest, a skip accelerates away; mid-flight, or going back, it eases in.
     const easing =
       !animatingRef.current && t > targetRef.current ? Easing.in(Easing.quad) : Easing.out(Easing.quad);
@@ -424,20 +493,23 @@ export const PromptScreen = () => {
     try {
       const result = await submitPromptReport(currentPrompt.id, reason);
       if (result === 'unavailable') {
-        Alert.alert(
-          'Thanks for flagging it',
-          'Reports can’t be sent from this version yet. Please send a note through TestFlight feedback (a screenshot helps) so we can review this prompt.',
-        );
+        toast.show({
+          message:
+            'Thanks for flagging it. Reports can’t be sent from this build yet, so please mention it in TestFlight feedback.',
+          icon: 'flag',
+          duration: 5000,
+        });
       } else {
-        Alert.alert(
-          'Thanks for flagging it',
-          result === 'sent'
-            ? 'We’ll review this prompt.'
-            : 'Your report will be sent when you’re back online.',
-        );
+        toast.show({
+          message:
+            result === 'sent'
+              ? 'Thanks for flagging it. We’ll review this prompt.'
+              : 'Thanks. Your report will go out when you’re back online.',
+          icon: 'flag',
+        });
       }
     } catch {
-      Alert.alert('Couldn’t send the report', 'Please try again, or use TestFlight feedback.');
+      toast.show({ message: 'Couldn’t send the report. Please try again.', icon: 'alert-circle' });
     }
   };
 
@@ -475,10 +547,12 @@ export const PromptScreen = () => {
   };
   const sendCoverAway = () => {
     if (titleMoving.current || coverGone) return;
+    haptic.light();
     moveTitleDeck(1, afterCoverLeft);
   };
   const sendAgeCardAway = () => {
     if (titleMoving.current) return;
+    haptic.light();
     moveTitleDeck(2, () => {
       titleMoving.current = false;
       titleMovingSV.value = false;
@@ -529,8 +603,12 @@ export const PromptScreen = () => {
     if (index === 0) {
       return (
         <View style={styles.titleCard}>
-          <Text style={[styles.titleMark, { color: accent }]}>?</Text>
-          <Text style={[styles.titleText, { color: accent }]}>What If?</Text>
+          <Image
+            source={isDark ? TITLE_ART.dark : TITLE_ART.light}
+            style={styles.titleArt}
+            accessibilityRole="image"
+            accessibilityLabel="What If?"
+          />
           <Text style={[styles.titleSubtitle, { color: colors.textSecondary }]}>
             {currentAgeGroup
               ? `Start a session to get your first prompt for ages ${currentAgeGroup.label.replace(' years', '').replace('-', ' – ')}.`
@@ -711,7 +789,7 @@ export const PromptScreen = () => {
                           accent={accent}
                           tipCount={tipCount}
                           onReport={handleReport}
-                          onDiscussion={() => setSheet('discussion')}
+                          onDiscussion={openDiscussion}
                           showListen={ttsEnabled}
                           speaking={speaking}
                           onListen={toggleListen}
@@ -829,7 +907,10 @@ export const PromptScreen = () => {
           <View style={styles.actionRow}>
             {/* Back to the previous prompt (swiping the card left skips forward). VoiceOver
                 users can't swipe the card, so both directions are also actions here. */}
-            <Animated.View entering={actionEntering(0)}>
+            <Animated.View
+              entering={actionEntering(0)}
+              layout={LinearTransition.duration(ACTION_FADE_MS / 2)}
+            >
               <TouchableOpacity
                 onPress={handleBack}
                 style={[
@@ -855,35 +936,47 @@ export const PromptScreen = () => {
                   else handleBack();
                 }}
               >
-                <Feather name="rotate-ccw" size={22} color={colors.iconDefault} />
+                <Feather name="corner-up-left" size={22} color={colors.iconDefault} />
               </TouchableOpacity>
             </Animated.View>
 
-            <Animated.View entering={actionEntering(1)}>
-              <TouchableOpacity
-                onPress={() => setShowTwists(p => !p)}
-                disabled={!hasTwists}
-                style={[
-                  styles.circleButton,
-                  styles.twistButton,
-                  {
-                    borderColor: accent,
-                    backgroundColor: showTwists ? accent : surface.card,
-                  },
-                  !hasTwists && styles.disabled,
-                ]}
-                accessibilityLabel={showTwists ? 'Show the prompt' : 'Flip to twists'}
+            {/* Only for prompts that have twists; the other buttons slide together when
+                it goes. */}
+            {showTwistButton && (
+              <Animated.View
+                entering={actionEntering(1)}
+                exiting={FadeOut.duration(ACTION_FADE_MS / 2)}
+                layout={LinearTransition.duration(ACTION_FADE_MS / 2)}
               >
-                <Feather name="shuffle" size={20} color={showTwists ? '#fff' : accent} />
-                <Text style={[styles.twistLabel, { color: showTwists ? '#fff' : accent }]}>
-                  Twist
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
+                <TouchableOpacity
+                  onPress={toggleTwists}
+                  style={[
+                    styles.circleButton,
+                    styles.twistButton,
+                    {
+                      borderColor: accent,
+                      backgroundColor: showTwists ? accent : surface.card,
+                    },
+                  ]}
+                  accessibilityLabel={showTwists ? 'Show the prompt' : 'Flip to twists'}
+                >
+                  <Feather name="shuffle" size={20} color={showTwists ? '#fff' : accent} />
+                  <Text style={[styles.twistLabel, { color: showTwists ? '#fff' : accent }]}>
+                    Twist
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
 
-            <Animated.View entering={actionEntering(2)}>
+            <Animated.View
+              entering={actionEntering(2)}
+              layout={LinearTransition.duration(ACTION_FADE_MS / 2)}
+            >
               <TouchableOpacity
-                onPress={() => toggleFavorite(promptId)}
+                onPress={() => {
+                  haptic.selection();
+                  toggleFavorite(promptId);
+                }}
                 style={[
                   styles.circleButton,
                   { borderColor: PINK, backgroundColor: favorited ? PINK : surface.card },
@@ -896,6 +989,26 @@ export const PromptScreen = () => {
           </View>
         )}
 
+        {sessionStarted && currentPrompt && !loading && (
+          <>
+            {hasTwists && !showTwists && twistHint.ready ? (
+              <HintBubble
+                icon="shuffle"
+                text="Tap Twist to turn the card over: a new angle on the same question."
+                onDismiss={twistHint.dismiss}
+                bottom={HINT_BOTTOM}
+              />
+            ) : tipCount > 0 && tipsHint.ready ? (
+              <HintBubble
+                icon="info"
+                text="Tips has ideas for getting the conversation going."
+                onDismiss={tipsHint.dismiss}
+                bottom={HINT_BOTTOM}
+              />
+            ) : null}
+          </>
+        )}
+
         <PromptSheets
           sheet={sheet}
           onClose={() => setSheet(null)}
@@ -906,6 +1019,11 @@ export const PromptScreen = () => {
           onChooseSpace={chooseSpace}
           promptId={promptId}
           onReport={sendReport}
+        />
+        <ReflectionSheet
+          prompt={reflectFor}
+          contextId={activeContext.id}
+          onClose={() => setReflectFor(null)}
         />
 
         {ageMenuOpen && <AgeMenuBackdrop onPress={() => setAgeMenuOpen(false)} />}
@@ -928,24 +1046,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titleMark: {
-    fontSize: 72,
-    lineHeight: 84,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
-    opacity: 0.15,
+  titleArt: {
+    width: TITLE_ART_WIDTH,
+    height: TITLE_ART_HEIGHT,
+    // Lift it a little, so it sits centered in the space above the subtitle.
+    marginBottom: Spacing.xl,
   },
-  titleText: {
-    fontSize: Typography.title1,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
-    textAlign: 'center',
-  },
+  // Sits at the foot of the card, leaving the mark and title centered. Footnote size
+  // (12–13 pt): iOS's Footnote style and above Material's 12 sp Body Small.
   titleSubtitle: {
-    marginTop: Spacing.sm,
-    fontSize: Typography.subheadline,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    lineHeight: 21,
+    lineHeight: 18,
     textAlign: 'center',
   },
   startRow: {
@@ -1057,6 +1173,5 @@ const styles = StyleSheet.create({
   twistLabel: {
     fontSize: 11,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
 });

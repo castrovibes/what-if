@@ -159,12 +159,10 @@ const localStyles = StyleSheet.create({
   metaText: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
   },
   coverTitle: {
     fontSize: Typography.title1,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-ExtraBold',
     lineHeight: Math.round(Typography.title1 * 1.25),
     marginBottom: Spacing.sm,
   },
@@ -187,7 +185,6 @@ const localStyles = StyleSheet.create({
   coverProgress: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
   },
   stepHeader: {
     flexDirection: 'row',
@@ -204,27 +201,24 @@ const localStyles = StyleSheet.create({
   stepNumber: {
     fontSize: 10,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1,
   },
+  // The italic family, not fontStyle: iOS ignores fontStyle for custom fonts.
   stepIntro: {
     fontSize: Typography.subheadline,
-    fontFamily: 'Inter-Medium',
-    fontStyle: 'italic',
+    fontFamily: 'Inter-MediumItalic',
     lineHeight: 21,
     marginBottom: Spacing.sm,
   },
   stepPrompt: {
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-SemiBold',
     lineHeight: Math.round(Typography.title3 * 1.3),
     marginBottom: Spacing.sm,
   },
   stepOutro: {
     fontSize: Typography.subheadline,
-    fontFamily: 'Inter-Medium',
-    fontStyle: 'italic',
+    fontFamily: 'Inter-MediumItalic',
     lineHeight: 21,
   },
 });

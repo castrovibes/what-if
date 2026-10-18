@@ -61,8 +61,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.title2,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-ExtraBold',
     textAlign: 'center',
   },
   message: {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useSurface, PINK } from '../ui/surface';
+import { useSurface, PINK, INPUT_RADIUS } from '../ui/surface';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
 // Banner for safety-sensitive screens that haven't been reviewed by a clinician.
@@ -24,14 +24,13 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: INPUT_RADIUS,
     borderWidth: 1,
     marginVertical: Spacing.md,
   },
   text: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 0.6,
   },
 });

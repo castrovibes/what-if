@@ -6,7 +6,6 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  Alert,
   useWindowDimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
@@ -14,9 +13,10 @@ import {
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
-import { useSurface, PINK } from '../../ui/surface';
+import { useSurface, PINK, INPUT_RADIUS } from '../../ui/surface';
 import { Screen } from '../../ui/components';
 import { useAuth } from '../../auth/AuthProvider';
+import { toast } from '../../ui/toast';
 import { NotAvailableError, SignInResult } from '../../auth/types';
 import { authBackend } from '../../backend/config';
 import { SignupStackParamList } from '../../navigation/types';
@@ -68,8 +68,8 @@ export const AuthMethodScreen = () => {
         await (method === 'apple' ? auth.signInWithApple() : auth.signInWithGoogle()),
       );
     } catch (e) {
-      if (e instanceof NotAvailableError) Alert.alert('Coming soon', e.message);
-      else Alert.alert('Sign in failed', 'Please try again.');
+      if (e instanceof NotAvailableError) toast.show({ message: e.message, icon: 'clock', duration: 4000 });
+      else toast.show({ message: 'Sign in failed. Please try again.', icon: 'alert-circle' });
     } finally {
       setBusy(null);
     }
@@ -188,8 +188,7 @@ const styles = StyleSheet.create({
   },
   slideTitle: {
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-Bold',
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
@@ -227,12 +226,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.sm,
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: INPUT_RADIUS,
     borderWidth: 1.5,
   },
   authText: {
     fontSize: Typography.callout,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
 });

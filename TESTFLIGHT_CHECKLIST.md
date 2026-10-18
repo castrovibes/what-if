@@ -9,12 +9,14 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 
 ## Phase 1 — Accounts and build pipeline
 
+Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNTS_GUIDE.md](TESTFLIGHT_ACCOUNTS_GUIDE.md).
+
 - [ ] **You:** Enroll in the Apple Developer Program ($99/year) if not already.
 - [ ] **You:** Create the app in App Store Connect with bundle ID `com.whatcouldyoudo.app`.
 - [ ] **You:** Create an Expo account (for EAS Build, Expo's cloud build service), then run `npx eas-cli login` and `npx eas-cli init` once. This links the project and adds its ID to `app.json`.
 - [x] **Claude:** Add `eas.json` with `preview` (internal) and `production` (TestFlight, auto-incrementing build number) profiles and a submit profile. Scripts: `npm run build:ios`, `npm run submit:ios`.
 - [x] **Claude:** Add a **placeholder** 1024×1024 app icon (pink background, white speech bubble with "?") in `assets/images/` and the iOS asset catalog, plus an Android adaptive icon.
-- [ ] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen.
+- [x] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen. Done: the icon is the hand-drawn question mark on its own green (`#bcd901`), edge to edge; the splash is "What If?" in Rock Salt above the question mark, held until the app draws the same image (`tools/graphics/`).
 - [x] **Claude:** Set version and build-number handling (`app.json` version 1.0.0; EAS keeps and auto-increments the build number remotely).
 - [x] **Claude:** Declare export compliance (`ITSAppUsesNonExemptEncryption: false`) in `app.json` and `ios/…/Info.plist`.
 - [x] **Claude:** Bring the checked-in `ios/` project up to date with new native modules (`pod install`: datetimepicker, expo-speech).
@@ -68,8 +70,9 @@ Your brainstorm board (objects, attributes and actions) compared with what's bui
 7. **Mad Libs prompts don't sync.** Prompts saved from Mad Libs are stored as the user's own prompts on the phone, but aren't part of cloud sync.
    - [x] **Claude:** Done with Phase 2c item 4e: all of the user's own prompts (Mad Libs and Write a prompt) now sync.
 8. **Long prompts.** Every prompt card is now the same height (380 pt). Prompt text shrinks to fit, from the title size down to a readable minimum (`title3`, 18–22 pt depending on the phone). Anything still too long at the minimum is cut off. That's fine for the current library, but user-created prompts (Mad Libs, community submissions) could be any length.
-   - [ ] **You:** Choose an approach: a **word or character limit** on user-created prompts (simplest; roughly 170 characters fits at the minimum size, so ~150 leaves room), or a **multi-page card** for long prompts, e.g. tapping the card to **flip** it and read the rest on the back.
-   - [ ] **Claude:** Build the chosen approach. A limit means a counter and validation on the prompt forms; a flip means a flip animation plus a "more" cue on cards whose text doesn't fit.
+   - [x] **Claude:** A **150-character limit** on the blank prompt creator is built (Phase 2c item 4b), so user-written prompts fit today.
+   - [ ] **You:** Decide whether to keep the limit or switch to a **multi-page card** for long prompts, e.g. tapping the card to **flip** it and read the rest on the back. Roughly 170 characters fits at the minimum text size.
+   - [ ] **Claude:** If you choose the flip: a flip animation plus a "more" cue on cards whose text doesn't fit.
 
 ## Phase 2c — Navigation reorganization
 
@@ -111,7 +114,9 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 
 - [x] **You:** Choose the backend. Decided: **Firebase** (Auth + Firestore), syncing accounts and user data (contexts, favorites, reflections, series progress). Prompt content stays bundled in the app.
 - [x] **Claude:** Build the data model (`src/backend/model.ts`), Firestore security rules with 18 tests (`npm run test:rules`), and a local emulator setup (`npm run emulators`).
-- [ ] **You:** Create the real Firebase project (separate dev and prod projects recommended), add an iOS app with bundle ID `com.whatcouldyoudo.app`, and share the web config keys. **Claude** will deploy the rules.
+- [x] **You:** Create the **dev** Firebase project (`what-if-dev-70316`, Spark plan) with Email link sign-in and Firestore. **Claude** deployed the rules and indexes and put its config in `.env` (git-ignored). Sign-up verified end to end against it on 2026-10-17 (test account `whatifdevtest1`). Back to the emulators: set `EXPO_PUBLIC_USE_FIREBASE_EMULATOR=true`.
+- [ ] **You:** Create the **prod** Firebase project the same way (Web app + iOS app with bundle ID `com.whatcouldyoudo.app`, Email link sign-in, Firestore in production mode, region `nam5`) and share its web config. **Claude** will deploy the rules and set the keys as EAS environment variables.
+- [ ] **You:** Upgrade to the **Blaze** plan (pay-as-you-go) before outside testers sign in, and set a budget alert (e.g. $10) in Google Cloud Billing. Spark sends only **5 sign-in emails a day** per project; Blaze allows 25,000 with the same free allowances.
 - [ ] **You:** Decide whether personalization (the child's name, town and interests) may ever sync. Today it is deliberately device-only.
 - [x] **Claude:** Connect the app to Firebase (JS SDK, emulators in development) and replace the mock `AuthService` with Firebase Auth. Sign-in creates `users/{uid}`; the profile step claims a unique username. Verified end to end against the emulators.
 - [x] **Claude:** Switch email sign-in to Firebase **magic links**. The Verify Code screen is now "Check your email" and continues automatically; the app handles sign-in links that open it.
@@ -132,3 +137,21 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 
 - [x] Sign-up flow UI (six screens) on a swappable mock backend
 - [x] Native birthdate picker (`@react-native-community/datetimepicker`)
+
+## Design critique pass (2026-10-17)
+
+Decisions from the founder/designer critique, recorded here because some reverse earlier items above:
+
+- **Tabs are Prompts · Explore · Create · You.** Profile and Settings merged into **You** (`src/screens/you/`); the ⚙ is gone from every header (reverses 2c item 1's "⚙ on every screen"). An **Explore redesign** is on the to-do list (see 2c item 2's open "You (later)" item).
+- **Onboarding is one screen.** Welcome → Get Started → the deck's age pick. Twist and Tips introduce themselves with one-time in-place hints. The tips deck survives as **Welcome guide** on You.
+- **Returning users skip the cover.** With a preferred age range set, the deck opens on the first prompt.
+- **Twist and Tips hide when a prompt has none** (not dimmed). Prompt cards grow with the system text size.
+- **Haptics** on swipe, flip, favorite, twist change and saves (`expo-haptics`).
+- **Toasts replace alerts** for confirmations (saved, report sent, About); native alerts stay for log out / delete. "Coming soon" controls say so inline and show a beta toast when tapped. Sample community posts and activity numbers stay, labeled, until there are real users.
+- **Sign-up profile step:** a display name (no username, no availability check) and an "I'm 18 or older" confirmation (no birthdate picker). The plan step stays for demos. Firestore: new `displayName` / `ageConfirmedAt` fields; `username` / `birthdate` remain nullable legacy fields (rules and tests updated).
+- **Brand-tinted neutrals** in both themes; the tab bar and modals use the same surface tokens. Two radii (20 cards, 14 controls). Micro-labels in Inter-SemiBold. No `fontWeight` / `fontStyle` with custom fonts.
+- **App icon:** white mark on deep purple at ~80% of the tile.
+- **Backups** live in `.backups/` (git-ignored), not beside the source.
+- [ ] **You:** Decide the Twist button's icon (kept `shuffle` for now; Previous prompt is `corner-up-left`).
+- [ ] **Claude:** Tab-bar mockup with the question-mark glyph for Prompts, before changing it.
+- [ ] **You (later):** Explore redesign.
