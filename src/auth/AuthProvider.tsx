@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -133,39 +134,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     // Push pending changes and remove the account's data from this device first.
     if (syncEnabled) await SyncService.signOut();
     PreferenceSync.setUser(null);
     await authService.signOut();
     setAccount(null);
-  };
+  }, []);
 
-  const deleteAccount = async () => {
+  const deleteAccount = useCallback(async () => {
     await authService.deleteAccount();
     if (syncEnabled) await SyncService.discardAfterAccountDeletion();
     PreferenceSync.setUser(null);
     setAccount(null);
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        deleteAccount,
-        account,
-        ready,
-        setAccount,
-        completeSignInLink,
-        linkError,
-        clearLinkError: () => setLinkError(null),
-        signOut,
-        signupOfferPending,
-        setSignupOfferPending,
-        auth: authService,
-        billing: billingService,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const clearLinkError = useCallback(() => setLinkError(null), []);
+
+  // Memoized so consumers only re-render when auth state actually changes.
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      deleteAccount,
+      account,
+      ready,
+      setAccount,
+      completeSignInLink,
+      linkError,
+      clearLinkError,
+      signOut,
+      signupOfferPending,
+      setSignupOfferPending,
+      auth: authService,
+      billing: billingService,
+    }),
+    [
+      deleteAccount,
+      account,
+      ready,
+      completeSignInLink,
+      linkError,
+      clearLinkError,
+      signOut,
+      signupOfferPending,
+    ],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

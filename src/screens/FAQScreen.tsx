@@ -104,7 +104,6 @@ const localStyles = StyleSheet.create({
   question: {
     fontSize: Typography.callout,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     flex: 1,
   },
   answer: {

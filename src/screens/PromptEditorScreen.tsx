@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import {
   useNavigation,
@@ -12,7 +12,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { ageGroups, AgeGroupId } from '../data/ageGroups';
 import { Screen, ScreenHeader, ScreenScroll, SectionLabel, Pill, Dot, Button } from '../ui/components';
-import { useSurface } from '../ui/surface';
+import { useSurface, INPUT_RADIUS } from '../ui/surface';
 import { useLiminalSpaces } from '../hooks/useLiminalSpaces';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import {
@@ -22,6 +22,8 @@ import {
 } from '../db/repositories/userPrompts';
 import { CreateStackParamList } from '../navigation/types';
 import { playMyPromptsInDeck } from '../navigation/deckLinks';
+import { toast } from '../ui/toast';
+import { haptic } from '../ui/haptics';
 
 const STARTER = 'What if ';
 
@@ -76,26 +78,20 @@ export const PromptEditorScreen = () => {
       situations,
     });
     setSaving(false);
-    if (editingId) {
-      navigation.goBack();
-      return;
-    }
-    Alert.alert('Saved to My Prompts', 'Want to try it now?', [
-      { text: 'Done', style: 'cancel', onPress: () => navigation.goBack() },
-      {
-        text: 'Play in deck',
-        // The deck gets ready with this prompt on top while the editor stays put; the
-        // editor closes after the switch, out of sight.
-        onPress: async () => {
-          await playMyPromptsInDeck(
-            navigation as unknown as NavigationProp<ParamListBase>,
-            ageGroup,
-            id,
-          );
-          navigation.goBack();
-        },
+    haptic.success();
+    // The Create stack outlives this screen, so the toast's action can still reach the
+    // deck after the editor has closed.
+    const stack = navigation.getParent() ?? navigation;
+    navigation.goBack();
+    toast.show({
+      message: editingId ? 'Changes saved' : 'Saved to My Prompts',
+      icon: 'check',
+      action: {
+        label: 'Play in deck',
+        onPress: () =>
+          void playMyPromptsInDeck(stack as unknown as NavigationProp<ParamListBase>, ageGroup, id),
       },
-    ]);
+    });
   };
 
   return (
@@ -131,7 +127,7 @@ export const PromptEditorScreen = () => {
           </Text>
         </View>
 
-        <SectionLabel>Who it's for</SectionLabel>
+        <SectionLabel>Who it’s for</SectionLabel>
         <View style={styles.pills}>
           {ageGroups.map(g => (
             <Pill
@@ -182,12 +178,12 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 110,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: INPUT_RADIUS,
     paddingHorizontal: Spacing.md,
     paddingTop: 12,
     paddingBottom: 12,
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: 'Geomini-SemiBold',
     textAlignVertical: 'top',
   },
   counter: {

@@ -1,10 +1,11 @@
 /**
  * Shared building blocks for the app's card-based look. See `surface.ts` for tokens.
  *
- * Typography is Inter throughout: titles in Inter-SemiBold (accent purple for screen
- * titles), body and labels in Inter-Medium.
+ * Typography: Geomini for headings (ExtraBold screen titles, Bold card and sheet titles,
+ * SemiBold buttons), Inter for everything else, including the small uppercase section
+ * labels (Inter-SemiBold, tracked).
  */
-import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,16 +16,18 @@ import {
   StyleProp,
   ViewStyle,
   ScrollView,
+  FlatList,
+  FlatListProps,
+  ListRenderItem,
   Animated,
   Easing,
   useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets, Edge } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
-import { useSurface, PINK, CARD_RADIUS } from './surface';
+import { useSurface, PINK, CARD_RADIUS, INPUT_RADIUS } from './surface';
 
 type IconName = keyof typeof Feather.glyphMap;
 
@@ -48,31 +51,8 @@ export const Screen = ({
 
 /**
  * Screen header: optional back chevron, a purple title, an optional subtitle and an
- * optional icon action on the right.
+ * optional icon action on the right. (Settings live on the You tab, so there's no ⚙.)
  */
-// Screen headers show a ⚙ that opens Settings, except inside Settings itself and in
-// onboarding, which wrap their screens in HideSettingsButton.
-const SettingsButtonContext = createContext(true);
-
-export const HideSettingsButton = ({ children }: { children: ReactNode }) => (
-  <SettingsButtonContext.Provider value={false}>{children}</SettingsButtonContext.Provider>
-);
-
-const SettingsButton = () => {
-  const navigation = useNavigation();
-  const surface = useSurface();
-  return (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('Settings' as never)}
-      hitSlop={8}
-      accessibilityRole="button"
-      accessibilityLabel="Settings"
-    >
-      <Feather name="settings" size={22} color={surface.accent} />
-    </TouchableOpacity>
-  );
-};
-
 export const ScreenHeader = ({
   title,
   subtitle,
@@ -90,7 +70,6 @@ export const ScreenHeader = ({
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
-  const showSettings = useContext(SettingsButtonContext);
   return (
     <View style={ui.header}>
       <View style={ui.headerRow}>
@@ -104,14 +83,11 @@ export const ScreenHeader = ({
             {title}
           </Text>
         </View>
-        {(rightIcon || showSettings) && (
+        {rightIcon && (
           <View style={ui.headerActions}>
-            {rightIcon && (
-              <TouchableOpacity onPress={onRightPress} hitSlop={8} accessibilityLabel={rightLabel}>
-                <Feather name={rightIcon} size={22} color={surface.accent} />
-              </TouchableOpacity>
-            )}
-            {showSettings && <SettingsButton />}
+            <TouchableOpacity onPress={onRightPress} hitSlop={8} accessibilityLabel={rightLabel}>
+              <Feather name={rightIcon} size={22} color={surface.accent} />
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -138,6 +114,40 @@ export const ScreenScroll = ({
     {children}
   </ScrollView>
 );
+
+/**
+ * Scrolling list with the standard side padding. Use this instead of ScreenScroll +
+ * map for anything that can grow without bound (user-created content), so only the
+ * visible rows are mounted.
+ */
+export function ScreenList<T>({
+  data,
+  renderItem,
+  keyExtractor,
+  ListHeaderComponent,
+  ListEmptyComponent,
+  contentStyle,
+}: {
+  data: T[] | null | undefined;
+  renderItem: ListRenderItem<T>;
+  keyExtractor: (item: T, index: number) => string;
+  ListHeaderComponent?: FlatListProps<T>['ListHeaderComponent'];
+  ListEmptyComponent?: FlatListProps<T>['ListEmptyComponent'];
+  contentStyle?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <FlatList
+      style={ui.scroll}
+      contentContainerStyle={[ui.scrollContent, contentStyle]}
+      showsVerticalScrollIndicator={false}
+      data={data ?? []}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      ListHeaderComponent={ListHeaderComponent}
+      ListEmptyComponent={ListEmptyComponent}
+    />
+  );
+}
 
 /* ============ Cards and lists ============ */
 
@@ -483,8 +493,7 @@ export const ui = StyleSheet.create({
   },
   headerTitle: {
     fontSize: Typography.title2,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-ExtraBold',
   },
   headerSubtitle: {
     marginTop: 4,
@@ -518,7 +527,6 @@ export const ui = StyleSheet.create({
   sectionLabel: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1.2,
     marginTop: Spacing.sm,
     marginBottom: -Spacing.xs,
@@ -537,7 +545,6 @@ export const ui = StyleSheet.create({
   rowLabel: {
     fontSize: Typography.callout,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
   },
   rowDetail: {
     marginTop: 2,
@@ -556,7 +563,6 @@ export const ui = StyleSheet.create({
   pillText: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
   },
   button: {
     flexDirection: 'row',
@@ -564,13 +570,12 @@ export const ui = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.sm,
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: INPUT_RADIUS,
     borderWidth: 1.5,
   },
   buttonText: {
     fontSize: Typography.callout,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-SemiBold',
   },
   disabled: {
     opacity: 0.35,
@@ -601,8 +606,7 @@ export const ui = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-Bold',
     marginBottom: Spacing.sm,
   },
   sheetOption: {

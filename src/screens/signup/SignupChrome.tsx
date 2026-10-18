@@ -17,7 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Edge } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
-import { useSurface, PINK } from '../../ui/surface';
+import { useSurface, PINK, INPUT_RADIUS } from '../../ui/surface';
 import { Screen } from '../../ui/components';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
 
@@ -174,8 +174,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.title1,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '700',
+    fontFamily: 'Geomini-ExtraBold',
     marginBottom: Spacing.sm,
   },
   text: {
@@ -187,7 +186,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1.2,
     marginBottom: Spacing.xs,
   },
@@ -195,7 +193,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderRadius: 14,
+    borderRadius: INPUT_RADIUS,
     paddingHorizontal: Spacing.md,
     minHeight: 52,
     marginBottom: Spacing.md,

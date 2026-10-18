@@ -83,27 +83,33 @@ npm start              # in another terminal
 
 ```
 what-if/
-├── App.tsx                     # Application entry point + app-wide providers
+├── App.tsx                     # Application entry point + app-wide providers (incl. ErrorBoundary)
 ├── src/
-│   ├── app/                   # RootNavigator
-│   ├── navigation/            # Stack/tab navigators
-│   ├── screens/               # App screens
-│   ├── components/            # Reusable UI components
-│   ├── db/                    # SQLite schema, migrations, repositories
+│   ├── app/                   # RootNavigator, splash hand-off
+│   ├── navigation/            # Stack/tab navigators, transitions, deck deep links
+│   ├── screens/               # App screens (src/screens/prompt/ holds the prompt deck's parts)
+│   ├── ui/                    # Shared kit (Screen, Card, Pill, Button, BottomSheet, ScreenList) + surface tokens
+│   ├── components/            # Reusable pieces (DiscussionTips, carousel, ErrorBoundary)
+│   ├── db/                    # SQLite open/migrate, migrations, repositories
+│   ├── sync/                  # Cloud sync (outbox, record conversion, preference sync)
+│   ├── auth/                  # AuthProvider, Firebase / mock auth services
+│   ├── backend/               # Firebase bootstrap, env config, Firestore model
 │   ├── hooks/                 # Data and UI hooks
 │   ├── providers/             # DB and active-context providers
 │   ├── theme/                 # Theme provider and themes
-│   ├── data/                  # Static config (age groups, feature flags)
+│   ├── data/                  # Static config (age groups, feature flags, personalization tokens)
 │   ├── styles/                # Shared styles
-│   └── utils/                 # Helpers
-├── assets/
-│   └── fonts/
-│       └── Barrio-Regular.ttf # Custom display font
-├── package.json               # Project dependencies
+│   └── utils/                 # Typography / Spacing scales
+├── firebase/                  # Firestore rules, indexes, rules tests
+├── ios/                       # Native iOS project (regenerate with `npx expo prebuild --clean`)
+├── .github/workflows/ci.yml   # Typecheck, lint, unit tests, Firestore rules tests
+├── assets/fonts/              # Inter (UI) and Rock Salt (splash) fonts
+├── package.json               # Project dependencies and scripts (typecheck, lint, test)
 ├── app.json                   # Expo configuration
-├── tsconfig.json             # TypeScript configuration
-├── babel.config.js           # Babel configuration
-└── metro.config.js           # Metro bundler config (native + web)
+├── eslint.config.js           # ESLint (expo config)
+├── tsconfig.json              # TypeScript configuration
+├── babel.config.js            # Babel configuration
+└── metro.config.js            # Metro bundler config (native + web)
 ```
 
 ## 🛠️ Tech Stack
@@ -122,7 +128,7 @@ what-if/
 2. **Home Screen**: Main navigation with age group selection
 3. **Prompt Screen**: Interactive scenario presentation
 4. **Favorites**: Saved prompts for quick access
-5. **Settings**: Customize app behavior and preferences
+5. **You**: Account, activity, preferences and help in one tab
 6. **Developer Tools**: Testing and development utilities
 
 ## 🤝 Contributing

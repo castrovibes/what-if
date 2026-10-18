@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { themes, ThemeColors } from './themes';
@@ -49,39 +49,41 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [systemScheme, hasUserPreference]);
 
-  const toggleDarkMode = () => {
+  const toggleDarkMode = useCallback(() => {
     const next = !isDark;
     setIsDark(next);
     setHasUserPreference(true);
     AsyncStorage.setItem(STORAGE_KEY, String(next));
     PreferenceSync.push({ darkMode: next });
-  };
+  }, [isDark]);
 
-  const applyDarkModePreference = (value: boolean | null) => {
-    if (value === null) {
-      setHasUserPreference(false);
-      setIsDark(systemScheme === 'dark');
-      AsyncStorage.removeItem(STORAGE_KEY);
-    } else {
-      setHasUserPreference(true);
-      setIsDark(value);
-      AsyncStorage.setItem(STORAGE_KEY, String(value));
-    }
-  };
-
-  const colors = isDark ? themes.dark : themes.light;
-
-  return (
-    <ThemeContext.Provider
-      value={{
-        isDark,
-        colors,
-        toggleDarkMode,
-        darkModePreference: hasUserPreference ? isDark : null,
-        applyDarkModePreference,
-      }}
-    >
-      {children}
-    </ThemeContext.Provider>
+  const applyDarkModePreference = useCallback(
+    (value: boolean | null) => {
+      if (value === null) {
+        setHasUserPreference(false);
+        setIsDark(systemScheme === 'dark');
+        AsyncStorage.removeItem(STORAGE_KEY);
+      } else {
+        setHasUserPreference(true);
+        setIsDark(value);
+        AsyncStorage.setItem(STORAGE_KEY, String(value));
+      }
+    },
+    [systemScheme],
   );
+
+  // One stable value per (isDark, preference) pair, so consumers only re-render when
+  // the theme actually changes, not whenever this provider does.
+  const value = useMemo<ThemeContextType>(
+    () => ({
+      isDark,
+      colors: isDark ? themes.dark : themes.light,
+      toggleDarkMode,
+      darkModePreference: hasUserPreference ? isDark : null,
+      applyDarkModePreference,
+    }),
+    [isDark, hasUserPreference, toggleDarkMode, applyDarkModePreference],
+  );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

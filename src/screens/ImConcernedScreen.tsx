@@ -11,7 +11,7 @@ import { Typography, Spacing } from '../utils/deviceHelpers';
 
 type Signal = 'disclosure' | 'mood' | 'safety' | 'just-checking';
 
-const SIGNALS: Array<{ id: Signal; label: string; description: string; icon: keyof typeof Feather.glyphMap }> = [
+const SIGNALS: { id: Signal; label: string; description: string; icon: keyof typeof Feather.glyphMap }[] = [
   {
     id: 'disclosure',
     label: 'They said something worrying',
@@ -82,7 +82,7 @@ export const ImConcernedScreen = () => {
               hitSlop={8}
             >
               <Feather name="rotate-ccw" size={14} color={PINK} />
-              <Text style={localStyles.changeText}>Change what's coming up</Text>
+              <Text style={localStyles.changeText}>Change what’s coming up</Text>
             </TouchableOpacity>
 
             {resources.length === 0 ? (
@@ -129,7 +129,6 @@ const localStyles = StyleSheet.create({
     color: PINK,
     fontSize: Typography.subheadline,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
   emptyText: {
     fontSize: Typography.subheadline,
@@ -142,13 +141,11 @@ const localStyles = StyleSheet.create({
   resourceKind: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1.2,
   },
   resourceTitle: {
     fontSize: Typography.body,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
   resourceDescription: {
     fontSize: Typography.subheadline,

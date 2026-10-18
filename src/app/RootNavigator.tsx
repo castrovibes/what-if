@@ -7,7 +7,6 @@ import { OnboardingNavigator } from '../navigation/OnboardingNavigator';
 import { MainTabNavigator } from '../navigation/MainTabNavigator';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { SignupNavigator } from '../navigation/SignupNavigator';
-import { SettingsNavigator } from '../navigation/SettingsNavigator';
 import { useAuth } from '../auth/AuthProvider';
 import { FadeIn, useTransitions } from '../navigation/transitions';
 
@@ -17,7 +16,7 @@ export const RootNavigator = () => {
   const { setSignupOfferPending } = useAuth();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
-  const { fade, modal, push } = useTransitions();
+  const { enter, modal } = useTransitions();
 
   useEffect(() => {
     async function loadFonts() {
@@ -26,6 +25,9 @@ export const RootNavigator = () => {
           'Inter-Medium': require('../../assets/fonts/Inter-Medium.ttf'),
           'Inter-MediumItalic': require('../../assets/fonts/Inter-MediumItalic.ttf'),
           'Inter-SemiBold': require('../../assets/fonts/Inter-SemiBold.ttf'),
+          'Geomini-SemiBold': require('../../assets/fonts/Geomini-SemiBold.ttf'),
+          'Geomini-Bold': require('../../assets/fonts/Geomini-Bold.ttf'),
+          'Geomini-ExtraBold': require('../../assets/fonts/Geomini-ExtraBold.ttf'),
         });
         setFontsLoaded(true);
       } catch (error) {
@@ -66,7 +68,9 @@ export const RootNavigator = () => {
     return <LoadingScreen />;
   }
 
-  // The app fades in over the loading screen; finishing onboarding cross-fades into it.
+  // Finishing onboarding swaps the Onboarding screen for MainApp; the stack animates that
+  // swap with MainApp's options, so `enter` slides the app in from the left. (On a normal
+  // launch MainApp is the first screen and doesn't animate.)
   return (
     // The app fades in over the loading screen (the same image as the launch screen):
     // on first launch the Welcome screen matches it exactly; otherwise it cross-fades.
@@ -77,9 +81,8 @@ export const RootNavigator = () => {
             {() => <OnboardingNavigator onComplete={completeOnboarding} />}
           </Stack.Screen>
         ) : (
-          <Stack.Screen name="MainApp" component={MainTabNavigator} options={fade} />
+          <Stack.Screen name="MainApp" component={MainTabNavigator} options={enter} />
         )}
-        <Stack.Screen name="Settings" component={SettingsNavigator} options={push} />
         <Stack.Screen name="Signup" component={SignupNavigator} options={modal} />
       </Stack.Navigator>
     </FadeIn>

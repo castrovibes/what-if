@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
+import { useSurface } from '../ui/surface';
 import { WorldBuildingCard } from '../db/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
@@ -80,6 +81,7 @@ export const WorldBuildingCarousel = ({
   const [itemWidth, setItemWidth] = useState(initialItemWidth);
   const listRef = useRef<FlatList<WorldBuildingCard>>(null);
   const { colors } = useTheme();
+  const surface = useSurface();
 
   // Reset to first card when the parent signals via resetKey (e.g. prompt change)
   useEffect(() => {
@@ -100,7 +102,7 @@ export const WorldBuildingCarousel = ({
       style={[
         localStyles.frame,
         {
-          backgroundColor: bgColor ?? colors.cardBg,
+          backgroundColor: bgColor ?? surface.card,
           borderColor: colors.tipsBoxBorder,
           borderWidth: FRAME_BORDER_WIDTH,
           marginTop: -peekFromTop,
@@ -121,6 +123,9 @@ export const WorldBuildingCarousel = ({
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleScrollEnd}
+        // Every page is itemWidth wide, so the list can place and scroll to any index
+        // without measuring (and scrollToOffset never lands between pages).
+        getItemLayout={(_, index) => ({ length: itemWidth, offset: itemWidth * index, index })}
         renderItem={({ item }) => (
           <Card
             card={item}
@@ -191,13 +196,11 @@ const localStyles = StyleSheet.create({
   difficultyLabel: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 0.8,
   },
   cardText: {
     fontSize: Typography.subheadline,
     fontFamily: 'Inter-Medium',
-    fontWeight: '500',
     lineHeight: 20,
   },
   // Dots live INSIDE the frame at the bottom — part of the "window"

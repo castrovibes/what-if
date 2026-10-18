@@ -17,7 +17,7 @@ const raw = {
   emailLinkUrl: process.env.EXPO_PUBLIC_EMAIL_LINK_URL,
 };
 
-const clean =(v: string | undefined) => (v && v.trim() !== '' ? v.trim() : undefined);
+const clean = (v: string | undefined) => (v && v.trim() !== '' ? v.trim() : undefined);
 
 const DEMO_PROJECT_ID = 'demo-what-if';
 
@@ -32,14 +32,17 @@ export const useEmulator =
 /** True when there is a Firebase backend to talk to (local emulators or a real project). */
 export const firebaseAvailable = useEmulator || realProjectConfigured;
 
-const projectId = clean(raw.projectId) ?? DEMO_PROJECT_ID;
+// The emulators run the demo project (`npm run emulators`), so use it whenever they're
+// on, even if a real project's keys are also set.
+const real: Partial<typeof raw> = useEmulator ? {} : raw;
+const projectId = clean(real.projectId) ?? DEMO_PROJECT_ID;
 
 export const firebaseConfig = {
   // The emulators accept any API key.
-  apiKey: clean(raw.apiKey) ?? 'demo-api-key',
-  authDomain: clean(raw.authDomain) ?? `${projectId}.firebaseapp.com`,
+  apiKey: clean(real.apiKey) ?? 'demo-api-key',
+  authDomain: clean(real.authDomain) ?? `${projectId}.firebaseapp.com`,
   projectId,
-  appId: clean(raw.appId) ?? 'demo-app-id',
+  appId: clean(real.appId) ?? 'demo-app-id',
 };
 
 export const emailLinkUrl =

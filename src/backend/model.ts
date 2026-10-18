@@ -25,14 +25,18 @@ export const SCHEMA_VERSION = 1;
 /** The account. One per Firebase Auth user; document id = auth uid. */
 export type UserDoc = {
   schemaVersion: number;
-  /** As typed, for display. Null until the profile step is finished. */
+  /** What the app calls them; free text, up to 40 characters. Null until the profile step. */
+  displayName: string | null;
+  /** When they confirmed they're an adult (18+) in the profile step; null until then. */
+  ageConfirmedAt: Timestamp | null;
+  /** Legacy unique handle (no longer collected). Null, or claimed in usernames/. */
   username: string | null;
   /** Lowercase username; must match a usernames/{usernameLower} claim owned by this user. */
   usernameLower: string | null;
   /** From the sign-in provider; must equal the auth token's email. */
   email: string | null;
   authProvider: AuthProvider;
-  /** YYYY-MM-DD. Rules require the user to be 18+. */
+  /** Legacy YYYY-MM-DD (no longer collected). When set, rules require 18+. */
   birthdate: string | null;
   photoUrl: string | null;
   /** Set by the server (purchase validation) only; clients can't change it. */
@@ -84,7 +88,7 @@ export type ModuleProgressDoc = {
 };
 
 /**
- * A prompt the user wrote (Create → Write a prompt, or Mad Libs). Free text by the
+ * A prompt the user wrote (Create → Write a prompt, or the Prompt Builder). Free text by the
  * adult, like reflection notes; it may mention people, so treat it as personal data.
  * Deleting sets `deleted` rather than removing the document, so favorites and notes
  * that refer to it on other devices stay valid.

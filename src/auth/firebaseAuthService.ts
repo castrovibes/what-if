@@ -19,6 +19,7 @@ import {
   getDocs,
   serverTimestamp,
   setDoc,
+  updateDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
@@ -50,11 +51,16 @@ const toAccount = (uid: string, data: UserDoc): Account => ({
   id: uid,
   provider: data.authProvider,
   email: data.email,
+  // Accounts from before the display-name profile step may only have a username.
+  displayName: data.displayName ?? data.username ?? null,
+  ageConfirmed: data.ageConfirmedAt != null || data.birthdate != null,
   username: data.username,
   birthdate: data.birthdate,
   photoUri: data.photoUrl,
   plan: data.plan,
 });
+
+const hasProfile = (data: UserDoc) => !!(data.displayName ?? data.username);
 
 /** Loads the user's account document, creating it on first sign-in. */
 const ensureUserDoc = async (user: User): Promise<SignInResult> => {
@@ -64,6 +70,8 @@ const ensureUserDoc = async (user: User): Promise<SignInResult> => {
   if (!snap.exists()) {
     await setDoc(ref, {
       schemaVersion: SCHEMA_VERSION,
+      displayName: null,
+      ageConfirmedAt: null,
       username: null,
       usernameLower: null,
       email: user.email ?? null,
@@ -77,7 +85,7 @@ const ensureUserDoc = async (user: User): Promise<SignInResult> => {
     });
   }
   const data = (await getDoc(ref)).data() as UserDoc;
-  return { account: toAccount(user.uid, data), needsProfile: !data.username };
+  return { account: toAccount(user.uid, data), needsProfile: !hasProfile(data) };
 };
 
 // Firebase only lets a sign-in be deleted shortly after signing in.
@@ -163,24 +171,13 @@ export const firebaseAuthService: AuthService = {
     const { db } = getFirebase();
     const userRef = doc(db, paths.user(uid));
     const current = (await getDoc(userRef)).data() as UserDoc;
-    const username = profile.username.trim();
-    const lower = username.toLowerCase();
-
-    // Account update and username claim go in one batch; the rules check them together.
-    const batch = writeBatch(db);
-    batch.update(userRef, {
-      username,
-      usernameLower: lower,
-      birthdate: profile.birthdate,
+    await updateDoc(userRef, {
+      displayName: profile.displayName.trim(),
+      // Set once; the rules keep it a timestamp afterwards.
+      ageConfirmedAt: current.ageConfirmedAt ?? serverTimestamp(),
       // TODO: upload the photo to Storage and save its URL here.
       updatedAt: serverTimestamp(),
     });
-    if (current.usernameLower !== lower) {
-      batch.set(doc(db, paths.username(lower)), { uid, createdAt: serverTimestamp() });
-      if (current.usernameLower) batch.delete(doc(db, paths.username(current.usernameLower)));
-    }
-    await batch.commit();
-
     const saved = (await getDoc(userRef)).data() as UserDoc;
     return toAccount(uid, saved);
   },

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useSurface, PINK } from '../../ui/surface';
 import { Button } from '../../ui/components';
 import { useAuth } from '../../auth/AuthProvider';
+import { toast } from '../../ui/toast';
 import { authBackend, useEmulator } from '../../backend/config';
 import { SignupStackParamList } from '../../navigation/types';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
@@ -39,7 +40,7 @@ export const CheckEmailScreen = () => {
   useEffect(() => {
     if (!account || signedInAtStart.current || continued.current) return;
     continued.current = true;
-    navigation.navigate(account.username ? 'Done' : 'ProfileSetup');
+    navigation.navigate(account.displayName ? 'Done' : 'ProfileSetup');
   }, [account, navigation]);
 
   const resend = async () => {
@@ -48,7 +49,7 @@ export const CheckEmailScreen = () => {
     try {
       await auth.sendSignInLink(email);
     } catch {
-      Alert.alert("Couldn't resend the link", 'Check your connection and try again.');
+      toast.show({ message: "Couldn't resend the link. Check your connection.", icon: 'alert-circle' });
     }
   };
 
@@ -60,12 +61,12 @@ export const CheckEmailScreen = () => {
     try {
       const link = await auth.devLatestSignInLink(email);
       if (!link) {
-        Alert.alert('No link yet', 'Nothing has been sent to this address. Try Resend.');
+        toast.show({ message: 'No link yet. Nothing has been sent to this address; try Resend.', icon: 'mail' });
         return;
       }
       await completeSignInLink(link);
     } catch (e) {
-      Alert.alert('Sign-in failed', e instanceof Error ? e.message : 'Please try again.');
+      toast.show({ message: e instanceof Error ? e.message : 'Sign-in failed. Please try again.', icon: 'alert-circle' });
     } finally {
       setDevBusy(false);
     }
@@ -156,7 +157,6 @@ const styles = StyleSheet.create({
   link: {
     fontSize: Typography.footnote,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
   },
   secondaryLink: {
     marginTop: Spacing.md,

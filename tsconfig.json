@@ -28,9 +28,14 @@
     "skipLibCheck": true,
 
     // Firebase Auth's React Native build exports getReactNativePersistence, but the
-    // default (web) typings don't declare it; point TypeScript at the RN typings.
+    // package's typings don't declare it (checked against firebase 13: the base
+    // config's "react-native" export condition isn't enough); point TypeScript at
+    // the RN typings. Re-test removing this on each firebase upgrade.
     "paths": {
       "@firebase/auth": ["./node_modules/@firebase/auth/dist/rn/index.rn.d.ts"]
     }
-  }
+  },
+
+  // Backups, old snapshots and the native projects are not part of the typed source.
+  "exclude": ["node_modules", "ios", "android", "**/*.bak", ".*-backup-*"]
 }

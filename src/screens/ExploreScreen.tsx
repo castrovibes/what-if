@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -14,7 +14,8 @@ import {
   Dot,
   Button,
 } from '../ui/components';
-import { useSurface, PINK } from '../ui/surface';
+import { useSurface, PINK, Surface } from '../ui/surface';
+import { ThemeColors } from '../theme/themes';
 import { comingSoon } from '../ui/comingSoon';
 import { ModuleRepo, Module } from '../db/repositories/modules';
 import { ExploreStackParamList } from '../navigation/types';
@@ -25,10 +26,30 @@ import { SeriesCard } from '../components/SeriesCard';
  * Series and a preview of the community; written content (guides, articles) may join
  * later. The detailed layout is still to be designed (TESTFLIGHT_CHECKLIST.md, 2c).
  */
+/** Theme-dependent styles, built once per theme change rather than per render. */
+const useThemedStyles = (colors: ThemeColors, surface: Surface) =>
+  useMemo(
+    () =>
+      StyleSheet.create({
+        previewNote: { ...local.previewNote, borderColor: surface.border },
+        previewNoteText: { ...local.previewNoteText, color: colors.textSecondary },
+        previewNoteStrong: { color: colors.textPrimary },
+        promoTitle: { ...local.promoTitle, color: surface.accent },
+        promoText: { ...local.promoText, color: colors.textSecondary },
+        postUserName: { ...local.postUserName, color: colors.textPrimary },
+        postMeta: { ...local.postMeta, color: colors.textSecondary },
+        postContent: { ...local.postContent, color: colors.textPrimary },
+        postActions: { ...local.postActions, borderTopColor: surface.border },
+        postActionText: { ...local.postActionText, color: colors.textSecondary },
+      }),
+    [colors, surface],
+  );
+
 export const ExploreScreen = () => {
   const navigation = useNavigation<NavigationProp<ExploreStackParamList>>();
   const { colors } = useTheme();
   const surface = useSurface();
+  const t = useThemedStyles(colors, surface);
   const [series, setSeries] = useState<Module[]>([]);
 
   useEffect(() => {
@@ -51,10 +72,10 @@ export const ExploreScreen = () => {
 
         <SectionLabel>Community</SectionLabel>
         {/* The community isn't built yet; a small note makes that clear to beta testers. */}
-        <View style={[local.previewNote, { borderColor: surface.border }]}>
+        <View style={t.previewNote}>
           <Feather name="eye" size={13} color={PINK} />
-          <Text style={[local.previewNoteText, { color: colors.textSecondary }]}>
-            <Text style={{ color: colors.textPrimary }}>Preview</Text> · Coming soon; posts below
+          <Text style={t.previewNoteText}>
+            <Text style={t.previewNoteStrong}>Preview</Text> · Coming soon; posts below
             are examples.
           </Text>
         </View>
@@ -62,10 +83,10 @@ export const ExploreScreen = () => {
         <Card>
           <View style={local.promoTitleRow}>
             <Feather name="users" size={20} color={surface.accent} />
-            <Text style={[local.promoTitle, { color: surface.accent }]}>Share your ideas</Text>
+            <Text style={t.promoTitle}>Share your ideas</Text>
           </View>
-          <Text style={[local.promoText, { color: colors.textSecondary }]}>
-            Share prompts you've created or favorites you've discovered. Help other parents,
+          <Text style={t.promoText}>
+            Share prompts you’ve created or favorites you’ve discovered. Help other parents,
             educators, and therapists spark meaningful conversations.
           </Text>
           <Button label="Create New Prompt" icon="plus" onPress={() => comingSoon('Sharing prompts')} />
@@ -86,31 +107,31 @@ export const ExploreScreen = () => {
         <Card>
           <View style={local.postHeader}>
             <View style={local.postUser}>
-              <View style={[local.avatar, { backgroundColor: '#90dcff' }]}>
+              <View style={[local.avatar, local.avatarSky]}>
                 <Feather name="user" size={18} color="#49297e" />
               </View>
               <View style={local.postUserText}>
-                <Text style={[local.postUserName, { color: colors.textPrimary }]}>Sarah M.</Text>
-                <Text style={[local.postMeta, { color: colors.textSecondary }]}>Parent • 2 days ago</Text>
+                <Text style={t.postUserName}>Sarah M.</Text>
+                <Text style={t.postMeta}>Parent • 2 days ago</Text>
               </View>
             </View>
             <Pill label="Ages 6-8" leading={<Dot color="#00db96" />} />
           </View>
-          <Text style={[local.postContent, { color: colors.textPrimary }]}>
+          <Text style={t.postContent}>
             What if you found a lost wallet with money in it?
           </Text>
-          <View style={[local.postActions, { borderTopColor: surface.border }]}>
+          <View style={t.postActions}>
             <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="heart" size={18} color={colors.iconDefault} />
-              <Text style={[local.postActionText, { color: colors.textSecondary }]}>24</Text>
+              <Text style={t.postActionText}>24</Text>
             </TouchableOpacity>
             <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="message-circle" size={18} color={colors.iconDefault} />
-              <Text style={[local.postActionText, { color: colors.textSecondary }]}>8</Text>
+              <Text style={t.postActionText}>8</Text>
             </TouchableOpacity>
             <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="share-2" size={18} color={colors.iconDefault} />
-              <Text style={[local.postActionText, { color: colors.textSecondary }]}>Share</Text>
+              <Text style={t.postActionText}>Share</Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -118,31 +139,31 @@ export const ExploreScreen = () => {
         <Card>
           <View style={local.postHeader}>
             <View style={local.postUser}>
-              <View style={[local.avatar, { backgroundColor: '#e10086' }]}>
+              <View style={[local.avatar, local.avatarPink]}>
                 <Feather name="user" size={18} color="#fff" />
               </View>
               <View style={local.postUserText}>
-                <Text style={[local.postUserName, { color: colors.textPrimary }]}>Michael T.</Text>
-                <Text style={[local.postMeta, { color: colors.textSecondary }]}>Educator • 5 days ago</Text>
+                <Text style={t.postUserName}>Michael T.</Text>
+                <Text style={t.postMeta}>Educator • 5 days ago</Text>
               </View>
             </View>
             <Pill label="Ages 9-12" leading={<Dot color="#e10086" />} />
           </View>
-          <Text style={[local.postContent, { color: colors.textPrimary }]}>
+          <Text style={t.postContent}>
             What if you noticed a classmate was always alone at lunch?
           </Text>
-          <View style={[local.postActions, { borderTopColor: surface.border }]}>
+          <View style={t.postActions}>
             <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="heart" size={18} color={PINK} />
-              <Text style={[local.postActionText, { color: colors.textSecondary }]}>42</Text>
+              <Text style={t.postActionText}>42</Text>
             </TouchableOpacity>
             <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="message-circle" size={18} color={colors.iconDefault} />
-              <Text style={[local.postActionText, { color: colors.textSecondary }]}>15</Text>
+              <Text style={t.postActionText}>15</Text>
             </TouchableOpacity>
             <TouchableOpacity style={local.postAction} onPress={() => comingSoon('Community')}>
               <Feather name="share-2" size={18} color={colors.iconDefault} />
-              <Text style={[local.postActionText, { color: colors.textSecondary }]}>Share</Text>
+              <Text style={t.postActionText}>Share</Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -174,8 +195,7 @@ const local = StyleSheet.create({
   },
   promoTitle: {
     fontSize: Typography.title3,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-Bold',
   },
   promoText: {
     fontSize: Typography.subheadline,
@@ -214,10 +234,12 @@ const local = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Sample community posts use fixed age-group accents.
+  avatarSky: { backgroundColor: '#90dcff' },
+  avatarPink: { backgroundColor: '#e10086' },
   postUserName: {
     fontSize: Typography.callout,
-    fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Geomini-SemiBold',
   },
   postMeta: {
     marginTop: 2,

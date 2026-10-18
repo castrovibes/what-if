@@ -3,8 +3,6 @@ export type RootStackParamList = {
   MainApp: undefined;
   /** Sign-up / sign-in flow, presented modally over wherever the user is. */
   Signup: undefined;
-  /** Settings, opened from the ⚙ in any screen's header, above the tabs. */
-  Settings: undefined;
 };
 
 export type SignupStackParamList = {
@@ -18,17 +16,24 @@ export type SignupStackParamList = {
 
 export type OnboardingStackParamList = {
   Welcome: undefined;
-  WelcomeTutorial: undefined;
 };
 
 export type MainTabParamList = {
   Prompts: undefined;
   Explore: undefined;
   Create: undefined;
-  Profile: undefined;
-  Prompt: undefined;
-  Developer: undefined;
-  Loading: undefined;
+  You: undefined;
+};
+
+/** The You tab: account, activity, preferences, help. (Profile and Settings, merged.) */
+export type YouStackParamList = {
+  YouMain: undefined;
+  Personalization: undefined;
+  FAQ: undefined;
+  ImConcerned: undefined;
+  /** The Welcome Guide: the welcome screen, then the tips deck. */
+  Welcome: undefined;
+  WelcomeTutorial: undefined;
 };
 
 export type ExploreStackParamList = {

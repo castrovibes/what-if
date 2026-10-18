@@ -59,7 +59,6 @@ const localStyles = StyleSheet.create({
   groupHeader: {
     fontSize: Typography.caption,
     fontFamily: 'Inter-SemiBold',
-    fontWeight: '600',
     letterSpacing: 1.2,
   },
   list: {

@@ -62,6 +62,8 @@ const signIn = async (
       id: `acct-${Date.now().toString(36)}`,
       provider,
       email,
+      displayName: null,
+      ageConfirmed: false,
       username: null,
       birthdate: null,
       photoUri: null,
@@ -71,7 +73,7 @@ const signIn = async (
     await saveAccounts(accounts);
   }
   await AsyncStorage.setItem(SESSION_KEY, account.id);
-  return { account, needsProfile: !account.username };
+  return { account, needsProfile: !account.displayName };
 };
 
 const updateAccount = async (id: string, patch: Partial<Account>): Promise<Account> => {
@@ -133,7 +135,11 @@ export const mockAuthService: AuthService = {
 
   async saveProfile(accountId, profile) {
     await delay();
-    return updateAccount(accountId, profile);
+    return updateAccount(accountId, {
+      displayName: profile.displayName.trim(),
+      ageConfirmed: profile.ageConfirmed,
+      photoUri: profile.photoUri,
+    });
   },
 
   async restoreSession() {
