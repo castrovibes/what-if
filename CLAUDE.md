@@ -63,9 +63,10 @@ This phrasing is intentional. It encourages brainstorming over judgment, creativ
 - Hot pink for primary actions and active/selected states; deep purple (lightened in dark mode) for titles, icons and outlines.
 - Age-group colors are accents only — a dot, small pill or thin stripe — never full card backgrounds.
 - Two radii: `CARD_RADIUS` (20) for cards, sheets, menus and plan cards; `INPUT_RADIUS` (14) for text fields, buttons, toasts and banners. Both in `src/ui/surface.ts`.
+- The tab bar is a floating pill (`src/navigation/FloatingTabBar.tsx`): a raised card above the bottom edge, a pink highlight that springs between tabs, and a scrim fading content into the screen color beneath it. Screens get the full height, so anything anchored to the bottom of a tab screen (scroll content, the deck's action row, hints, toasts) pads itself with `useTabBarInset()` from `src/navigation/tabBarInset.ts`; the hook is 0 outside the tabs.
 - Filters are pills; secondary choices open bottom sheets. Confirmations are toasts (`toast.show()` in `src/ui/toast.tsx`, drawn by `ToastHost` in App.tsx); a native `Alert` is kept only for destructive confirms (log out, delete). Controls that aren't built yet say so inline ("Coming soon") and, if tapped, show `toast.beta()` rather than an alert.
 - Haptics (`src/ui/haptics.ts`): light on a swipe commit or page-turn, medium on the card flip, selection on toggles and twist changes, success on a save.
-- One-time hints (`useOneTimeHint` + `HintBubble`) introduce Twist and Tips in place the first time they appear; there's no multi-page tutorial on first launch (the tips deck remains as the Welcome Guide on the You tab).
+- One-time hints (`useOneTimeHint` + `HintBubble`) introduce Twist and Tips in place the first time they appear, on top of the first-launch Welcome guide (the tips deck), which can be replayed from the You tab.
 - Build screens from the shared kit: `src/ui/surface.ts` (`useSurface()` tokens) and `src/ui/components.tsx` (Screen, ScreenHeader, Card, ListRow, Pill, Button, BottomSheet, …).
 
 ### Color Palette (5 colors)
@@ -172,8 +173,8 @@ firebase/                    Firestore rules, indexes, and the rules test suite
 ```
 
 **Screens:**
-- **Welcome** — first launch; continues the splash, and Get Started goes straight into the app (the deck opens on the age pick). The swipeable tips deck (**Welcome Tutorial**) is the Welcome Guide on the You tab.
-- **Prompts** (`src/screens/prompt/`) — the deck: title card and age pick (skipped when a preferred age range is set), swipeable prompt cards with twists on the back, Listen (TTS), Tips, favorite, report; filters for age group and situation; deck source (originals vs My Prompts); Twist and Tips are hidden (not dimmed) for prompts without them; a "How did that go?" reflection sheet is offered when a prompt that was on top for 45 s+ is swiped away
+- **Welcome / Welcome Tutorial** — first launch; continues the splash, then Get Started opens the Welcome guide (the swipeable tips deck), and finishing it opens the app on the deck's age pick. The guide can be replayed from the You tab; it opens from the root stack (`WelcomeGuide`), above the tabs, so it runs full screen with no tab bar, and finishing it lands on the Prompts tab.
+- **Prompts** (`src/screens/prompt/`) — the deck: title card and age pick (skipped when a preferred age range is set), swipeable prompt cards with twists on the back, Listen (TTS), Tips, favorite, report; filters for age group and situation; deck source (originals vs My Prompts); Twist and Tips are hidden (not dimmed) for prompts without them; the deck does not wrap: after the last prompt an end card (`EndOfDeckCard`) offers another age group's deck or this one again, and dragging past it rubber-bands; a "How did that go?" reflection sheet is offered when a prompt that was on top for 45 s+ is swiped away
 - **Explore / Module Detail** — themed modules and series (community posts are labeled samples until the community exists)
 - **Create / Prompt Editor / Prompt Builder (`MadLibs*` in code) / My Prompts** — user-written prompts, playable in the deck
 - **You** (`src/screens/you/`) — Profile and Settings merged into one tab: account, activity (sample numbers, labeled), personalization (child's name/town/interests, never synced), preferences, the community content filter (shown, not live during testing), reflections, Welcome Guide / FAQ / I'm Concerned, the Professional upsell, account actions. There is no ⚙ in any header.
@@ -247,6 +248,8 @@ firebase/                    Firestore rules, indexes, and the rules test suite
 - Hot pink (`#e10086`) for primary CTAs and active states
 - Check every screen in both light and dark mode, and the deck at the largest accessibility text size (the card height scales with the font scale, capped at 1.6×)
 - Hide a control that has nothing to do (no twists, no tips) rather than dimming it; a dimmed button looks broken
+- Bottom-anchored content on a tab screen adds `useTabBarInset()` to its bottom padding, or the floating tab bar covers it (`ScreenScroll` and `ScreenList` already do)
+- Local simulator builds can't run from this iCloud folder (the space in `Mobile Documents`); see TESTFLIGHT_CHECKLIST.md "Floating tab bar" for the clean-path build recipe
 - Welcome screen uses a soft gradient background, NOT the full color palette gradient
 - The app icon (`tools/graphics/make_icon.py`) is the white hand-drawn mark on deep purple, filling ~80% of the tile; rerun the script after changing the mark
 

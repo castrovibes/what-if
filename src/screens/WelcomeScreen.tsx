@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSurface } from '../ui/surface';
 import { Button } from '../ui/components';
+import { useTabBarInset } from '../navigation/tabBarInset';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
 // The first onboarding screen picks up where the launch screen leaves off: the same
@@ -47,13 +48,15 @@ const fadeIn = (value: Animated.Value, delay: number, duration: number) =>
   });
 
 /**
- * First launch: Get Started goes straight into the app (the deck opens on the age
- * pick). Replayed from the You tab's Welcome Guide, it leads into the tips deck instead.
+ * First launch and the You tab's Welcome guide both open here; Get Started leads into
+ * the tips deck (WelcomeTutorialScreen).
  */
 export const WelcomeScreen = ({ onContinue }: { onContinue: () => void }) => {
   const navigation = useNavigation();
   const { colors, isDark } = useTheme();
   const surface = useSurface();
+  // Replayed from the You tab, the button must clear the floating tab bar (0 on first launch).
+  const tabInset = useTabBarInset();
 
   // Swiping left continues, like Get Started.
   const { width } = useWindowDimensions();
@@ -102,7 +105,7 @@ export const WelcomeScreen = ({ onContinue }: { onContinue: () => void }) => {
           </Animated.View>
         ) : null}
         <View style={styles.fill} pointerEvents="none" />
-        <Animated.View style={[styles.actions, { opacity: actions }]}>
+        <Animated.View style={[styles.actions, { paddingBottom: Spacing.lg + tabInset, opacity: actions }]}>
           <Button label="Get Started" onPress={() => goNext.current()} />
           <Text style={[styles.footer, { color: textColor }]}>
             For Parents, Educators & Therapists

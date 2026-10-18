@@ -28,6 +28,7 @@ import { SafeAreaView, useSafeAreaInsets, Edge } from 'react-native-safe-area-co
 import { useTheme } from '../theme/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK, CARD_RADIUS, INPUT_RADIUS } from './surface';
+import { useTabBarInset } from '../navigation/tabBarInset';
 
 type IconName = keyof typeof Feather.glyphMap;
 
@@ -98,22 +99,28 @@ export const ScreenHeader = ({
   );
 };
 
-/** Scrolling body with the standard side padding. */
+/**
+ * Scrolling body with the standard side padding. The bottom padding also clears the
+ * floating tab bar (0 outside the tabs), so the last card can scroll out from under it.
+ */
 export const ScreenScroll = ({
   children,
   contentStyle,
 }: {
   children: ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
-}) => (
-  <ScrollView
-    style={ui.scroll}
-    contentContainerStyle={[ui.scrollContent, contentStyle]}
-    showsVerticalScrollIndicator={false}
-  >
-    {children}
-  </ScrollView>
-);
+}) => {
+  const tabInset = useTabBarInset();
+  return (
+    <ScrollView
+      style={ui.scroll}
+      contentContainerStyle={[ui.scrollContent, { paddingBottom: Spacing.xl + tabInset }, contentStyle]}
+      showsVerticalScrollIndicator={false}
+    >
+      {children}
+    </ScrollView>
+  );
+};
 
 /**
  * Scrolling list with the standard side padding. Use this instead of ScreenScroll +
@@ -135,10 +142,11 @@ export function ScreenList<T>({
   ListEmptyComponent?: FlatListProps<T>['ListEmptyComponent'];
   contentStyle?: StyleProp<ViewStyle>;
 }) {
+  const tabInset = useTabBarInset();
   return (
     <FlatList
       style={ui.scroll}
-      contentContainerStyle={[ui.scrollContent, contentStyle]}
+      contentContainerStyle={[ui.scrollContent, { paddingBottom: Spacing.xl + tabInset }, contentStyle]}
       showsVerticalScrollIndicator={false}
       data={data ?? []}
       renderItem={renderItem}
