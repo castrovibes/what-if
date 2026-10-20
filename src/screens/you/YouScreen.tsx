@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -197,10 +197,20 @@ export const YouScreen = () => {
               label="Replay first launch (dev)"
               detail="Shows the welcome screen and the first-time hints on next launch."
               chevron={false}
-              onPress={async () => {
-                await AsyncStorage.multiRemove(['hasLaunchedBefore', 'hint:twist', 'hint:tips']);
-                toast.show({ message: 'Reset. Restart the app to see the welcome flow.', icon: 'refresh-cw' });
-              }}
+              // It sits just above the tab bar, so a low tap can land here: confirm first.
+              onPress={() =>
+                Alert.alert('Replay first launch?', 'The welcome screen and first-time hints show again on the next launch.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Reset',
+                    style: 'destructive',
+                    onPress: async () => {
+                      await AsyncStorage.multiRemove(['hasLaunchedBefore', 'hint:twist', 'hint:tips']);
+                      toast.show({ message: 'Reset. Restart the app to see the welcome flow.', icon: 'refresh-cw' });
+                    },
+                  },
+                ])
+              }
               last
             />
           </Card>
