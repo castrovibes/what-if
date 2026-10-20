@@ -1,0 +1,81 @@
+<!doctype html>
+<!--
+  Fallback for the sign-in email's link. On an iPhone with the app installed, iOS opens
+  the app instead (see .well-known/apple-app-site-association). People land here when
+  the link is opened anywhere else: a computer, another phone, or before the app is set up.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>What If? sign-in</title>
+    <style>
+      :root {
+        --bg: #f6f4fa;
+        --card: #ffffff;
+        --border: #e6e1ef;
+        --accent: #49297e;
+        --text: #2a2433;
+        --muted: #6b6478;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0a0f;
+          --card: #1a1722;
+          --border: #2c2738;
+          --accent: #b9a3e3;
+          --text: #f2eff7;
+          --muted: #a59eb3;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        box-sizing: border-box;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        max-width: 420px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 28px 24px;
+        box-shadow: 0 8px 24px rgba(73, 41, 126, 0.08);
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 24px;
+        color: var(--accent);
+      }
+      p {
+        margin: 0 0 12px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      p:last-child {
+        margin-bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Open this link in the app</h1>
+      <p>
+        This sign-in link is for the What If? app. Tap it in the email on the iPhone where you
+        asked for it, and the app will open and sign you in.
+      </p>
+      <p>
+        If the app didn't open, check that it's installed, then tap the link in the email again.
+        Each link works once and expires after a while; if it no longer works, ask for a new one in
+        the app.
+      </p>
+    </main>
+  </body>
+</html>

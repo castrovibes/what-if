@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["T2F74J4VGV.com.whatcouldyoudo.app"],
+        "components": [
+          {
+            "/": "/__/auth/action",
+            "?": { "mode": "signIn" },
+            "comment": "The sign-in link in the email (Firebase's action handler)"
+          },
+          {
+            "/": "/finishSignIn",
+            "comment": "Where that handler forwards when the link opens in a browser"
+          }
+        ]
+      }
+    ]
+  }
+}

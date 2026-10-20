@@ -11,7 +11,10 @@
       "bundleIdentifier": "com.whatcouldyoudo.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "applinks:what-if-dev-70316.firebaseapp.com"
+      ]
     },
     "android": {
       "package": "com.whatcouldyoudo.app",
