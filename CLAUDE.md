@@ -128,7 +128,7 @@ Each prompt has these fields:
 | Professional (Therapeutic) | 22 | 7.6% | Sensitive topics for trained facilitators |
 
 ### Subcategories
-There are 228 unique subcategories spanning topics from `sharing` and `empathy` to `cyberbullying`, `grief`, `identity`, `peer pressure`, `substance experimentation`, and `sexual boundaries`. See `Ethical_Choices_App_Full_Prompt_Library.xlsx` for the complete mapping.
+There are 228 unique subcategories spanning topics from `sharing` and `empathy` to `cyberbullying`, `grief`, `identity`, `peer pressure`, `substance experimentation`, and `sexual boundaries`. See `content/Ethical_Choices_App_Full_Prompt_Library.xlsx` for the complete mapping.
 
 ---
 
@@ -164,19 +164,24 @@ src/components/              Reusable pieces that aren't kit-level (DiscussionTi
 src/hooks/                   Data hooks over the repositories (usePromptsForAge, useFavorites…)
 src/db/                      SQLite open/migrate, numbered migrations, repositories, row types
 src/sync/                    Cloud sync (outbox, record conversion, preference sync, change events)
-src/auth/                    AuthProvider and the Firebase / mock auth services
+src/providers/               The app-wide context providers: Theme, Db, ActiveContext, Auth
+src/auth/                    Firebase / mock auth services and their types
 src/backend/                 Firebase bootstrap, config from EXPO_PUBLIC_* env, Firestore model paths
 src/data/                    Static config (age groups, feature flags, personalization tokens)
-src/theme/, src/styles/      Theme colors, shadows
+src/theme/                   Theme colors, shadows
 src/utils/deviceHelpers.ts   Typography and Spacing scales (computed once; app is portrait-only, no tablets)
 firebase/                    Firestore rules, indexes, and the rules test suite
+content/                     The prompt library spreadsheet
+.claude/skills/              Project skills for Claude Code (shared; settings.local.json stays personal)
 ```
+
+`docs/` holds local working notes and is git-ignored; nothing in the repo should depend on it.
 
 **Screens:**
 - **Welcome / Welcome Tutorial** — first launch; continues the splash, then Get Started opens the Welcome guide (the swipeable tips deck), and finishing it opens the app on the deck's age pick. The guide can be replayed from the You tab; it opens from the root stack (`WelcomeGuide`), above the tabs, so it runs full screen with no tab bar, and finishing it lands on the Prompts tab.
 - **Prompts** (`src/screens/prompt/`) — the deck: title card and age pick (skipped when a preferred age range is set), swipeable prompt cards with twists on the back, Listen (TTS), Tips, favorite, report; filters for age group and situation; deck source (originals vs My Prompts); Twist and Tips are hidden (not dimmed) for prompts without them; the deck does not wrap: after the last prompt an end card (`EndOfDeckCard`) offers another age group's deck or this one again, and dragging past it rubber-bands; a "How did that go?" reflection sheet is offered when a prompt that was on top for 45 s+ is swiped away
 - **Explore / Module Detail** — themed modules and series (community posts are labeled samples until the community exists)
-- **Create / Prompt Editor / Prompt Builder (`MadLibs*` in code) / My Prompts** — user-written prompts, playable in the deck
+- **Create / Prompt Editor / Prompt Builder (`PromptBuilderScreen`, `PromptTemplatesRepo`; the table keeps its original name, `mad_libs_templates`) / My Prompts** — user-written prompts, playable in the deck
 - **You** (`src/screens/you/`) — Profile and Settings merged into one tab: account, activity (sample numbers, labeled), Saved Prompts (the ♥ favorites for the active group, playable in the deck), personalization (child's name/town/interests, never synced), preferences, the community content filter (saved and synced, applied once the community opens), reflections, Welcome Guide / FAQ / I'm Concerned, the Professional upsell, account actions. There is no ⚙ in any header.
 - **Signup flow** (`src/screens/signup/`) — email-link sign-in, profile (a display name and an "I'm 18 or older" confirmation; no username or birthdate), plan choice (kept for demos; free during beta)
 
@@ -233,8 +238,8 @@ firebase/                    Firestore rules, indexes, and the rules test suite
 
 ## Key Files Reference
 
-- `Ethical_Choices_App_Full_Prompt_Library.xlsx` — Complete 290-prompt database with all metadata (age groups, categories, subcategories, tiers)
-- `What_If_Professional_Tier_Discovery.docx` — Professional tier discovery/feedback questionnaire for counselors, therapists, educators
+- `content/Ethical_Choices_App_Full_Prompt_Library.xlsx` — Complete 290-prompt database with all metadata (age groups, categories, subcategories, tiers)
+- `What_If_Professional_Tier_Discovery.docx` (not in the repo) — Professional tier discovery/feedback questionnaire for counselors, therapists, educators
 
 ---
 

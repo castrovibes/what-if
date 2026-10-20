@@ -11,18 +11,12 @@ npm-debug.*
 web-build/
 # Personal Claude Code permissions; the rest of .claude/ (skills) is shared
 .claude/settings.local.json
-# Local safety copies made before refactors (see CLAUDE.md). Never committed.
-.*-backup-*/
-*.bak
 
 # Editor settings are personal
 .vscode/
 
 # Working notes and plans; kept locally, not part of the repo
 docs/
-
-# Local Flutter SDK clone (not part of this app)
-flutter/
 
 # macOS
 .DS_Store
@@ -38,5 +32,7 @@ flutter/
 .env
 .env.local
 
-# Physical backups taken before refactors (git tags mark the same points)
+# Physical backups taken before refactors (git tags mark the same points).
+# *.bak catches any stray copy made beside the source; move it into .backups/.
 .backups/
+*.bak
