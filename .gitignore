@@ -9,7 +9,8 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
-.claude
+# Personal Claude Code permissions; the rest of .claude/ (skills) is shared
+.claude/settings.local.json
 # Local safety copies made before refactors (see CLAUDE.md). Never committed.
 .*-backup-*/
 *.bak
@@ -17,7 +18,8 @@ web-build/
 # Editor settings are personal
 .vscode/
 
-docs
+# Working notes and plans; kept locally, not part of the repo
+docs/
 
 # Local Flutter SDK clone (not part of this app)
 flutter/
