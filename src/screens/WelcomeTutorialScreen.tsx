@@ -15,7 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { useSurface, PINK, CARD_RADIUS } from '../ui/surface';
 import { Screen, ScreenHeader, Button } from '../ui/components';
 import { useTabBarInset } from '../navigation/tabBarInset';

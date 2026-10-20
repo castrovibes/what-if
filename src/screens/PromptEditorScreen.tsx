@@ -8,7 +8,7 @@ import {
   NavigationProp,
   ParamListBase,
 } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { ageGroups, AgeGroupId } from '../data/ageGroups';
 import { Screen, ScreenHeader, ScreenScroll, SectionLabel, Pill, Dot, Button } from '../ui/components';

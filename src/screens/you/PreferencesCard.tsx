@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Switch } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useSurface, PINK } from '../../ui/surface';
 import { Card, ListRow, Dot, BottomSheet, SheetOption, SectionLabel } from '../../ui/components';
 import { comingSoon } from '../../ui/comingSoon';

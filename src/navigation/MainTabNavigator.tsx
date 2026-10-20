@@ -14,14 +14,15 @@ import { PromptsStackNavigator } from './PromptsStackNavigator';
 import { ExploreScreen } from '../screens/ExploreScreen';
 import { ModuleDetailScreen } from '../screens/ModuleDetailScreen';
 import { CreateScreen } from '../screens/CreateScreen';
-import { MadLibsScreen } from '../screens/MadLibsScreen';
+import { PromptBuilderScreen } from '../screens/PromptBuilderScreen';
 import { PromptEditorScreen } from '../screens/PromptEditorScreen';
 import { MyPromptsScreen } from '../screens/MyPromptsScreen';
 import { YouScreen } from '../screens/you/YouScreen';
+import { SavedPromptsScreen } from '../screens/you/SavedPromptsScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
 import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../providers/AuthProvider';
 import { FeatureFlags } from '../data/featureFlags';
 import { useStackScreenOptions } from './transitions';
 import { FloatingTabBar } from './FloatingTabBar';
@@ -57,7 +58,7 @@ const CreateStackNavigator = () => {
   return (
     <CreateStack.Navigator screenOptions={screenOptions}>
       <CreateStack.Screen name="CreateMain" component={CreateScreen} />
-      <CreateStack.Screen name="MadLibs" component={MadLibsScreen} />
+      <CreateStack.Screen name="PromptBuilder" component={PromptBuilderScreen} />
       <CreateStack.Screen name="PromptEditor" component={PromptEditorScreen} />
       <CreateStack.Screen name="MyPrompts" component={MyPromptsScreen} />
     </CreateStack.Navigator>
@@ -73,6 +74,7 @@ const YouStackNavigator = () => {
   return (
     <YouStack.Navigator screenOptions={screenOptions}>
       <YouStack.Screen name="YouMain" component={YouScreen} />
+      <YouStack.Screen name="SavedPrompts" component={SavedPromptsScreen} />
       <YouStack.Screen name="Personalization" component={PersonalizationScreen} />
       <YouStack.Screen name="FAQ" component={FAQScreen} />
       <YouStack.Screen name="ImConcerned" component={ImConcernedScreen} />

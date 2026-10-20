@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK, INPUT_RADIUS } from './surface';
 

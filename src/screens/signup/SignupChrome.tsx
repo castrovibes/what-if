@@ -16,7 +16,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Edge } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useSurface, PINK, INPUT_RADIUS } from '../../ui/surface';
 import { Screen } from '../../ui/components';
 import { Typography, Spacing } from '../../utils/deviceHelpers';

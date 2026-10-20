@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { useSurface, PINK } from '../ui/surface';
 import { Screen, ScreenHeader, ScreenScroll, Card, SectionLabel } from '../ui/components';
 import { FAQRepo, FAQEntry } from '../db/repositories/faq';

@@ -46,10 +46,15 @@ export type UserDoc = {
   updatedAt: Timestamp;
 };
 
+/** Which shared prompts may appear once the community opens (You > Quality & safety). */
+export type CommunityFilter = 'all' | 'vetted' | 'friends';
+
 export type UserPreferences = {
   /** null = follow the device. */
   darkMode: boolean | null;
   activeContextId: string | null;
+  /** null = never chosen (the app treats it as 'vetted'). */
+  communityFilter: CommunityFilter | null;
 };
 
 /** Mirrors the local `contexts` table. `label` must be anonymous (no child names). */

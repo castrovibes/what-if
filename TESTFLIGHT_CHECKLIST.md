@@ -11,12 +11,13 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 
 Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNTS_GUIDE.md](TESTFLIGHT_ACCOUNTS_GUIDE.md).
 
-- [ ] **You:** Enroll in the Apple Developer Program ($99/year) if not already.
-- [ ] **You:** Create the app in App Store Connect with bundle ID `com.whatcouldyoudo.app`.
-- [ ] **You:** Create an Expo account (for EAS Build, Expo's cloud build service), then run `npx eas-cli login` and `npx eas-cli init` once. This links the project and adds its ID to `app.json`.
+- [x] **You:** Enroll in the Apple Developer Program ($99/year). Done 2026-10-20.
+- [x] **You:** Create the app in App Store Connect with bundle ID `com.whatcouldyoudo.app`. Done 2026-10-20.
+- [x] **You:** Create an Expo account (for EAS Build, Expo's cloud build service). Done 2026-10-20.
+- [x] **You:** Run `npx eas-cli login` and `npx eas-cli init` once. Done 2026-10-20: linked as `@castrovibes/what-could-you-do`; the project ID is in `app.json`.
 - [x] **Claude:** Add `eas.json` with `preview` (internal) and `production` (TestFlight, auto-incrementing build number) profiles and a submit profile. Scripts: `npm run build:ios`, `npm run submit:ios`.
 - [x] **Claude:** Add a **placeholder** 1024×1024 app icon (pink background, white speech bubble with "?") in `assets/images/` and the iOS asset catalog, plus an Android adaptive icon.
-- [x] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen. Done: the icon is the hand-drawn question mark on its own green (`#bcd901`), edge to edge; the splash is "What If?" in Rock Salt above the question mark, held until the app draws the same image (`tools/graphics/`).
+- [x] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen. Done: the icon is the white hand-drawn question mark on deep purple at ~80% of the tile (`tools/graphics/make_icon.py`); the splash is "What If?" in Geomini ExtraBold, curved over the question mark, held until the app draws the same image (`tools/graphics/make_splash.py`). (An earlier green tile with Rock Salt lettering was replaced in the 2026-10-17 design critique.)
 - [x] **Claude:** Set version and build-number handling (`app.json` version 1.0.0; EAS keeps and auto-increments the build number remotely).
 - [x] **Claude:** Declare export compliance (`ITSAppUsesNonExemptEncryption: false`) in `app.json` and `ios/…/Info.plist`.
 - [x] **Claude:** Bring the checked-in `ios/` project up to date with new native modules (`pod install`: datetimepicker, expo-speech).
@@ -24,7 +25,7 @@ Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNT
 - [x] **Claude:** Smoke-test a Release build in the simulator. Confirmed: no sign-up offer, row or card; no I'm Concerned; no dev tools; no placeholder tags; Report falls back to TestFlight feedback.
 - [x] **You:** Choose the home-screen name. Decided: **"What If?"** (iOS display name and `app.json`). In-app titles still say "What Could You Do?".
 - [ ] **Claude:** Smoke-test a release build on a real device before the first upload (needs your Apple account for signing).
-  - Local native builds fail from this folder: the space in iCloud's `Mobile Documents` path breaks Expo's `expo-constants` build script. EAS cloud builds aren't affected. For local release builds, use a checkout in a path without spaces, or move the project out of iCloud Drive (it's also much faster there).
+  - Local native builds need a path without spaces (iCloud's `Mobile Documents` broke Expo's `expo-constants` build script). The repo moved to `~/Developer/what-if` on 2026-10-20 for this; EAS cloud builds were never affected.
 
 ## Phase 2 — Make the app safe to hand to testers
 
@@ -35,7 +36,7 @@ Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNT
 - [x] **Claude:** `FeatureFlags.betaFreeAccess` (`EXPO_PUBLIC_BETA_FREE_ACCESS`, on by default) shows plans as "Free during beta" and drives `isPremium`.
 - [ ] **You (content team):** Deliver the real prompt library. All prompts, tips, twists, FAQ and series are still `[PLACEHOLDER]` seed data.
 - [x] **You:** Approve importing the 290-prompt library.
-- [x] **Claude:** Add a placeholder `Ethical_Choices_App_Full_Prompt_Library.xlsx` (the 12 placeholder prompts, same columns, dropdowns, Read Me sheet) so the file exists. The content team will replace its rows.
+- [x] **Claude:** Add a placeholder `content/Ethical_Choices_App_Full_Prompt_Library.xlsx` (moved from the repo root 2026-10-20; the 12 placeholder prompts, same columns, dropdowns, Read Me sheet) so the file exists. The content team will replace its rows.
 - [ ] **Claude:** Import it through a new migration. Professional (therapeutic) prompts stay hidden unless `isProfessional`.
 - [ ] **You + clinician advisor:** Clinical review of "I'm concerned".
 - [x] **Claude:** Gate "I'm concerned" behind `FeatureFlags.showImConcerned`: on in development, off in builds unless `EXPO_PUBLIC_SHOW_IM_CONCERNED=true`.
@@ -50,12 +51,12 @@ Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNT
 
 Your brainstorm board (objects, attributes and actions) compared with what's built. The data layer covers most objects; the gaps are mostly actions (CTAs) that have no screen yet. Items 1, 2 and 5 are the ones testers would notice; item 8 matters once users can write prompts.
 
-1. **Notes: "Give Feedback".** Reflections (note plus a 1–5 emoji rating) are stored and synced, but nothing in the app creates one since the redesign removed the "How did that go?" pop-up.
-   - [ ] **You:** Decide where a note is written: a button on the prompt card, a prompt after skipping, or a Notes tab.
-   - [ ] **Claude:** Build it, plus a list of past notes.
-2. **Bookmarks: "Save" and folders.** The ♥ saves favorites (synced), but no screen lists them. Folders/Categories (name, description, prompts, Edit) aren't built.
-   - [ ] **You:** Decide whether the beta needs folders, or a simple "Saved" list is enough.
-   - [ ] **Claude:** Build the Saved list, then folders if wanted. Folders would also need the data model, rules and sync.
+1. **Notes: "Give Feedback".** Reflections (note plus a 1–5 emoji rating) are stored and synced.
+   - [x] **You:** Decided: the "How did that go?" sheet, offered after a prompt that was on top for 45 s+ is swiped away (`src/screens/prompt/ReflectionSheet.tsx`).
+   - [x] **Claude:** Built; the You tab lists the five most recent reflections for the active group. A full notes list is still open (see the Create tab's "Notes (coming soon)").
+2. **Bookmarks: "Save" and folders.** The ♥ saves favorites (synced). Folders/Categories (name, description, prompts, Edit) aren't built.
+   - [x] **Claude (2026-10-20):** **Saved Prompts** list under You (`src/screens/you/SavedPromptsScreen.tsx`, a "Saved prompts" row with the count): the active group's favorites newest first, Originals and your own prompts alike, personalized like the deck; tap or ▶ opens the deck on that prompt (`playInDeck` in `deckLinks.ts`), ♥ unsaves. Checked in the simulator: save from the deck, list, play, unsave.
+   - [ ] **You:** Decide whether the beta needs folders on top of the list. Folders would also need the data model, rules and sync.
 3. **User: first name, last name, role.** Not collected today; Profile shows a fixed label.
    - [ ] **You:** Decide on **Role** (Parent / Educator / Counselor / Therapist…). It's useful for the Professional tier.
    - [ ] **You:** Decide whether real **first and last names** are needed (e.g. for community posts), given they add personal data to protect.
@@ -63,8 +64,8 @@ Your brainstorm board (objects, attributes and actions) compared with what's bui
 4. **Naming: "Context".** On the board, Context means the *situation* (in the car, a restaurant). In the code it means *who you're talking with* ("Quick Start", "Group A"), and situations are called "liminal spaces".
    - [ ] **You:** Agree on names. Suggested: **Situation** for the board's meaning, **Group** for who you're talking with.
    - [ ] **Claude:** Rename in the UI and code; Firestore collection names change too, so do this before real users exist.
-5. **Settings: Safety.** The three content-filter options (all user content / after vetting / friends only) sit on Profile, but the choice isn't saved or synced.
-   - [ ] **Claude:** Move it to Settings, save it, and sync it with the other preferences.
+5. **Settings: Safety.** The three content-filter options (all user content / after vetting / friends only) sit on the You tab's Community card.
+   - [x] **Claude (2026-10-20):** The choice is saved on the device (`src/hooks/useCommunityFilter.ts`) and synced as `users/{uid}.preferences.communityFilter` like dark mode (model, rules + 1 new test, 29 passing; the account's choice wins on sign-in, else the device's is uploaded). The card says it applies once the community opens. Checked in the simulator: tap, relaunch, choice kept.
 6. **Post, Article, and the Prompt's "Settings" attribute.** These have no attributes defined yet. Community shows sample posts only; nothing in the app corresponds to Article (the closest are the FAQ and the I'm Concerned resources).
    - [ ] **You:** Define Post and Article (attributes and actions), and what the Prompt's "Settings" attribute means.
 7. **Mad Libs prompts don't sync.** Prompts saved from Mad Libs are stored as the user's own prompts on the phone, but aren't part of cloud sync.
@@ -103,7 +104,7 @@ Do these **one at a time**: finish, check and commit each before starting the ne
 
 ## Phase 3 — External beta (Beta App Review)
 
-- [ ] **You:** Publish a **privacy policy URL**. External TestFlight requires one. It must cover email, username, birthdate and photo for accounts.
+- [ ] **You:** Publish a **privacy policy URL**. External TestFlight requires one. It must cover the email address and display name that accounts store (and a profile photo, if that ships), plus crash reports once crash reporting is in.
 - [ ] **You:** Fill in the Test Information: beta description, feedback email, and what to test.
 - [ ] **You:** If sign-in is needed to review the app, provide a demo account for Apple's reviewers.
 - [ ] **You:** Decide the **minimum account age**. The code assumes 18+ (adult facilitators). Under-13 users bring in COPPA (US) and GDPR-K (EU) obligations.
@@ -126,7 +127,7 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 - [x] **Claude:** Sync preferences: dark mode and active context go to `users/{uid}.preferences`; the preferred age range syncs with its context. On sign-in the account's saved preferences win; if it has none, this device's choices are saved to it.
 - [ ] **You:** Set up Sign in with Apple (a capability in the Apple Developer account) and the Google OAuth client IDs. **Claude** will add `expo-apple-authentication` and Google sign-in.
 - [ ] **Claude:** Create accounts and sessions on the server, link Apple, Google and email logins to one account, and have the server decide new vs. returning users.
-- [ ] **Claude:** Check username availability on the server (unique names, profanity filter).
+- ~~**Claude:** Check username availability on the server (unique names, profanity filter).~~ Dropped: sign-up collects a display name, not a unique username (design critique, 2026-10-17).
 - [ ] **You:** Create the subscription products in App Store Connect and Google Play, and set real prices. They are "$X.XX/month" today.
 - [ ] **Claude:** Integrate in-app purchases (RevenueCat recommended): receipt validation, **Restore Purchases** (Apple requires it), and unlocking Premium and Professional content from the plan.
 - [x] **Claude:** Add in-app **account deletion** (Apple requires it). It runs client-side: it deletes synced data, the account and username claim, then the sign-in, and asks for a fresh sign-in first if needed.
@@ -166,8 +167,31 @@ Decisions from the founder/designer critique, recorded here because some reverse
 - **The tab bar is a floating pill** (`src/navigation/FloatingTabBar.tsx`): a raised card hovering above the bottom edge with the screen showing around it, a pink highlight that springs between tabs, and a scrim that fades content into the screen color underneath. Screens get the full height and pad their own bottom edge with `useTabBarInset()` (`src/navigation/tabBarInset.ts`; 0 outside the tabs). `ScreenScroll`, `ScreenList`, the deck's action row and cover button, the hint bubbles, toasts, Welcome (replayed) and the tips deck all use it.
 - Verified in the iPhone 16e simulator, light and dark: every tab's last card scrolls out from under the pill; the deck's Start button, action row and hints sit above it; toasts sit just above it; bottom sheets cover it; the Welcome guide's buttons clear it. Screenshots were taken with synthetic taps (see the session's scratchpad), not by hand.
 - Found and fixed while testing: the reflection sheet fired after a two-second session, because its dwell clock started when the first prompt loaded behind the cover; it now restarts when the session starts. Also fixed: the Professional card's text ran past its edge (text directly inside an accent `Card` needs a `View` wrapper), and the sign-up card double-padded.
-- **Local simulator builds from this iCloud folder still fail** (the `Mobile Documents` space). What worked: sync the working tree to `~/Developer/what-if-release-check` (`rsync -a --delete --exclude .git --exclude node_modules --exclude ios/Pods --exclude ios/build --exclude .backups`), run `npm install`, then `RCT_USE_PREBUILT_RNCORE=0 npx pod-install` in `ios/` and `RCT_USE_PREBUILT_RNCORE=0 npx expo run:ios --no-bundler` there, with Metro (`npx expo start`) running from this folder. The prebuilt React Native core (the default) failed to link `facebook::react::Sealable` against expo-modules-core; building core from source avoids it. Clear that checkout's DerivedData first if a link error mentions a stale symbol.
-- **Metro and iCloud Drive:** while testing from this folder, Metro's long-lived bundle graph twice kept serving a stale module after a file changed (the watcher missed the write), even across app relaunches, while a fresh request got the new code. If a change doesn't show up after a relaunch, restart Metro with `npx expo start --clear` before suspecting the code.
+- **Local simulator builds (updated 2026-10-20):** the iCloud-era workaround (an rsync'd `~/Developer/what-if-release-check` checkout built with `RCT_USE_PREBUILT_RNCORE=0`) is retired. After moving the repo to `~/Developer/what-if`, a plain `pod install` and `npx expo run:ios` build and launch on the iPhone 16e simulator with the default prebuilt React Native core; the `Sealable` link error didn't recur. If it ever does, clear DerivedData and retry with `RCT_USE_PREBUILT_RNCORE=0`.
+- **Metro and iCloud Drive (historical):** from the iCloud folder, Metro's watcher sometimes missed writes and served stale modules. If a change doesn't show up after a relaunch, `npx expo start --clear` is still the first thing to try.
 
 - **End of deck (2026-10-17):** the deck no longer loops. After the last prompt an end card says the deck is done (count, age range, situation) with "Pick another deck" (a sheet of age groups) and "Start this deck over"; swiping past it rubber-bands, and the action row keeps only the back button so the deck stays put. Verified in the simulator.
 - **Welcome guide from You (2026-10-17):** opens as a root-stack screen above the tabs (`WelcomeGuide` in RootNavigator), so the floating tab bar is gone for the whole flow, exactly like first launch; its back chevron closes it, and finishing lands on the Prompts tab. Verified in the simulator.
+
+## Repo cleanup (2026-10-20)
+
+Tagged `pre-structure-cleanup-2026-10-20`, with a copy in `.backups/2026-10-20-structure-cleanup/`.
+
+- **`docs/` is no longer in the repo** (git-ignored; the files stay on your Mac). Old plans and guides moved to `docs/archive/`; `FIREBASE_EMULATOR_GUIDE.md` and `SAVED_COPY.md` stay current. This checklist and `TESTFLIGHT_ACCOUNTS_GUIDE.md` stay in the root so they remain tracked.
+- **`.claude/` is tracked** (project skills); `.claude/settings.local.json` stays personal. The persona files that were in the `expo-dev` skill moved to `~/.claude/personal/expo-dev-persona/`.
+- **Code layout:** all four providers (Theme, Db, ActiveContext, Auth) in `src/providers/`; `shadows.ts` in `src/theme/` (`src/styles/` is gone); the unused `ModulesScreen` removed.
+- **Prompt Builder rename:** `PromptBuilderScreen`, `PromptTemplatesRepo` (`src/db/repositories/promptTemplates.ts`), route `PromptBuilder`. The `mad_libs_templates` table and its migrations keep their names.
+- The prompt library spreadsheet lives in `content/`; CHANGELOG has an Unreleased section for the React Native rebuild; stray `.bak` files moved to `.backups/stray-bak/`.
+- Typecheck, lint and unit tests pass.
+- [x] **Claude (2026-10-20):** Smoke-tested in the iPhone 16e simulator: Create → Prompt Builder lists the templates, fills a template from its chips and saves it to My Prompts, and ▷ plays it in the deck (3–5, My Prompts source); dark mode switches both ways; the sign-in sheet opens and reaches the email step. Not tested: sending a sign-in link and signing in with it.
+
+## Sign-up flow review (2026-10-20)
+
+Found while capturing every sign-up screen in the simulator (mock backend). Screens: AuthMethod → EmailEntry → CheckEmail → ProfileSetup → Paywall → Done (`src/screens/signup/`).
+
+- [ ] **Claude:** Make each step's main button the solid hot-pink primary. Send Link (EmailEntry) and Continue (Paywall) are outlined today, while Finish (ProfileSetup) is pink. The dev-only "Open link (dev)" button can stay secondary.
+- [ ] **Claude:** Rename ProfileSetup's **Finish** to **Continue**: the plan step still follows it.
+- [ ] **You (content):** Fix the Premium card's "Hundreds of real-world scenario prompts". The library plans 44 Premium prompts; say what's true (e.g. "Real-world scenario prompts") until the count is final.
+- [ ] **Claude:** Greet a brand-new account with "Welcome, Sam" on the You tab, not "Welcome back, Sam" (`src/screens/you/AccountCard.tsx`).
+- [ ] **You:** Decide how long Done ("You're all set!") stays up before returning (1.6 s today, `RETURN_AFTER_MS` in `DoneScreen.tsx`); it's hard to read in that time. Options: about 2.5 s, or wait for a tap.
+- [ ] **Claude:** Move the dev-only **Replay first launch** row on You away from the tab bar, or ask for confirmation before it clears the flag. A low tap can hit it. The first-launch flag was cleared once during testing; this row is the only code that clears it, though that wasn't confirmed as the cause.

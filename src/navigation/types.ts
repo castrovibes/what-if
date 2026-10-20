@@ -33,6 +33,8 @@ export type MainTabParamList = {
 /** The You tab: account, activity, preferences, help. (Profile and Settings, merged.) */
 export type YouStackParamList = {
   YouMain: undefined;
+  /** Favorites (♥) for the active group, playable in the deck. */
+  SavedPrompts: undefined;
   Personalization: undefined;
   FAQ: undefined;
   ImConcerned: undefined;
@@ -45,7 +47,7 @@ export type ExploreStackParamList = {
 
 export type CreateStackParamList = {
   CreateMain: undefined;
-  MadLibs: undefined;
+  PromptBuilder: undefined;
   /** Write a prompt (optionally for `ageGroup`), or edit one of yours with `promptId`. */
   PromptEditor: { promptId?: string; ageGroup?: string } | undefined;
   MyPrompts: undefined;
@@ -64,9 +66,8 @@ export type PromptsStackParamList = {
       }
     | undefined;
   Reflection: { promptId: string };
-  Modules: undefined;
   ModuleDetail: { moduleId: string };
-  MadLibs: undefined;
+  PromptBuilder: undefined;
   FAQ: undefined;
   ImConcerned: undefined;
   Personalization: undefined;

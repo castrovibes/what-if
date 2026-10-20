@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation, NavigationProp } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { Screen, ScreenHeader, ScreenScroll, Card } from '../ui/components';
 import { useSurface } from '../ui/surface';
@@ -88,7 +88,7 @@ export const CreateScreen = () => {
           icon="type"
           title="Prompt Builder"
           description="Fill in the blanks of a ready-made template."
-          onPress={() => navigation.navigate('MadLibs')}
+          onPress={() => navigation.navigate('PromptBuilder')}
         />
         <ToolCard
           icon="book-open"

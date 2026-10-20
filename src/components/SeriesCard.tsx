@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { Module } from '../db/repositories/modules';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { findAgeGroup } from '../data/ageGroups';

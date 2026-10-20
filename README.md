@@ -92,18 +92,19 @@ what-if/
 │   ├── components/            # Reusable pieces (DiscussionTips, carousel, ErrorBoundary)
 │   ├── db/                    # SQLite open/migrate, migrations, repositories
 │   ├── sync/                  # Cloud sync (outbox, record conversion, preference sync)
-│   ├── auth/                  # AuthProvider, Firebase / mock auth services
+│   ├── auth/                  # Firebase / mock auth services
 │   ├── backend/               # Firebase bootstrap, env config, Firestore model
 │   ├── hooks/                 # Data and UI hooks
-│   ├── providers/             # DB and active-context providers
-│   ├── theme/                 # Theme provider and themes
+│   ├── providers/             # App-wide providers: Theme, Db, ActiveContext, Auth
+│   ├── theme/                 # Theme colors and shadows
 │   ├── data/                  # Static config (age groups, feature flags, personalization tokens)
-│   ├── styles/                # Shared styles
 │   └── utils/                 # Typography / Spacing scales
 ├── firebase/                  # Firestore rules, indexes, rules tests
+├── content/                   # Prompt library spreadsheet
+├── tools/graphics/            # Scripts that draw the app icon and launch art
 ├── ios/                       # Native iOS project (regenerate with `npx expo prebuild --clean`)
 ├── .github/workflows/ci.yml   # Typecheck, lint, unit tests, Firestore rules tests
-├── assets/fonts/              # Inter (UI) and Rock Salt (splash) fonts
+├── assets/fonts/              # Inter (text) and Geomini (headings) fonts
 ├── package.json               # Project dependencies and scripts (typecheck, lint, test)
 ├── app.json                   # Expo configuration
 ├── eslint.config.js           # ESLint (expo config)

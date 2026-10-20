@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { usePersonalizationEditor } from '../hooks/usePersonalization';
 import { useActiveContext } from '../providers/ActiveContextProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';

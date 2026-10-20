@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { BottomSheet, SheetOption, Dot } from '../../ui/components';
 import { DiscussionTips } from '../../components/DiscussionTips';
 import { ReportReason } from '../../backend/reports';

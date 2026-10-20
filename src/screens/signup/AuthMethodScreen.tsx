@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useSurface, PINK, INPUT_RADIUS } from '../../ui/surface';
 import { Screen } from '../../ui/components';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import { toast } from '../../ui/toast';
 import { NotAvailableError, SignInResult } from '../../auth/types';
 import { authBackend } from '../../backend/config';

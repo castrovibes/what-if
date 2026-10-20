@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { TAP_FLASH_DARK, TAP_FLASH_IN_MS, TAP_FLASH_LIGHT, TAP_FLASH_OUT_MS } from './deck';
 
 /**

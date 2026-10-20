@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useSurface, PINK, CARD_RADIUS } from '../../ui/surface';
 import { Dot } from '../../ui/components';
 import { ageGroups, AgeGroupId } from '../../data/ageGroups';
