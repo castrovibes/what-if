@@ -1,7 +1,8 @@
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useAuth } from '../../providers/AuthProvider';
 import { ReauthRequiredError } from '../../auth/types';
+import { RootStackParamList } from '../../navigation/types';
 import { toast } from '../../ui/toast';
 
 /**
@@ -9,7 +10,7 @@ import { toast } from '../../ui/toast';
  * right: both are destructive, and the system sheet is what people expect for them.
  */
 export const useAccountActions = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { signOut, deleteAccount } = useAuth();
 
   const confirmLogOut = () => {
@@ -54,7 +55,7 @@ export const useAccountActions = () => {
                     text: 'Sign in again',
                     onPress: async () => {
                       await signOut();
-                      navigation.navigate('Signup' as never);
+                      navigation.navigate('Signup', { mode: 'login' });
                     },
                   },
                 ]);

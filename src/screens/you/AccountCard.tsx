@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../providers/ThemeProvider';
-import { useSurface } from '../../ui/surface';
+import { useSurface, PINK } from '../../ui/surface';
 import { Card, Button, ListRow } from '../../ui/components';
 import { useAuth } from '../../providers/AuthProvider';
 import { PlanId } from '../../auth/types';
@@ -17,9 +17,9 @@ const PLAN_LABEL: Record<PlanId, string> = {
 
 /**
  * The top of the You tab: who's signed in (name, plan, email), or a plain welcome while
- * accounts are off for the beta, or the sign-up offer.
+ * accounts are off for the beta, or the sign-up offer with a way in for returning users.
  */
-export const AccountCard = ({ onSignUp }: { onSignUp: () => void }) => {
+export const AccountCard = ({ onSignUp, onLogIn }: { onSignUp: () => void; onLogIn: () => void }) => {
   const { colors } = useTheme();
   const surface = useSurface();
   const { account } = useAuth();
@@ -84,7 +84,12 @@ export const AccountCard = ({ onSignUp }: { onSignUp: () => void }) => {
         </View>
       </View>
       <View style={styles.cta}>
-        <Button label="Sign up or log in" onPress={onSignUp} />
+        <Button label="Create a free account" onPress={onSignUp} />
+        <TouchableOpacity style={styles.logIn} onPress={onLogIn} hitSlop={8}>
+          <Text style={[styles.logInText, { color: colors.textSecondary }]}>
+            Already have an account? <Text style={{ color: PINK }}>Log in</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </Card>
   );
@@ -124,5 +129,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
     marginTop: -Spacing.sm,
+  },
+  logIn: {
+    alignSelf: 'center',
+    marginTop: Spacing.md,
+  },
+  logInText: {
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-SemiBold',
   },
 });

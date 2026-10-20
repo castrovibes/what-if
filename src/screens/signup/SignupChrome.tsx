@@ -2,7 +2,7 @@
  * Shared layout pieces for the sign-up screens: header (back, progress, close),
  * titles and labeled text fields.
  */
-import React, { ReactNode } from 'react';
+import React, { createContext, ReactNode, useContext, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { Edge } from 'react-native-safe-area-context';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useSurface, PINK, INPUT_RADIUS } from '../../ui/surface';
 import { Screen } from '../../ui/components';
+import { SignupMode } from '../../navigation/types';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
 
 export const SIGNUP_STEPS = 4;
@@ -26,17 +27,43 @@ export const SIGNUP_STEPS = 4;
 /** Sign-up is presented as a modal sheet below the status bar: only the bottom inset applies. */
 export const MODAL_EDGES: Edge[] = ['bottom'];
 
+type SignupModeValue = { mode: SignupMode; setMode: (mode: SignupMode) => void };
+
+const SignupModeContext = createContext<SignupModeValue>({ mode: 'signup', setMode: () => {} });
+
+/**
+ * Whether the flow is creating an account or logging a returning user in. It starts
+ * from how the flow was opened; the first screen can switch it.
+ */
+export const SignupModeProvider = ({
+  initialMode,
+  children,
+}: {
+  initialMode: SignupMode;
+  children: ReactNode;
+}) => {
+  const [mode, setMode] = useState(initialMode);
+  const value = useMemo(() => ({ mode, setMode }), [mode]);
+  return <SignupModeContext.Provider value={value}>{children}</SignupModeContext.Provider>;
+};
+
+export const useSignupMode = () => useContext(SignupModeContext);
+
 /** Leaves the whole sign-up flow and returns to wherever it was opened from. */
 export const useCloseSignup = () => {
   const navigation = useNavigation();
   return () => navigation.getParent()?.goBack();
 };
 
-/** Back chevron, close X, and a segmented progress bar for steps 1–4. */
+/**
+ * Back chevron, close X, and a segmented progress bar for steps 1–4. Logging in isn't
+ * a numbered sequence, so it shows no progress bar.
+ */
 export const SignupHeader = ({ step, onBack }: { step?: number; onBack?: () => void }) => {
   const { colors } = useTheme();
   const surface = useSurface();
   const close = useCloseSignup();
+  const { mode } = useSignupMode();
   return (
     <View style={styles.header}>
       <View style={styles.headerRow}>
@@ -47,11 +74,11 @@ export const SignupHeader = ({ step, onBack }: { step?: number; onBack?: () => v
         ) : (
           <View style={styles.iconSpacer} />
         )}
-        <TouchableOpacity onPress={close} hitSlop={10} accessibilityLabel="Close sign up">
+        <TouchableOpacity onPress={close} hitSlop={10} accessibilityLabel={mode === 'login' ? 'Close log in' : 'Close sign up'}>
           <Feather name="x" size={22} color={colors.iconDefault} />
         </TouchableOpacity>
       </View>
-      {step !== undefined && (
+      {step !== undefined && mode === 'signup' && (
         <View style={styles.progress} accessibilityLabel={`Step ${step} of ${SIGNUP_STEPS}`}>
           {Array.from({ length: SIGNUP_STEPS }, (_, i) => (
             <View

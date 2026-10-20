@@ -40,7 +40,8 @@ export const CheckEmailScreen = () => {
   useEffect(() => {
     if (!account || signedInAtStart.current || continued.current) return;
     continued.current = true;
-    navigation.navigate(account.displayName ? 'Done' : 'ProfileSetup');
+    if (account.displayName) navigation.navigate('Done', { returning: true });
+    else navigation.navigate('ProfileSetup');
   }, [account, navigation]);
 
   const resend = async () => {

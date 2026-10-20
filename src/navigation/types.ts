@@ -3,11 +3,16 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type RootStackParamList = {
   Onboarding: undefined;
   MainApp: NavigatorScreenParams<MainTabParamList> | undefined;
-  /** Sign-up / sign-in flow, presented modally over wherever the user is. */
-  Signup: undefined;
+  /**
+   * Sign-up / sign-in flow, presented modally over wherever the user is. `mode: 'login'`
+   * opens it for a returning user: no sign-up pitch or step counter.
+   */
+  Signup: { mode?: SignupMode } | undefined;
   /** The Welcome guide replayed from the You tab: full screen, above the tabs. */
   WelcomeGuide: undefined;
 };
+
+export type SignupMode = 'signup' | 'login';
 
 export type SignupStackParamList = {
   AuthMethod: undefined;
@@ -15,7 +20,8 @@ export type SignupStackParamList = {
   CheckEmail: { email: string };
   ProfileSetup: undefined;
   Paywall: undefined;
-  Done: undefined;
+  /** `returning`: an existing account signed back in, rather than a new one. */
+  Done: { returning?: boolean } | undefined;
 };
 
 export type OnboardingStackParamList = {
