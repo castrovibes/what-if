@@ -42,7 +42,6 @@ export const EmailEntryScreen = () => {
       footer={
         <Button
           label={sending ? 'Sending…' : 'Send Link'}
-          variant="secondary"
           onPress={sendLink}
           disabled={!valid || sending}
         />

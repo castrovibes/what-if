@@ -53,7 +53,6 @@ export const PaywallScreen = () => {
         <>
           <Button
             label={busy ? 'One moment…' : 'Continue'}
-            variant="secondary"
             onPress={purchase}
             disabled={busy || plans.length === 0}
           />
