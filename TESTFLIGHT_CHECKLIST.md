@@ -11,9 +11,10 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 
 Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNTS_GUIDE.md](TESTFLIGHT_ACCOUNTS_GUIDE.md).
 
-- [ ] **You:** Enroll in the Apple Developer Program ($99/year) if not already.
+- [x] **You:** Enroll in the Apple Developer Program ($99/year). Done 2026-10-20.
 - [ ] **You:** Create the app in App Store Connect with bundle ID `com.whatcouldyoudo.app`.
-- [ ] **You:** Create an Expo account (for EAS Build, Expo's cloud build service), then run `npx eas-cli login` and `npx eas-cli init` once. This links the project and adds its ID to `app.json`.
+- [x] **You:** Create an Expo account (for EAS Build, Expo's cloud build service). Done 2026-10-20.
+- [x] **You:** Run `npx eas-cli login` and `npx eas-cli init` once. Done 2026-10-20: linked as `@castrovibes/what-could-you-do`; the project ID is in `app.json`.
 - [x] **Claude:** Add `eas.json` with `preview` (internal) and `production` (TestFlight, auto-incrementing build number) profiles and a submit profile. Scripts: `npm run build:ios`, `npm run submit:ios`.
 - [x] **Claude:** Add a **placeholder** 1024×1024 app icon (pink background, white speech bubble with "?") in `assets/images/` and the iOS asset catalog, plus an Android adaptive icon.
 - [x] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen. Done: the icon is the white hand-drawn question mark on deep purple at ~80% of the tile (`tools/graphics/make_icon.py`); the splash is "What If?" in Geomini ExtraBold, curved over the question mark, held until the app draws the same image (`tools/graphics/make_splash.py`). (An earlier green tile with Rock Salt lettering was replaced in the 2026-10-17 design critique.)
