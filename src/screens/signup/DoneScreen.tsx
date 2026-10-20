@@ -2,7 +2,10 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { ZoomIn } from 'react-native-reanimated';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useAuth } from '../../providers/AuthProvider';
+import { SignupStackParamList } from '../../navigation/types';
 import { useSurface } from '../../ui/surface';
 import { Screen } from '../../ui/components';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
@@ -15,6 +18,8 @@ export const DoneScreen = () => {
   const { colors } = useTheme();
   const surface = useSurface();
   const close = useCloseSignup();
+  const returning = useRoute<RouteProp<SignupStackParamList, 'Done'>>().params?.returning ?? false;
+  const name = useAuth().account?.displayName;
 
   useEffect(() => {
     const t = setTimeout(close, RETURN_AFTER_MS);
@@ -28,9 +33,13 @@ export const DoneScreen = () => {
         <Animated.View entering={ZoomIn.springify().damping(12)} style={styles.check}>
           <Feather name="check" size={40} color="#fff" />
         </Animated.View>
-        <Text style={[styles.title, { color: surface.accent }]}>You’re all set!</Text>
+        <Text style={[styles.title, { color: surface.accent }]}>
+          {returning ? (name ? `Welcome back, ${name}!` : 'Welcome back!') : 'You’re all set!'}
+        </Text>
         <Text style={[styles.text, { color: colors.textSecondary }]}>
-          Taking you back to where you left off.
+          {returning
+            ? 'Your favorites and settings will sync to this phone.'
+            : 'Taking you back to where you left off.'}
         </Text>
       </View>
     </Screen>
@@ -56,6 +65,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.title2,
     fontFamily: 'Geomini-ExtraBold',
+    textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   text: {

@@ -9,8 +9,6 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 
 ## Phase 1 — Accounts and build pipeline
 
-Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNTS_GUIDE.md](TESTFLIGHT_ACCOUNTS_GUIDE.md).
-
 - [x] **You:** Enroll in the Apple Developer Program ($99/year). Done 2026-10-20.
 - [x] **You:** Create the app in App Store Connect with bundle ID `com.whatcouldyoudo.app`. Done 2026-10-20.
 - [x] **You:** Create an Expo account (for EAS Build, Expo's cloud build service). Done 2026-10-20.
@@ -177,7 +175,7 @@ Decisions from the founder/designer critique, recorded here because some reverse
 
 Tagged `pre-structure-cleanup-2026-10-20`, with a copy in `.backups/2026-10-20-structure-cleanup/`.
 
-- **`docs/` is no longer in the repo** (git-ignored; the files stay on your Mac). Old plans and guides moved to `docs/archive/`; `FIREBASE_EMULATOR_GUIDE.md` and `SAVED_COPY.md` stay current. This checklist and `TESTFLIGHT_ACCOUNTS_GUIDE.md` stay in the root so they remain tracked.
+- **`docs/` is no longer in the repo** (git-ignored; the files stay on your Mac). Old plans and guides moved to `docs/archive/`; `FIREBASE_EMULATOR_GUIDE.md` and `SAVED_COPY.md` stay current. This checklist stays in the root so it remains tracked. (`TESTFLIGHT_ACCOUNTS_GUIDE.md` also stayed, then was removed later on 2026-10-20 once the accounts were set up.)
 - **`.claude/` is tracked** (project skills); `.claude/settings.local.json` stays personal. The persona files that were in the `expo-dev` skill moved to `~/.claude/personal/expo-dev-persona/`.
 - **Code layout:** all four providers (Theme, Db, ActiveContext, Auth) in `src/providers/`; `shadows.ts` in `src/theme/` (`src/styles/` is gone); the unused `ModulesScreen` removed.
 - **Prompt Builder rename:** `PromptBuilderScreen`, `PromptTemplatesRepo` (`src/db/repositories/promptTemplates.ts`), route `PromptBuilder`. The `mad_libs_templates` table and its migrations keep their names.

@@ -21,7 +21,7 @@ import { NotAvailableError, SignInResult } from '../../auth/types';
 import { authBackend } from '../../backend/config';
 import { SignupStackParamList } from '../../navigation/types';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
-import { SignupHeader, MockNote, MODAL_EDGES } from './SignupChrome';
+import { SignupHeader, MockNote, MODAL_EDGES, useSignupMode } from './SignupChrome';
 
 // DRAFT COPY — slides 2 and 3 are placeholders until marketing copy is final.
 const SLIDES: { icon: keyof typeof Feather.glyphMap; title: string; text: string }[] = [
@@ -52,13 +52,15 @@ export const AuthMethodScreen = () => {
   const { auth, setAccount } = useAuth();
   const [slide, setSlide] = useState(0);
   const [busy, setBusy] = useState<Method | null>(null);
+  const { mode, setMode } = useSignupMode();
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setSlide(Math.round(e.nativeEvent.contentOffset.x / width));
 
   const continueWith = (result: SignInResult) => {
     setAccount(result.account);
-    navigation.navigate(result.needsProfile ? 'ProfileSetup' : 'Done');
+    if (result.needsProfile) navigation.navigate('ProfileSetup');
+    else navigation.navigate('Done', { returning: true });
   };
 
   const signIn = async (method: Method) => {
@@ -83,37 +85,52 @@ export const AuthMethodScreen = () => {
     <Screen edges={MODAL_EDGES}>
       <SignupHeader />
 
-      <View style={styles.carouselArea}>
-        <FlatList
-          data={SLIDES}
-          keyExtractor={s => s.title}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={onScrollEnd}
-          style={styles.carousel}
-          renderItem={({ item }) => (
-            <View style={[styles.slide, { width }]}>
-              <View style={styles.slideIcon}>
-                <Feather name={item.icon} size={30} color="#fff" />
-              </View>
-              <Text style={[styles.slideTitle, { color: surface.accent }]}>{item.title}</Text>
-              <Text style={[styles.slideText, { color: colors.textSecondary }]}>{item.text}</Text>
+      {mode === 'login' ? (
+        // A returning user doesn't need the pitch.
+        <View style={styles.carouselArea}>
+          <View style={styles.slide}>
+            <View style={styles.slideIcon}>
+              <Feather name="log-in" size={28} color="#fff" />
             </View>
-          )}
-        />
-        <View style={styles.dots}>
-          {SLIDES.map((_, i) => (
-            <View
-              key={i}
-              style={[styles.dot, { backgroundColor: i === slide ? PINK : surface.border }]}
-            />
-          ))}
+            <Text style={[styles.slideTitle, { color: surface.accent }]}>Welcome back</Text>
+            <Text style={[styles.slideText, { color: colors.textSecondary }]}>
+              Log in to bring your favorites, reflections and settings to this phone.
+            </Text>
+          </View>
         </View>
-        {slide < SLIDES.length - 1 && (
-          <Text style={[styles.swipeHint, { color: colors.textSecondary }]}>Swipe to see more →</Text>
-        )}
-      </View>
+      ) : (
+        <View style={styles.carouselArea}>
+          <FlatList
+            data={SLIDES}
+            keyExtractor={s => s.title}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onScrollEnd}
+            style={styles.carousel}
+            renderItem={({ item }) => (
+              <View style={[styles.slide, { width }]}>
+                <View style={styles.slideIcon}>
+                  <Feather name={item.icon} size={30} color="#fff" />
+                </View>
+                <Text style={[styles.slideTitle, { color: surface.accent }]}>{item.title}</Text>
+                <Text style={[styles.slideText, { color: colors.textSecondary }]}>{item.text}</Text>
+              </View>
+            )}
+          />
+          <View style={styles.dots}>
+            {SLIDES.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.dot, { backgroundColor: i === slide ? PINK : surface.border }]}
+              />
+            ))}
+          </View>
+          {slide < SLIDES.length - 1 && (
+            <Text style={[styles.swipeHint, { color: colors.textSecondary }]}>Swipe to see more →</Text>
+          )}
+        </View>
+      )}
 
       <View style={styles.buttons}>
         <TouchableOpacity
@@ -156,6 +173,18 @@ export const AuthMethodScreen = () => {
         >
           <Feather name="mail" size={17} color={colors.textPrimary} />
           <Text style={[styles.authText, { color: colors.textPrimary }]}>Continue with Email</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.switchMode}
+          onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}
+          disabled={busy !== null}
+          hitSlop={8}
+        >
+          <Text style={[styles.switchText, { color: colors.textSecondary }]}>
+            {mode === 'login' ? 'New here? ' : 'Already have an account? '}
+            <Text style={{ color: PINK }}>{mode === 'login' ? 'Create an account' : 'Log in'}</Text>
+          </Text>
         </TouchableOpacity>
 
         {authBackend === 'mock' && <MockNote>Apple and Google sign-in are simulated.</MockNote>}
@@ -228,6 +257,14 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: INPUT_RADIUS,
     borderWidth: 1.5,
+  },
+  switchMode: {
+    alignSelf: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  switchText: {
+    fontSize: Typography.footnote,
+    fontFamily: 'Inter-SemiBold',
   },
   authText: {
     fontSize: Typography.callout,

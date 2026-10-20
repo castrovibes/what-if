@@ -52,7 +52,10 @@ export const YouScreen = () => {
     <Screen>
       <ScreenHeader title="You" subtitle="Your account, preferences and progress" />
       <ScreenScroll>
-        <AccountCard onSignUp={() => navigation.navigate('Signup')} />
+        <AccountCard
+          onSignUp={() => navigation.navigate('Signup')}
+          onLogIn={() => navigation.navigate('Signup', { mode: 'login' })}
+        />
 
         <ActivityStats />
 
@@ -160,9 +163,9 @@ export const YouScreen = () => {
             <ListRow
               icon="log-in"
               iconColor={surface.accent}
-              label="Sign up or log in"
-              detail="Optional — the app works without an account"
-              onPress={() => navigation.navigate('Signup')}
+              label="Log in"
+              detail="For an account you already have"
+              onPress={() => navigation.navigate('Signup', { mode: 'login' })}
             />
           )}
           <ListRow

@@ -11,6 +11,7 @@ import {
   SignupText,
   FieldLabel,
   SignupField,
+  useSignupMode,
 } from './SignupChrome';
 
 const looksLikeEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
@@ -21,6 +22,7 @@ export const EmailEntryScreen = () => {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const valid = looksLikeEmail(email);
+  const { mode } = useSignupMode();
 
   const sendLink = async () => {
     setSending(true);
@@ -46,8 +48,19 @@ export const EmailEntryScreen = () => {
         />
       }
     >
-      <SignupTitle>What’s your email?</SignupTitle>
-      <SignupText>We’ll email you a link to sign in. No password needed.</SignupText>
+      {mode === 'login' ? (
+        <>
+          <SignupTitle>Log in with email</SignupTitle>
+          <SignupText>
+            Enter the email you signed up with. We’ll send a link to log in. No password needed.
+          </SignupText>
+        </>
+      ) : (
+        <>
+          <SignupTitle>What’s your email?</SignupTitle>
+          <SignupText>We’ll email you a link to sign in. No password needed.</SignupText>
+        </>
+      )}
       <FieldLabel>Email</FieldLabel>
       <SignupField
         value={email}
