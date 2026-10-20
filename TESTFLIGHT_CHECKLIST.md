@@ -184,3 +184,14 @@ Tagged `pre-structure-cleanup-2026-10-20`, with a copy in `.backups/2026-10-20-s
 - The prompt library spreadsheet lives in `content/`; CHANGELOG has an Unreleased section for the React Native rebuild; stray `.bak` files moved to `.backups/stray-bak/`.
 - Typecheck, lint and unit tests pass.
 - [x] **Claude (2026-10-20):** Smoke-tested in the iPhone 16e simulator: Create → Prompt Builder lists the templates, fills a template from its chips and saves it to My Prompts, and ▷ plays it in the deck (3–5, My Prompts source); dark mode switches both ways; the sign-in sheet opens and reaches the email step. Not tested: sending a sign-in link and signing in with it.
+
+## Sign-up flow review (2026-10-20)
+
+Found while capturing every sign-up screen in the simulator (mock backend). Screens: AuthMethod → EmailEntry → CheckEmail → ProfileSetup → Paywall → Done (`src/screens/signup/`).
+
+- [ ] **Claude:** Make each step's main button the solid hot-pink primary. Send Link (EmailEntry) and Continue (Paywall) are outlined today, while Finish (ProfileSetup) is pink. The dev-only "Open link (dev)" button can stay secondary.
+- [ ] **Claude:** Rename ProfileSetup's **Finish** to **Continue**: the plan step still follows it.
+- [ ] **You (content):** Fix the Premium card's "Hundreds of real-world scenario prompts". The library plans 44 Premium prompts; say what's true (e.g. "Real-world scenario prompts") until the count is final.
+- [ ] **Claude:** Greet a brand-new account with "Welcome, Sam" on the You tab, not "Welcome back, Sam" (`src/screens/you/AccountCard.tsx`).
+- [ ] **You:** Decide how long Done ("You're all set!") stays up before returning (1.6 s today, `RETURN_AFTER_MS` in `DoneScreen.tsx`); it's hard to read in that time. Options: about 2.5 s, or wait for a tap.
+- [ ] **Claude:** Move the dev-only **Replay first launch** row on You away from the tab bar, or ask for confirmation before it clears the flag. A low tap can hit it. The first-launch flag was cleared once during testing; this row is the only code that clears it, though that wasn't confirmed as the cause.
