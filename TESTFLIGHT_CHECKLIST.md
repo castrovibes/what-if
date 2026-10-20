@@ -183,4 +183,4 @@ Tagged `pre-structure-cleanup-2026-10-20`, with a copy in `.backups/2026-10-20-s
 - **Prompt Builder rename:** `PromptBuilderScreen`, `PromptTemplatesRepo` (`src/db/repositories/promptTemplates.ts`), route `PromptBuilder`. The `mad_libs_templates` table and its migrations keep their names.
 - The prompt library spreadsheet lives in `content/`; CHANGELOG has an Unreleased section for the React Native rebuild; stray `.bak` files moved to `.backups/stray-bak/`.
 - Typecheck, lint and unit tests pass.
-- [ ] **You:** Smoke-test in the simulator: Create → Prompt Builder opens and plays in the deck, dark mode toggles, sign-in still works. The refactor hasn't been run in the app yet.
+- [x] **Claude (2026-10-20):** Smoke-tested in the iPhone 16e simulator: Create → Prompt Builder lists the templates, fills a template from its chips and saves it to My Prompts, and ▷ plays it in the deck (3–5, My Prompts source); dark mode switches both ways; the sign-in sheet opens and reaches the email step. Not tested: sending a sign-in link and signing in with it.
