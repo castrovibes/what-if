@@ -188,7 +188,7 @@ Tagged `pre-structure-cleanup-2026-10-20`, with a copy in `.backups/2026-10-20-s
 Found while capturing every sign-up screen in the simulator (mock backend). Screens: AuthMethod → EmailEntry → CheckEmail → ProfileSetup → Paywall → Done (`src/screens/signup/`).
 
 - [x] **Claude:** Make each step's main button the solid hot-pink primary. Send Link (EmailEntry) and Continue (Paywall) are outlined today, while Finish (ProfileSetup) is pink. The dev-only "Open link (dev)" button can stay secondary. Done 2026-10-20.
-- [ ] **Claude:** Rename ProfileSetup's **Finish** to **Continue**: the plan step still follows it.
+- [x] **Claude:** Rename ProfileSetup's **Finish** to **Continue**: the plan step still follows it. Done 2026-10-20.
 - [ ] **You (content):** Fix the Premium card's "Hundreds of real-world scenario prompts". The library plans 44 Premium prompts; say what's true (e.g. "Real-world scenario prompts") until the count is final.
 - [ ] **Claude:** Greet a brand-new account with "Welcome, Sam" on the You tab, not "Welcome back, Sam" (`src/screens/you/AccountCard.tsx`).
 - [ ] **You:** Decide how long Done ("You're all set!") stays up before returning (1.6 s today, `RETURN_AFTER_MS` in `DoneScreen.tsx`); it's hard to read in that time. Options: about 2.5 s, or wait for a tap.

@@ -53,7 +53,7 @@ export const ProfileSetupScreen = () => {
   return (
     <SignupLayout
       header={<SignupHeader step={3} onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} />}
-      footer={<Button label={saving ? 'Saving…' : 'Finish'} onPress={finish} disabled={!canFinish} />}
+      footer={<Button label={saving ? 'Saving…' : 'Continue'} onPress={finish} disabled={!canFinish} />}
     >
       <SignupTitle>What should we call you?</SignupTitle>
       <SignupText>Just a first name or a nickname is fine. You can change it later.</SignupText>
