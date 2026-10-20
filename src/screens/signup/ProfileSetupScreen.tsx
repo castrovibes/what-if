@@ -25,7 +25,7 @@ export const ProfileSetupScreen = () => {
   const navigation = useNavigation<NavigationProp<SignupStackParamList>>();
   const { colors } = useTheme();
   const surface = useSurface();
-  const { auth, account, setAccount } = useAuth();
+  const { account, saveProfile } = useAuth();
   const [name, setName] = useState(account?.displayName ?? '');
   const [isAdult, setIsAdult] = useState(account?.ageConfirmed ?? false);
   const [saving, setSaving] = useState(false);
@@ -38,9 +38,7 @@ export const ProfileSetupScreen = () => {
     if (!account || !canFinish) return;
     setSaving(true);
     try {
-      setAccount(
-        await auth.saveProfile(account.id, { displayName: trimmed, ageConfirmed: true, photoUri: null }),
-      );
+      await saveProfile({ displayName: trimmed, photoUri: null });
       haptic.success();
       navigation.navigate('Paywall');
     } catch {

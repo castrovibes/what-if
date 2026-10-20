@@ -35,6 +35,10 @@ type AuthContextValue = {
   /** False until the saved session has been checked on launch. */
   ready: boolean;
   setAccount: (account: Account | null) => void;
+  /** True for an account created in this session (it finished the profile step here). */
+  isNewAccount: boolean;
+  /** The profile step: saves the profile and marks the account as new. */
+  saveProfile: (profile: { displayName: string; photoUri: string | null }) => Promise<Account>;
   /** Finishes sign-in from an email link and sets the account. */
   completeSignInLink: (url: string) => Promise<SignInResult>;
   /** Error from a sign-in link that opened the app, for the UI to show. */
@@ -69,6 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [ready, setReady] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [signupOfferPending, setSignupOfferPending] = useState(false);
+  const [newAccountId, setNewAccountId] = useState<string | null>(null);
 
   useEffect(() => {
     authService
@@ -159,6 +164,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const clearLinkError = useCallback(() => setLinkError(null), []);
 
+  const saveProfile = useCallback(
+    async (profile: { displayName: string; photoUri: string | null }) => {
+      if (!account) throw new Error('No signed-in account');
+      const saved = await authService.saveProfile(account.id, { ...profile, ageConfirmed: true });
+      setAccount(saved);
+      setNewAccountId(saved.id);
+      return saved;
+    },
+    [account],
+  );
+  const isNewAccount = account !== null && account.id === newAccountId;
+
   // Memoized so consumers only re-render when auth state actually changes.
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -166,6 +183,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       account,
       ready,
       setAccount,
+      isNewAccount,
+      saveProfile,
       completeSignInLink,
       linkError,
       clearLinkError,
@@ -179,6 +198,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       deleteAccount,
       account,
       ready,
+      isNewAccount,
+      saveProfile,
       completeSignInLink,
       linkError,
       clearLinkError,

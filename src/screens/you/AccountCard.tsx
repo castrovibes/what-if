@@ -22,7 +22,7 @@ const PLAN_LABEL: Record<PlanId, string> = {
 export const AccountCard = ({ onSignUp, onLogIn }: { onSignUp: () => void; onLogIn: () => void }) => {
   const { colors } = useTheme();
   const surface = useSurface();
-  const { account } = useAuth();
+  const { account, isNewAccount } = useAuth();
 
   if (account) {
     const name = account.displayName;
@@ -38,7 +38,8 @@ export const AccountCard = ({ onSignUp, onLogIn }: { onSignUp: () => void; onLog
           </View>
           <View style={styles.flex}>
             <Text style={[styles.name, { color: colors.textPrimary }]}>
-              {name ? `Welcome back, ${name}` : 'Welcome back'}
+              {/* "Back" only once they've been here before: not right after sign-up. */}
+              {`${isNewAccount ? 'Welcome' : 'Welcome back'}${name ? `, ${name}` : ''}`}
             </Text>
             <Text style={[styles.detail, { color: colors.textSecondary }]}>
               {PLAN_LABEL[account.plan]}
