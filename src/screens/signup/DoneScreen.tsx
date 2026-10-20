@@ -11,7 +11,7 @@ import { Screen } from '../../ui/components';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
 import { useCloseSignup, MODAL_EDGES } from './SignupChrome';
 
-const RETURN_AFTER_MS = 1600;
+const RETURN_AFTER_MS = 2000;
 
 /** Confirmation, then closes the sign-up flow back to where it was opened. */
 export const DoneScreen = () => {
