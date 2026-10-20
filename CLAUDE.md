@@ -249,7 +249,7 @@ firebase/                    Firestore rules, indexes, and the rules test suite
 - Check every screen in both light and dark mode, and the deck at the largest accessibility text size (the card height scales with the font scale, capped at 1.6×)
 - Hide a control that has nothing to do (no twists, no tips) rather than dimming it; a dimmed button looks broken
 - Bottom-anchored content on a tab screen adds `useTabBarInset()` to its bottom padding, or the floating tab bar covers it (`ScreenScroll` and `ScreenList` already do)
-- Local simulator builds can't run from this iCloud folder (the space in `Mobile Documents`); see TESTFLIGHT_CHECKLIST.md "Floating tab bar" for the clean-path build recipe
+- The repo lives at `~/Developer/what-if` (moved out of iCloud Drive on 2026-10-20); keep it on a local path without spaces, or local native builds break. `npx expo run:ios` builds directly from here
 - Welcome screen uses a soft gradient background, NOT the full color palette gradient
 - The app icon (`tools/graphics/make_icon.py`) is the white hand-drawn mark on deep purple, filling ~80% of the tile; rerun the script after changing the mark
 
