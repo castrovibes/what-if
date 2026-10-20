@@ -43,6 +43,18 @@ export type PromptFilter = {
 };
 
 export const PromptRepo = {
+  /** Active prompts (any source) for these ids, in the order given; unknown ids are skipped. */
+  async findByIds(ids: string[]): Promise<Prompt[]> {
+    if (ids.length === 0) return [];
+    const db = await getDb();
+    const rows = await db.getAllAsync<PromptRow>(
+      `SELECT * FROM prompts WHERE is_active = 1 AND id IN (${ids.map(() => '?').join(',')})`,
+      ...ids
+    );
+    const byId = new Map(rows.map(r => [r.id, fromRow(r)]));
+    return ids.map(id => byId.get(id)).filter((p): p is Prompt => !!p);
+  },
+
   async findFiltered(filter: PromptFilter): Promise<Prompt[]> {
     const db = await getDb();
     const where: string[] = ['is_active = 1'];

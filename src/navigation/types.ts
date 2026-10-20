@@ -33,6 +33,8 @@ export type MainTabParamList = {
 /** The You tab: account, activity, preferences, help. (Profile and Settings, merged.) */
 export type YouStackParamList = {
   YouMain: undefined;
+  /** Favorites (♥) for the active group, playable in the deck. */
+  SavedPrompts: undefined;
   Personalization: undefined;
   FAQ: undefined;
   ImConcerned: undefined;

@@ -11,6 +11,7 @@ import { comingSoon } from '../../ui/comingSoon';
 import { toast } from '../../ui/toast';
 import { useAuth } from '../../auth/AuthProvider';
 import { useActiveContext } from '../../providers/ActiveContextProvider';
+import { useFavorites } from '../../hooks/useFavorites';
 import { ReflectionRepo, Reflection } from '../../db/repositories/reflections';
 import { useSyncVersion } from '../../sync/events';
 import { FeatureFlags } from '../../data/featureFlags';
@@ -39,6 +40,7 @@ export const YouScreen = () => {
   const { account } = useAuth();
   const { activeContext } = useActiveContext();
   const { confirmLogOut, confirmDeleteAccount } = useAccountActions();
+  const savedCount = useFavorites().favorites.size;
 
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const syncVersion = useSyncVersion();
@@ -55,6 +57,17 @@ export const YouScreen = () => {
         <ActivityStats />
 
         <Card padded={false}>
+          <ListRow
+            icon="heart"
+            iconColor={PINK}
+            label="Saved prompts"
+            detail={
+              savedCount === 0
+                ? `Tap ♥ on a prompt to save it for ${activeContext.label}`
+                : `${savedCount} saved for ${activeContext.label}`
+            }
+            onPress={() => navigation.navigate('SavedPrompts')}
+          />
           <ListRow
             icon="edit-2"
             iconColor={PINK}

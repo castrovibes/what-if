@@ -34,9 +34,11 @@ service cloud.firestore {
 
     function validPreferences(p) {
       return p is map
-        && p.keys().hasOnly(['darkMode', 'activeContextId'])
+        && p.keys().hasOnly(['darkMode', 'activeContextId', 'communityFilter'])
         && (!('darkMode' in p) || p.darkMode == null || p.darkMode is bool)
-        && (!('activeContextId' in p) || isNullableString(p.activeContextId, 100));
+        && (!('activeContextId' in p) || isNullableString(p.activeContextId, 100))
+        && (!('communityFilter' in p) || p.communityFilter == null
+            || p.communityFilter in ['all', 'vetted', 'friends']);
     }
 
     // Username fields are both null, or the lowercase form is claimed by this user.

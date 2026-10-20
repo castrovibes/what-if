@@ -28,18 +28,13 @@ const MIN_WAIT_MS = 250;
 const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
 /**
- * Opens the Prompts tab with the deck showing My Prompts for an age group (with
- * `promptId` on top), from anywhere in the tab navigator, e.g. right after writing a
- * prompt. The deck is set up out of sight first, and the tab switches once it's ready,
- * so there's no flip or reload on screen. Resolves after the switch.
+ * Opens the Prompts tab with the deck showing `request` (a source and age group, with
+ * `promptId` on top), from anywhere in the tab navigator. The deck is set up out of
+ * sight first, and the tab switches once it's ready, so there's no flip or reload on
+ * screen. Resolves after the switch.
  */
-export const playMyPromptsInDeck = async (
-  navigation: NavigationProp<ParamListBase>,
-  ageGroup: AgeGroupId,
-  promptId?: string,
-) => {
+export const playInDeck = async (navigation: NavigationProp<ParamListBase>, request: DeckRequest) => {
   const tabs = navigation.getParent() ?? navigation;
-  const request: DeckRequest = { source: 'user', ageGroup, promptId };
   if (deckHandler) {
     await Promise.all([Promise.race([deckHandler(request), wait(MAX_WAIT_MS)]), wait(MIN_WAIT_MS)]);
     tabs.navigate('Prompts', { screen: 'PromptsMain' });
@@ -51,3 +46,10 @@ export const playMyPromptsInDeck = async (
     params: { ...request, opened: Date.now() },
   });
 };
+
+/** `playInDeck` for My Prompts, e.g. right after writing a prompt or ▶ in the list. */
+export const playMyPromptsInDeck = (
+  navigation: NavigationProp<ParamListBase>,
+  ageGroup: AgeGroupId,
+  promptId?: string,
+) => playInDeck(navigation, { source: 'user', ageGroup, promptId });

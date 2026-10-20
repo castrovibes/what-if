@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useSurface, PINK } from '../../ui/surface';
 import { Card } from '../../ui/components';
+import { haptic } from '../../ui/haptics';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
+import { CommunityFilter } from '../../backend/model';
+import { DEFAULT_COMMUNITY_FILTER, useCommunityFilter } from '../../hooks/useCommunityFilter';
 
-const OPTIONS = [
+const OPTIONS: { id: CommunityFilter; label: string; description: string }[] = [
   {
     id: 'all',
     label: 'Show all community prompts',
@@ -16,7 +19,6 @@ const OPTIONS = [
     id: 'vetted',
     label: 'Only prompts reviewed by our team',
     description: 'The recommended setting for most families and classrooms.',
-    recommended: true,
   },
   {
     id: 'friends',
@@ -26,13 +28,22 @@ const OPTIONS = [
 ];
 
 /**
- * The content filter for community prompts. The community isn't live during testing,
- * so the choice is shown but not yet live: the recommended option is marked and the
- * card says so inline (TESTFLIGHT_CHECKLIST.md 2c item 5).
+ * The content filter for community prompts. The choice is saved on the device and
+ * synced to the account with the other preferences (TESTFLIGHT_CHECKLIST.md 2b item 5).
+ * The community isn't live during testing, so the card says the filter applies once
+ * it opens.
  */
 export const QualitySafetyCard = () => {
   const { colors } = useTheme();
   const surface = useSurface();
+  const [filter, setFilter] = useCommunityFilter();
+
+  const choose = (id: CommunityFilter) => {
+    if (id === filter) return;
+    haptic.selection();
+    setFilter(id);
+  };
+
   return (
     <Card>
       <View style={styles.titleRow}>
@@ -45,41 +56,47 @@ export const QualitySafetyCard = () => {
       <View style={[styles.notice, { borderColor: surface.border }]}>
         <Feather name="clock" size={13} color={PINK} />
         <Text style={[styles.noticeText, { color: colors.textSecondary }]}>
-          Not available during testing
+          Applies when the community opens
         </Text>
       </View>
 
-      <View style={styles.options} accessibilityState={{ disabled: true }}>
-        {OPTIONS.map((o, i) => (
-          <View
-            key={o.id}
-            style={[
-              styles.option,
-              i < OPTIONS.length - 1 && {
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: surface.border,
-              },
-            ]}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: !!o.recommended, disabled: true }}
-            accessibilityLabel={o.label}
-          >
-            <View style={[styles.radio, { borderColor: o.recommended ? PINK : surface.border }]}>
-              {o.recommended && <View style={styles.radioInner} />}
-            </View>
-            <View style={styles.flex}>
-              <Text style={[styles.label, { color: colors.textPrimary }]}>{o.label}</Text>
-              {o.recommended && (
-                <View style={[styles.badge, { borderColor: surface.accent }]}>
-                  <Text style={[styles.badgeText, { color: surface.accent }]}>Recommended</Text>
-                </View>
-              )}
-              <Text style={[styles.description, { color: colors.textSecondary }]}>
-                {o.description}
-              </Text>
-            </View>
-          </View>
-        ))}
+      <View accessibilityRole="radiogroup">
+        {OPTIONS.map((o, i) => {
+          const selected = o.id === filter;
+          return (
+            <Pressable
+              key={o.id}
+              onPress={() => choose(o.id)}
+              style={({ pressed }) => [
+                styles.option,
+                i < OPTIONS.length - 1 && {
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                  borderBottomColor: surface.border,
+                },
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected, checked: selected }}
+              accessibilityLabel={o.label}
+              accessibilityHint={o.description}
+            >
+              <View style={[styles.radio, { borderColor: selected ? PINK : surface.border }]}>
+                {selected && <View style={styles.radioInner} />}
+              </View>
+              <View style={styles.flex}>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>{o.label}</Text>
+                {o.id === DEFAULT_COMMUNITY_FILTER && (
+                  <View style={[styles.badge, { borderColor: surface.accent }]}>
+                    <Text style={[styles.badgeText, { color: surface.accent }]}>Recommended</Text>
+                  </View>
+                )}
+                <Text style={[styles.description, { color: colors.textSecondary }]}>
+                  {o.description}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
     </Card>
   );
@@ -118,15 +135,14 @@ const styles = StyleSheet.create({
     fontSize: Typography.footnote,
     fontFamily: 'Inter-Medium',
   },
-  // Not live yet: visibly quieter, and not tappable.
-  options: {
-    opacity: 0.55,
-  },
   option: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.md,
     paddingVertical: Spacing.sm + 4,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   radio: {
     width: 22,

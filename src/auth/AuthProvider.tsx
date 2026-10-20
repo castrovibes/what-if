@@ -16,6 +16,7 @@ import { firebaseAuthService } from './firebaseAuthService';
 import { authBackend } from '../backend/config';
 import { SyncService } from '../sync/syncService';
 import { PreferenceSync } from '../sync/preferenceSync';
+import { CommunityFilterStore } from '../hooks/useCommunityFilter';
 import { emitSyncChange } from '../sync/events';
 import { useTheme } from '../theme/ThemeProvider';
 import { ACTIVE_CONTEXT_KEY, useActiveContext } from '../providers/ActiveContextProvider';
@@ -117,6 +118,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (remote.darkMode !== null) applyDarkModePreference(remote.darkMode);
       else if (local.current.darkModePreference !== null) {
         PreferenceSync.push({ darkMode: local.current.darkModePreference });
+      }
+
+      await CommunityFilterStore.ready();
+      if (cancelled) return;
+      if (remote.communityFilter) CommunityFilterStore.apply(remote.communityFilter);
+      else if (CommunityFilterStore.get()) {
+        PreferenceSync.push({ communityFilter: CommunityFilterStore.get() });
       }
 
       if (remote.activeContextId && remote.activeContextId !== local.current.activeContextId) {

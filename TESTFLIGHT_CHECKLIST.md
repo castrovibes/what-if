@@ -16,7 +16,7 @@ Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNT
 - [ ] **You:** Create an Expo account (for EAS Build, Expo's cloud build service), then run `npx eas-cli login` and `npx eas-cli init` once. This links the project and adds its ID to `app.json`.
 - [x] **Claude:** Add `eas.json` with `preview` (internal) and `production` (TestFlight, auto-incrementing build number) profiles and a submit profile. Scripts: `npm run build:ios`, `npm run submit:ios`.
 - [x] **Claude:** Add a **placeholder** 1024×1024 app icon (pink background, white speech bubble with "?") in `assets/images/` and the iOS asset catalog, plus an Android adaptive icon.
-- [x] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen. Done: the icon is the hand-drawn question mark on its own green (`#bcd901`), edge to edge; the splash is "What If?" in Rock Salt above the question mark, held until the app draws the same image (`tools/graphics/`).
+- [x] **You (design):** Replace the placeholder icon with the final design, and decide on a splash screen. Done: the icon is the white hand-drawn question mark on deep purple at ~80% of the tile (`tools/graphics/make_icon.py`); the splash is "What If?" in Geomini ExtraBold, curved over the question mark, held until the app draws the same image (`tools/graphics/make_splash.py`). (An earlier green tile with Rock Salt lettering was replaced in the 2026-10-17 design critique.)
 - [x] **Claude:** Set version and build-number handling (`app.json` version 1.0.0; EAS keeps and auto-increments the build number remotely).
 - [x] **Claude:** Declare export compliance (`ITSAppUsesNonExemptEncryption: false`) in `app.json` and `ios/…/Info.plist`.
 - [x] **Claude:** Bring the checked-in `ios/` project up to date with new native modules (`pod install`: datetimepicker, expo-speech).
@@ -50,12 +50,12 @@ Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNT
 
 Your brainstorm board (objects, attributes and actions) compared with what's built. The data layer covers most objects; the gaps are mostly actions (CTAs) that have no screen yet. Items 1, 2 and 5 are the ones testers would notice; item 8 matters once users can write prompts.
 
-1. **Notes: "Give Feedback".** Reflections (note plus a 1–5 emoji rating) are stored and synced, but nothing in the app creates one since the redesign removed the "How did that go?" pop-up.
-   - [ ] **You:** Decide where a note is written: a button on the prompt card, a prompt after skipping, or a Notes tab.
-   - [ ] **Claude:** Build it, plus a list of past notes.
-2. **Bookmarks: "Save" and folders.** The ♥ saves favorites (synced), but no screen lists them. Folders/Categories (name, description, prompts, Edit) aren't built.
-   - [ ] **You:** Decide whether the beta needs folders, or a simple "Saved" list is enough.
-   - [ ] **Claude:** Build the Saved list, then folders if wanted. Folders would also need the data model, rules and sync.
+1. **Notes: "Give Feedback".** Reflections (note plus a 1–5 emoji rating) are stored and synced.
+   - [x] **You:** Decided: the "How did that go?" sheet, offered after a prompt that was on top for 45 s+ is swiped away (`src/screens/prompt/ReflectionSheet.tsx`).
+   - [x] **Claude:** Built; the You tab lists the five most recent reflections for the active group. A full notes list is still open (see the Create tab's "Notes (coming soon)").
+2. **Bookmarks: "Save" and folders.** The ♥ saves favorites (synced). Folders/Categories (name, description, prompts, Edit) aren't built.
+   - [x] **Claude (2026-10-20):** **Saved Prompts** list under You (`src/screens/you/SavedPromptsScreen.tsx`, a "Saved prompts" row with the count): the active group's favorites newest first, Originals and your own prompts alike, personalized like the deck; tap or ▶ opens the deck on that prompt (`playInDeck` in `deckLinks.ts`), ♥ unsaves. Checked in the simulator: save from the deck, list, play, unsave.
+   - [ ] **You:** Decide whether the beta needs folders on top of the list. Folders would also need the data model, rules and sync.
 3. **User: first name, last name, role.** Not collected today; Profile shows a fixed label.
    - [ ] **You:** Decide on **Role** (Parent / Educator / Counselor / Therapist…). It's useful for the Professional tier.
    - [ ] **You:** Decide whether real **first and last names** are needed (e.g. for community posts), given they add personal data to protect.
@@ -63,8 +63,8 @@ Your brainstorm board (objects, attributes and actions) compared with what's bui
 4. **Naming: "Context".** On the board, Context means the *situation* (in the car, a restaurant). In the code it means *who you're talking with* ("Quick Start", "Group A"), and situations are called "liminal spaces".
    - [ ] **You:** Agree on names. Suggested: **Situation** for the board's meaning, **Group** for who you're talking with.
    - [ ] **Claude:** Rename in the UI and code; Firestore collection names change too, so do this before real users exist.
-5. **Settings: Safety.** The three content-filter options (all user content / after vetting / friends only) sit on Profile, but the choice isn't saved or synced.
-   - [ ] **Claude:** Move it to Settings, save it, and sync it with the other preferences.
+5. **Settings: Safety.** The three content-filter options (all user content / after vetting / friends only) sit on the You tab's Community card.
+   - [x] **Claude (2026-10-20):** The choice is saved on the device (`src/hooks/useCommunityFilter.ts`) and synced as `users/{uid}.preferences.communityFilter` like dark mode (model, rules + 1 new test, 29 passing; the account's choice wins on sign-in, else the device's is uploaded). The card says it applies once the community opens. Checked in the simulator: tap, relaunch, choice kept.
 6. **Post, Article, and the Prompt's "Settings" attribute.** These have no attributes defined yet. Community shows sample posts only; nothing in the app corresponds to Article (the closest are the FAQ and the I'm Concerned resources).
    - [ ] **You:** Define Post and Article (attributes and actions), and what the Prompt's "Settings" attribute means.
 7. **Mad Libs prompts don't sync.** Prompts saved from Mad Libs are stored as the user's own prompts on the phone, but aren't part of cloud sync.
@@ -103,7 +103,7 @@ Do these **one at a time**: finish, check and commit each before starting the ne
 
 ## Phase 3 — External beta (Beta App Review)
 
-- [ ] **You:** Publish a **privacy policy URL**. External TestFlight requires one. It must cover email, username, birthdate and photo for accounts.
+- [ ] **You:** Publish a **privacy policy URL**. External TestFlight requires one. It must cover the email address and display name that accounts store (and a profile photo, if that ships), plus crash reports once crash reporting is in.
 - [ ] **You:** Fill in the Test Information: beta description, feedback email, and what to test.
 - [ ] **You:** If sign-in is needed to review the app, provide a demo account for Apple's reviewers.
 - [ ] **You:** Decide the **minimum account age**. The code assumes 18+ (adult facilitators). Under-13 users bring in COPPA (US) and GDPR-K (EU) obligations.
@@ -126,7 +126,7 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 - [x] **Claude:** Sync preferences: dark mode and active context go to `users/{uid}.preferences`; the preferred age range syncs with its context. On sign-in the account's saved preferences win; if it has none, this device's choices are saved to it.
 - [ ] **You:** Set up Sign in with Apple (a capability in the Apple Developer account) and the Google OAuth client IDs. **Claude** will add `expo-apple-authentication` and Google sign-in.
 - [ ] **Claude:** Create accounts and sessions on the server, link Apple, Google and email logins to one account, and have the server decide new vs. returning users.
-- [ ] **Claude:** Check username availability on the server (unique names, profanity filter).
+- ~~**Claude:** Check username availability on the server (unique names, profanity filter).~~ Dropped: sign-up collects a display name, not a unique username (design critique, 2026-10-17).
 - [ ] **You:** Create the subscription products in App Store Connect and Google Play, and set real prices. They are "$X.XX/month" today.
 - [ ] **Claude:** Integrate in-app purchases (RevenueCat recommended): receipt validation, **Restore Purchases** (Apple requires it), and unlocking Premium and Professional content from the plan.
 - [x] **Claude:** Add in-app **account deletion** (Apple requires it). It runs client-side: it deletes synced data, the account and username claim, then the sign-in, and asks for a fresh sign-in first if needed.

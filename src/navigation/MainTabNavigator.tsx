@@ -18,6 +18,7 @@ import { MadLibsScreen } from '../screens/MadLibsScreen';
 import { PromptEditorScreen } from '../screens/PromptEditorScreen';
 import { MyPromptsScreen } from '../screens/MyPromptsScreen';
 import { YouScreen } from '../screens/you/YouScreen';
+import { SavedPromptsScreen } from '../screens/you/SavedPromptsScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
 import { FAQScreen } from '../screens/FAQScreen';
 import { ImConcernedScreen } from '../screens/ImConcernedScreen';
@@ -73,6 +74,7 @@ const YouStackNavigator = () => {
   return (
     <YouStack.Navigator screenOptions={screenOptions}>
       <YouStack.Screen name="YouMain" component={YouScreen} />
+      <YouStack.Screen name="SavedPrompts" component={SavedPromptsScreen} />
       <YouStack.Screen name="Personalization" component={PersonalizationScreen} />
       <YouStack.Screen name="FAQ" component={FAQScreen} />
       <YouStack.Screen name="ImConcerned" component={ImConcernedScreen} />

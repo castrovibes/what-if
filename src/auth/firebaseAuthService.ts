@@ -79,7 +79,7 @@ const ensureUserDoc = async (user: User): Promise<SignInResult> => {
       birthdate: null,
       photoUrl: null,
       plan: 'free',
-      preferences: { darkMode: null, activeContextId: null },
+      preferences: { darkMode: null, activeContextId: null, communityFilter: null },
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

@@ -50,7 +50,7 @@ const newUser = (uid, overrides = {}) => ({
   birthdate: null,
   photoUrl: null,
   plan: 'free',
-  preferences: { darkMode: null, activeContextId: null },
+  preferences: { darkMode: null, activeContextId: null, communityFilter: null },
   createdAt: serverTimestamp(),
   updatedAt: serverTimestamp(),
   ...overrides,
@@ -159,12 +159,29 @@ describe('users/{uid}', () => {
     await setDoc(doc(alice, 'users/alice'), newUser('alice'));
     await assertSucceeds(
       updateDoc(doc(alice, 'users/alice'), {
-        preferences: { darkMode: true, activeContextId: 'ctx-quick-start' },
+        preferences: { darkMode: true, activeContextId: 'ctx-quick-start', communityFilter: 'friends' },
         updatedAt: serverTimestamp(),
       }),
     );
     await assertFails(
       updateDoc(doc(alice, 'users/alice'), { isAdmin: true, updatedAt: serverTimestamp() }),
+    );
+  });
+
+  test('the community filter only accepts its three values', async () => {
+    const alice = db('alice');
+    await setDoc(doc(alice, 'users/alice'), newUser('alice'));
+    await assertSucceeds(
+      updateDoc(doc(alice, 'users/alice'), {
+        'preferences.communityFilter': 'all',
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(alice, 'users/alice'), {
+        'preferences.communityFilter': 'everything',
+        updatedAt: serverTimestamp(),
+      }),
     );
   });
 });
