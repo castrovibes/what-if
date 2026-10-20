@@ -12,7 +12,7 @@ Goal: a build of What Could You Do? that beta testers can install from TestFligh
 Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNTS_GUIDE.md](TESTFLIGHT_ACCOUNTS_GUIDE.md).
 
 - [x] **You:** Enroll in the Apple Developer Program ($99/year). Done 2026-10-20.
-- [ ] **You:** Create the app in App Store Connect with bundle ID `com.whatcouldyoudo.app`.
+- [x] **You:** Create the app in App Store Connect with bundle ID `com.whatcouldyoudo.app`. Done 2026-10-20.
 - [x] **You:** Create an Expo account (for EAS Build, Expo's cloud build service). Done 2026-10-20.
 - [x] **You:** Run `npx eas-cli login` and `npx eas-cli init` once. Done 2026-10-20: linked as `@castrovibes/what-could-you-do`; the project ID is in `app.json`.
 - [x] **Claude:** Add `eas.json` with `preview` (internal) and `production` (TestFlight, auto-incrementing build number) profiles and a submit profile. Scripts: `npm run build:ios`, `npm run submit:ios`.
@@ -36,7 +36,7 @@ Step-by-step instructions for the three **You** items below: [TESTFLIGHT_ACCOUNT
 - [x] **Claude:** `FeatureFlags.betaFreeAccess` (`EXPO_PUBLIC_BETA_FREE_ACCESS`, on by default) shows plans as "Free during beta" and drives `isPremium`.
 - [ ] **You (content team):** Deliver the real prompt library. All prompts, tips, twists, FAQ and series are still `[PLACEHOLDER]` seed data.
 - [x] **You:** Approve importing the 290-prompt library.
-- [x] **Claude:** Add a placeholder `Ethical_Choices_App_Full_Prompt_Library.xlsx` (the 12 placeholder prompts, same columns, dropdowns, Read Me sheet) so the file exists. The content team will replace its rows.
+- [x] **Claude:** Add a placeholder `content/Ethical_Choices_App_Full_Prompt_Library.xlsx` (moved from the repo root 2026-10-20; the 12 placeholder prompts, same columns, dropdowns, Read Me sheet) so the file exists. The content team will replace its rows.
 - [ ] **Claude:** Import it through a new migration. Professional (therapeutic) prompts stay hidden unless `isProfessional`.
 - [ ] **You + clinician advisor:** Clinical review of "I'm concerned".
 - [x] **Claude:** Gate "I'm concerned" behind `FeatureFlags.showImConcerned`: on in development, off in builds unless `EXPO_PUBLIC_SHOW_IM_CONCERNED=true`.
@@ -172,3 +172,15 @@ Decisions from the founder/designer critique, recorded here because some reverse
 
 - **End of deck (2026-10-17):** the deck no longer loops. After the last prompt an end card says the deck is done (count, age range, situation) with "Pick another deck" (a sheet of age groups) and "Start this deck over"; swiping past it rubber-bands, and the action row keeps only the back button so the deck stays put. Verified in the simulator.
 - **Welcome guide from You (2026-10-17):** opens as a root-stack screen above the tabs (`WelcomeGuide` in RootNavigator), so the floating tab bar is gone for the whole flow, exactly like first launch; its back chevron closes it, and finishing lands on the Prompts tab. Verified in the simulator.
+
+## Repo cleanup (2026-10-20)
+
+Tagged `pre-structure-cleanup-2026-10-20`, with a copy in `.backups/2026-10-20-structure-cleanup/`.
+
+- **`docs/` is no longer in the repo** (git-ignored; the files stay on your Mac). Old plans and guides moved to `docs/archive/`; `FIREBASE_EMULATOR_GUIDE.md` and `SAVED_COPY.md` stay current. This checklist and `TESTFLIGHT_ACCOUNTS_GUIDE.md` stay in the root so they remain tracked.
+- **`.claude/` is tracked** (project skills); `.claude/settings.local.json` stays personal. The persona files that were in the `expo-dev` skill moved to `~/.claude/personal/expo-dev-persona/`.
+- **Code layout:** all four providers (Theme, Db, ActiveContext, Auth) in `src/providers/`; `shadows.ts` in `src/theme/` (`src/styles/` is gone); the unused `ModulesScreen` removed.
+- **Prompt Builder rename:** `PromptBuilderScreen`, `PromptTemplatesRepo` (`src/db/repositories/promptTemplates.ts`), route `PromptBuilder`. The `mad_libs_templates` table and its migrations keep their names.
+- The prompt library spreadsheet lives in `content/`; CHANGELOG has an Unreleased section for the React Native rebuild; stray `.bak` files moved to `.backups/stray-bak/`.
+- Typecheck, lint and unit tests pass.
+- [ ] **You:** Smoke-test in the simulator: Create → Prompt Builder opens and plays in the deck, dark mode toggles, sign-in still works. The refactor hasn't been run in the app yet.
