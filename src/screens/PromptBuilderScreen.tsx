@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeProvider';
-import { MadLibsRepo, MadLibsTemplate, applyTemplate } from '../db/repositories/madLibs';
+import { useTheme } from '../providers/ThemeProvider';
+import { PromptTemplatesRepo, PromptTemplate, applyTemplate } from '../db/repositories/promptTemplates';
 import { FeatureFlags } from '../data/featureFlags';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { findAgeGroup, AgeGroupId } from '../data/ageGroups';
@@ -35,16 +35,16 @@ const AgeMeta = ({ ageGroup }: { ageGroup: string }) => {
   );
 };
 
-export const MadLibsScreen = () => {
+export const PromptBuilderScreen = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { colors } = useTheme();
   const surface = useSurface();
-  const [templates, setTemplates] = useState<MadLibsTemplate[]>([]);
+  const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [fills, setFills] = useState<string[]>([]);
 
   useEffect(() => {
-    MadLibsRepo.list().then(setTemplates);
+    PromptTemplatesRepo.list().then(setTemplates);
   }, []);
 
   const selected = templates.find(t => t.id === selectedId);

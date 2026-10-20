@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Button } from '../../ui/components';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import { toast } from '../../ui/toast';
 import { SignupStackParamList } from '../../navigation/types';
 import {

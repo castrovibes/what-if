@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, LayoutChangeEvent } from 'react-nati
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BottomTabBarProps, BottomTabBarHeightCallbackContext } from '@react-navigation/bottom-tabs';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { useSurface, PINK } from '../ui/surface';
 import { haptic } from '../ui/haptics';
 import { Typography } from '../utils/deviceHelpers';

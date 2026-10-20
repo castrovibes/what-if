@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
 import { findAgeGroup } from '../../data/ageGroups';
 import { Screen, ScreenHeader, ScreenList, Card, Dot, Button } from '../../ui/components';

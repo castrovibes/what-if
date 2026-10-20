@@ -14,11 +14,11 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
-import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
+import { ThemeProvider, useTheme } from './src/providers/ThemeProvider';
 import { DbProvider } from './src/providers/DbProvider';
 import { ActiveContextProvider } from './src/providers/ActiveContextProvider';
 import { RootNavigator } from './src/app/RootNavigator';
-import { AuthProvider } from './src/auth/AuthProvider';
+import { AuthProvider } from './src/providers/AuthProvider';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { useSurface, PINK } from './src/ui/surface';
 import { ToastHost } from './src/ui/toast';

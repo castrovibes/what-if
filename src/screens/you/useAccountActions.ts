@@ -1,6 +1,6 @@
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import { ReauthRequiredError } from '../../auth/types';
 import { toast } from '../../ui/toast';
 

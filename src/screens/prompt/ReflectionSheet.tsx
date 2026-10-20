@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { ReflectionRepo } from '../../db/repositories/reflections';
 import { Prompt } from '../../db/types';
 import { Typography, Spacing } from '../../utils/deviceHelpers';

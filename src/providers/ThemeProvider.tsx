@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themes, ThemeColors } from './themes';
+import { themes, ThemeColors } from '../theme/themes';
 import { PreferenceSync } from '../sync/preferenceSync';
 
 const STORAGE_KEY = 'darkMode';

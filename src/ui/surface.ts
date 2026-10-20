@@ -8,8 +8,8 @@
  * chrome read these same tokens, so every background in a theme matches.
  */
 import { useMemo } from 'react';
-import { useTheme } from '../theme/ThemeProvider';
-import { cardShadow } from '../styles/shadows';
+import { useTheme } from '../providers/ThemeProvider';
+import { cardShadow } from '../theme/shadows';
 
 export const PURPLE = '#49297e';
 export const PURPLE_ON_DARK = '#a78bdb';

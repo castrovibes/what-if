@@ -47,7 +47,7 @@ export type ExploreStackParamList = {
 
 export type CreateStackParamList = {
   CreateMain: undefined;
-  MadLibs: undefined;
+  PromptBuilder: undefined;
   /** Write a prompt (optionally for `ageGroup`), or edit one of yours with `promptId`. */
   PromptEditor: { promptId?: string; ageGroup?: string } | undefined;
   MyPrompts: undefined;
@@ -66,9 +66,8 @@ export type PromptsStackParamList = {
       }
     | undefined;
   Reflection: { promptId: string };
-  Modules: undefined;
   ModuleDetail: { moduleId: string };
-  MadLibs: undefined;
+  PromptBuilder: undefined;
   FAQ: undefined;
   ImConcerned: undefined;
   Personalization: undefined;

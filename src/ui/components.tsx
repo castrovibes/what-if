@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets, Edge } from 'react-native-safe-area-context';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { useSurface, PINK, CARD_RADIUS, INPUT_RADIUS } from './surface';
 import { useTabBarInset } from '../navigation/tabBarInset';

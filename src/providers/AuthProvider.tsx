@@ -10,16 +10,16 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Linking } from 'react-native';
-import { Account, AuthService, BillingService, SignInResult } from './types';
-import { mockAuthService, mockBillingService } from './mockAuthService';
-import { firebaseAuthService } from './firebaseAuthService';
+import { Account, AuthService, BillingService, SignInResult } from '../auth/types';
+import { mockAuthService, mockBillingService } from '../auth/mockAuthService';
+import { firebaseAuthService } from '../auth/firebaseAuthService';
 import { authBackend } from '../backend/config';
 import { SyncService } from '../sync/syncService';
 import { PreferenceSync } from '../sync/preferenceSync';
 import { CommunityFilterStore } from '../hooks/useCommunityFilter';
 import { emitSyncChange } from '../sync/events';
-import { useTheme } from '../theme/ThemeProvider';
-import { ACTIVE_CONTEXT_KEY, useActiveContext } from '../providers/ActiveContextProvider';
+import { useTheme } from './ThemeProvider';
+import { ACTIVE_CONTEXT_KEY, useActiveContext } from './ActiveContextProvider';
 
 // Cloud sync needs the Firebase backend; with the mock, data stays on the device.
 const syncEnabled = authBackend === 'firebase';

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { ZoomIn } from 'react-native-reanimated';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useSurface } from '../../ui/surface';
 import { Screen } from '../../ui/components';
 import { Typography, Spacing } from '../../utils/deviceHelpers';

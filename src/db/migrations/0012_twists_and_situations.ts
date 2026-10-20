@@ -9,7 +9,7 @@
 //    2 Deeper, 3 Challenging), replacing the earlier placeholder twists.
 //
 // The real library from the content team replaces these rows WHERE is_placeholder = 1
-// (see Ethical_Choices_App_Full_Prompt_Library.xlsx, which mirrors this content).
+// (see content/Ethical_Choices_App_Full_Prompt_Library.xlsx, which mirrors this content).
 
 import * as SQLite from 'expo-sqlite';
 

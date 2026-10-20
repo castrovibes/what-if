@@ -7,7 +7,7 @@ import { OnboardingNavigator } from '../navigation/OnboardingNavigator';
 import { MainTabNavigator } from '../navigation/MainTabNavigator';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { SignupNavigator } from '../navigation/SignupNavigator';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../providers/AuthProvider';
 import { FadeIn, useTransitions } from '../navigation/transitions';
 
 const Stack = createStackNavigator<RootStackParamList>();

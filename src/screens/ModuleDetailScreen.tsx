@@ -3,7 +3,7 @@ import { useSyncVersion } from '../sync/events';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { ModuleRepo, Module, ModuleStep } from '../db/repositories/modules';
 import { PromptRepo } from '../db/repositories/prompts';
 import { Prompt } from '../db/types';

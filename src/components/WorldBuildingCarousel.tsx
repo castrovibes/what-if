@@ -8,7 +8,7 @@ import {
   NativeScrollEvent,
   Dimensions,
 } from 'react-native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { useSurface } from '../ui/surface';
 import { WorldBuildingCard } from '../db/types';
 import { Typography, Spacing } from '../utils/deviceHelpers';

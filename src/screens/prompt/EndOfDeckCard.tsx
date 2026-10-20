@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { Button } from '../../ui/components';
 import { QuestionMark } from '../../ui/QuestionMark';
 import { Typography, Spacing } from '../../utils/deviceHelpers';

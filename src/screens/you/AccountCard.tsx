@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useSurface } from '../../ui/surface';
 import { Card, Button, ListRow } from '../../ui/components';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import { PlanId } from '../../auth/types';
 import { FeatureFlags } from '../../data/featureFlags';
 import { Typography, Spacing } from '../../utils/deviceHelpers';

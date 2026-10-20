@@ -25,7 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { findAgeGroup, AgeGroupId } from '../../data/ageGroups';
 import { DeckRequest, registerDeckHandler } from '../../navigation/deckLinks';
 import { usePromptsForAge } from '../../hooks/usePromptsForAge';

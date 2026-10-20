@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useSurface } from '../../ui/surface';
 import { Card, Dot, SectionLabel } from '../../ui/components';
 import { Typography, Spacing } from '../../utils/deviceHelpers';

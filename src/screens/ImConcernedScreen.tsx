@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { useSurface, PINK } from '../ui/surface';
 import { Screen, ScreenHeader, ScreenScroll, Card, ListRow } from '../ui/components';
 import { PreReleaseBanner } from '../components/PreReleaseBanner';
