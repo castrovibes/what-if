@@ -187,6 +187,12 @@ content/                     The prompt library spreadsheet
 
 **Quality gates:** `npm run typecheck` (strict TS), `npm run lint` (ESLint, expo config), `npm test` (Jest via `jest-expo`), `npm run test:rules` (Firestore rules against the emulator). All run in GitHub Actions (`.github/workflows/ci.yml`).
 
+**Claude Code tooling (`.claude/` and `tools/`):** the session workflow lives in project skills, agents and hooks rather than in this file. Read the skill before doing the task by hand.
+- Skills: `/run-app` (Metro in the background with a log, `tools/run-app.sh`), `/sim` (drive the simulator: tap, swipe, screenshot, light/dark, relaunch; `tools/sim/sim`), `/verify` (the whole gate in one run, `tools/check.sh`), `/ship` (commit style, PR body, checklist tick), `/checklist` (read and update the checklists without loading them whole), `/handoff` (write `docs/HANDOFF.md` at the end of a session).
+- Agents: `ui-verifier` (screenshots stay in the agent; you get a text report — use it for every simulator check beyond a single screenshot), `design-critic`, `screen-restyler` (one per screen, in parallel), `release-checker`.
+- Hooks (`.claude/settings.json`): `git commit` runs `tools/check.sh` and is blocked when it fails; hand-taken simulator screenshots are resized to 600 px and images over 800 px tall can't be read; `.bak` files beside source, deleting `.backups/` and force pushes are refused; SessionStart prints branch, open checklist counts, Metro/simulator state and the handoff note; compaction appends to `docs/HANDOFF.md`.
+- Process: one feature branch per session, `/clear` after the PR merges; numbered requests go on the checklist and are done one at a time.
+
 ### Why cross-platform (React Native)
 - Target users (parents, educators, therapists) use both iOS and Android roughly equally
 - App is UI/content-focused — no heavy graphics or device-specific features
