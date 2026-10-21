@@ -1,0 +1,245 @@
+#!/usr/bin/env bash
+# Drive the booted iOS Simulator from the shell: taps, swipes, screenshots, light/dark,
+# relaunch, logs. See .claude/skills/sim/SKILL.md for the workflow and known tap targets.
+#
+# Coordinates are DEVICE POINTS (e.g. 390x844 on an iPhone 16e), origin top-left.
+# Run `sim calibrate` once per window position/size; it is re-run on demand when the
+# window has moved. Screenshots are resized to <=600 px tall unless --full is given.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+BUNDLE_ID="${WHATIF_BUNDLE_ID:-com.whatcouldyoudo.app}"
+METRO_LOG="${WHATIF_METRO_LOG:-$ROOT/.expo/metro.log}"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/what-if-sim"
+CALIB="$CACHE_DIR/calibration.json"
+OUT_DIR="${SIM_OUT:-${TMPDIR%/}/what-if-sim}"
+EVENTS="$HERE/.build/events"
+MAX_HEIGHT="${SIM_MAX_HEIGHT:-600}"
+mkdir -p "$CACHE_DIR" "$OUT_DIR"
+
+die() { echo "sim: $*" >&2; exit 1; }
+need_booted() { xcrun simctl list devices booted | grep -q '(Booted)' || die "no booted simulator (open -a Simulator, or tools/run-app.sh ios)"; }
+
+build_events() {
+  if [ ! -x "$EVENTS" ] || [ "$HERE/events.swift" -nt "$EVENTS" ]; then
+    mkdir -p "$HERE/.build"
+    swiftc -O "$HERE/events.swift" -o "$EVENTS" 2>&1 | grep -v "^$" >&2 || true
+    [ -x "$EVENTS" ] || die "could not build events.swift"
+  fi
+}
+
+window() { build_events; "$EVENTS" window; }
+
+# Device size in points: screenshot pixels / scale (3x for every current iPhone; 2x for the SE).
+device_points() {
+  local tmp="$CACHE_DIR/probe.png"
+  xcrun simctl io booted screenshot "$tmp" >/dev/null 2>&1 || die "screenshot failed; is the simulator booted?"
+  local w h scale
+  w=$(sips -g pixelWidth "$tmp" | awk '/pixelWidth/ {print $2}')
+  h=$(sips -g pixelHeight "$tmp" | awk '/pixelHeight/ {print $2}')
+  scale="${WHATIF_SIM_SCALE:-$([ "$w" -ge 1000 ] && echo 3 || echo 2)}"
+  echo "$((w / scale)) $((h / scale))"
+}
+
+calibrate() {
+  need_booted; build_events
+  local win wx wy ww wh wid pts dw dh was
+  win=$(window) || die "Simulator window not found"
+  read -r wx wy ww wh wid _ <<<"$win"
+  read -r dw dh <<<"$(device_points)"
+  # Light mode guarantees a light screen for the edge detection; put it back afterwards.
+  was=$(xcrun simctl ui booted appearance 2>/dev/null || echo light)
+  [ "$was" = light ] || { xcrun simctl ui booted appearance light; sleep 0.6; }
+  local cap="$CACHE_DIR/window.png"
+  screencapture -x -o -l "$wid" "$cap" || die "screencapture failed (needs Screen Recording permission for this terminal)"
+  [ "$was" = light ] || xcrun simctl ui booted appearance "$was"
+  python3 "$HERE/calibrate.py" "$cap" "$wx" "$wy" "$ww" "$wh" "$dw" "$dh" > "$CALIB"
+  cat "$CALIB"
+}
+
+# Loads calibration into OX OY SC and DW DH; recalibrates if the window has moved or resized.
+load_calib() {
+  need_booted
+  local win wx wy ww wh
+  win=$(window) || die "Simulator window not found"
+  read -r wx wy ww wh _ <<<"$win"
+  if [ -f "$CALIB" ]; then
+    local cw
+    cw=$(python3 -I -c "import json,sys;c=json.load(open(sys.argv[1]));print(*c['window'])" "$CALIB")
+    [ "$cw" = "$wx $wy $ww $wh" ] || { echo "sim: window moved or resized; recalibrating" >&2; calibrate >/dev/null; }
+  else
+    echo "sim: no calibration yet; calibrating" >&2; calibrate >/dev/null
+  fi
+  read -r OX OY SC DW DH <<<"$(python3 -I -c "import json,sys;c=json.load(open(sys.argv[1]));print(c['originX'],c['originY'],c['scale'],*c['device'])" "$CALIB")"
+}
+
+# Device point -> Mac screen point.
+to_screen() { python3 -I -c "import sys;ox,oy,s,x,y=map(float,sys.argv[1:]);print(round(ox+x*s,1),round(oy+y*s,1))" "$OX" "$OY" "$SC" "$1" "$2"; }
+
+shot() {
+  need_booted
+  local name="${1:?usage: sim shot NAME [--full]}" full="${2:-}"
+  local path="$OUT_DIR/$name.png"
+  xcrun simctl io booted screenshot "$path" >/dev/null 2>&1 || die "screenshot failed"
+  if [ "$full" != "--full" ]; then
+    sips -Z "$MAX_HEIGHT" "$path" --out "$path" >/dev/null
+  fi
+  echo "$path"
+}
+
+wait_for_app() {
+  # Wait until Metro has served a fresh bundle (a new "Bundled" line after the launch),
+  # then a moment for the first render. Falls back to a short fixed wait without a log.
+  local before="$1" deadline=$((SECONDS + 60)) line
+  if [ ! -f "$METRO_LOG" ]; then
+    echo "sim: no Metro log at $METRO_LOG (start Metro with tools/run-app.sh start); waiting 6 s" >&2
+    sleep 6; return
+  fi
+  while [ $SECONDS -lt $deadline ]; do
+    line=$(tail -n +"$((before + 1))" "$METRO_LOG" | grep -E -m1 'Bundled|Bundling failed|Unable to resolve|SyntaxError' || true)
+    if [ -n "$line" ]; then
+      echo "sim: $line" >&2
+      case "$line" in *Bundled*) sleep 1.5; return 0 ;; *) return 1 ;; esac
+    fi
+    sleep 0.5
+  done
+  echo "sim: timed out waiting for Metro to bundle; the app may still be loading" >&2
+  return 1
+}
+
+# clear_prefs KEY...: remove AsyncStorage keys from the app's container (app must be terminated).
+clear_prefs() {
+  local container manifest
+  container=$(xcrun simctl get_app_container booted "$BUNDLE_ID" data 2>/dev/null) || die "app not installed on the booted simulator"
+  manifest="$container/Library/Application Support/$BUNDLE_ID/RCTAsyncLocalStorage_V1/manifest.json"
+  [ -f "$manifest" ] || { echo "sim: no AsyncStorage manifest yet; nothing stored" >&2; return; }
+  python3 -I - "$manifest" "$@" <<'PY'
+import json, sys, os
+p, keys = sys.argv[1], sys.argv[2:]
+d = json.load(open(p))
+removed = [k for k in keys if d.pop(k, None) is not None]
+json.dump(d, open(p, "w"))
+for k in removed:
+    f = os.path.join(os.path.dirname(p), k)
+    if os.path.exists(f): os.remove(f)
+print("sim: removed", removed or "nothing (keys were not set)")
+PY
+}
+reset_first_launch() { clear_prefs hasLaunchedBefore; }
+
+# stored_pref KEY: the app's AsyncStorage value for KEY, or "none".
+stored_pref() {
+  local container manifest
+  container=$(xcrun simctl get_app_container booted "$BUNDLE_ID" data 2>/dev/null) || { echo none; return; }
+  manifest="$container/Library/Application Support/$BUNDLE_ID/RCTAsyncLocalStorage_V1/manifest.json"
+  [ -f "$manifest" ] || { echo none; return; }
+  python3 -I -c 'import json,sys; d=json.load(open(sys.argv[1])); v=d.get(sys.argv[2]); print("none" if v is None else v)' "$manifest" "$1"
+}
+
+# The in-app Dark Mode toggle, once used, overrides the system appearance.
+warn_dark_pref() {
+  local v; v=$(stored_pref darkMode)
+  [ "$v" = none ] || echo "sim: the app has its own darkMode preference ($v), which overrides the simulator's appearance; run: sim clear-pref darkMode && sim relaunch" >&2
+}
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  status)
+    echo "simulator: $(xcrun simctl list devices booted | grep '(Booted)' | sed 's/^ *//' || echo none)"
+    echo "app: $(xcrun simctl spawn booted launchctl list 2>/dev/null | grep -q "$BUNDLE_ID" && echo running || echo 'not running')"
+    echo "appearance: $(xcrun simctl ui booted appearance 2>/dev/null || echo '?') (system); app darkMode pref: $(stored_pref darkMode)"
+    echo "metro: $(curl -s -m 2 http://localhost:8081/status || echo 'not running')  log: $([ -f "$METRO_LOG" ] && echo "$METRO_LOG" || echo none)"
+    echo "window: $(window 2>/dev/null || echo 'not found')"
+    [ -f "$CALIB" ] && echo "calibration: $(cat "$CALIB")" || echo "calibration: none (run: sim calibrate)"
+    echo "screenshots: $OUT_DIR" ;;
+  calibrate) calibrate ;;
+  where) load_calib; to_screen "${1:?X}" "${2:?Y}" ;;
+  move) load_calib; "$EVENTS" move $(to_screen "${1:?X}" "${2:?Y}") ;;
+  tap) load_calib; "$EVENTS" tap $(to_screen "${1:?X}" "${2:?Y}"); sleep "${SIM_SETTLE:-0.6}" ;;
+  drag) load_calib; "$EVENTS" drag $(to_screen "${1:?X1}" "${2:?Y1}") $(to_screen "${3:?X2}" "${4:?Y2}") "${5:-300}"; sleep "${SIM_SETTLE:-0.6}" ;;
+  swipe)
+    # sim swipe left|right|up|down [X Y]: a 60% swipe across the screen through (X,Y), default center.
+    load_calib
+    dir="${1:?left|right|up|down}"; cx="${2:-$((DW / 2))}"; cy="${3:-$((DH / 2))}"
+    dx=$((DW * 3 / 10)); dy=$((DH * 3 / 10))
+    case "$dir" in
+      left)  from="$((cx + dx)) $cy"; to="$((cx - dx)) $cy" ;;
+      right) from="$((cx - dx)) $cy"; to="$((cx + dx)) $cy" ;;
+      up)    from="$cx $((cy + dy))"; to="$cx $((cy - dy))" ;;
+      down)  from="$cx $((cy - dy))"; to="$cx $((cy + dy))" ;;
+      *) die "swipe direction must be left, right, up or down" ;;
+    esac
+    "$EVENTS" drag $(to_screen $from) $(to_screen $to) 250; sleep "${SIM_SETTLE:-0.8}" ;;
+  shot) shot "$@" ;;
+  sheet) python3 "$HERE/sheet.py" "$@" ;;
+  appearance)
+    need_booted
+    case "${1:-get}" in
+      get) xcrun simctl ui booted appearance ;;
+      toggle) cur=$(xcrun simctl ui booted appearance); [ "$cur" = dark ] && xcrun simctl ui booted appearance light || xcrun simctl ui booted appearance dark; warn_dark_pref; sleep 1.5; xcrun simctl ui booted appearance ;;
+      light|dark) xcrun simctl ui booted appearance "$1"; warn_dark_pref; sleep 1.5; echo "$1" ;;
+      *) die "appearance light|dark|toggle|get" ;;
+    esac ;;
+  textsize)
+    # Dynamic Type: default | large (XXXL, the largest non-accessibility size) | largest (AX5).
+    need_booted
+    case "${1:-get}" in
+      get) xcrun simctl ui booted content_size ;;
+      default) xcrun simctl ui booted content_size large ;;
+      large) xcrun simctl ui booted content_size extra-extra-extra-large ;;
+      largest) xcrun simctl ui booted content_size accessibility-extra-extra-extra-large ;;
+      *) xcrun simctl ui booted content_size "$1" ;;
+    esac ;;
+  relaunch)
+    # sim relaunch [--reset]: cold start the app and wait for Metro's bundle, not a timer.
+    need_booted
+    before=$( [ -f "$METRO_LOG" ] && wc -l < "$METRO_LOG" || echo 0 )
+    xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true
+    [ "${1:-}" = "--reset" ] && reset_first_launch
+    xcrun simctl launch booted "$BUNDLE_ID" >/dev/null
+    wait_for_app "$before" || true ;;
+  reset-first-launch) need_booted; xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true; reset_first_launch ;;
+  clear-pref)
+    # sim clear-pref KEY...: drop stored preferences (darkMode, ttsEnabled, activeContextId, communityFilter, ...)
+    need_booted; xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true; clear_prefs "$@" ;;
+  log)
+    # JS console output (console.log/warn/error reach Metro, not the system log).
+    [ -f "$METRO_LOG" ] || die "no Metro log at $METRO_LOG"
+    grep -E ' (LOG|WARN|ERROR|INFO|DEBUG) |Bundled|Bundling failed|Error|error' "$METRO_LOG" | tail -n "${1:-40}" ;;
+  syslog)
+    # Native-side log for the app's process (crashes, Hermes fatal errors), last N minutes.
+    need_booted
+    xcrun simctl spawn booted log show --last "${1:-2}m" --style compact --predicate 'process == "WhatCouldYouDo"' 2>/dev/null | grep -v -E 'nw_|boringssl|tcp_' | tail -n "${2:-60}" ;;
+  type)
+    # Type into the focused field (Simulator must be the frontmost app).
+    need_booted; osascript -e 'tell application "Simulator" to activate' -e "tell application \"System Events\" to keystroke \"${1:?text}\"" ;;
+  key)
+    # sim key return|tab|escape|delete|space
+    need_booted
+    case "${1:?key}" in return) code=36 ;; tab) code=48 ;; escape) code=53 ;; delete) code=51 ;; space) code=49 ;; *) code="$1" ;; esac
+    osascript -e 'tell application "Simulator" to activate' -e "tell application \"System Events\" to key code $code" ;;
+  home) need_booted; xcrun simctl spawn booted launchctl stop com.apple.SpringBoard 2>/dev/null || true ;;
+  open-url) need_booted; xcrun simctl openurl booted "${1:?url}" ;;
+  help|*)
+    sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'
+    cat <<'USAGE'
+
+usage: tools/sim/sim COMMAND
+  status                         simulator, app, appearance, Metro, window, calibration
+  calibrate                      find the device screen in the Simulator window (auto when needed)
+  shot NAME [--full]             screenshot -> $SIM_OUT/NAME.png, resized to <=600 px tall
+  sheet OUT.png IN.png ...       stitch screenshots side by side, labeled
+  tap X Y | drag X1 Y1 X2 Y2 [ms] | swipe left|right|up|down [X Y]
+  where X Y | move X Y           show / point at where a device point lands on the Mac screen
+  appearance light|dark|toggle   switch the simulator's appearance
+  textsize default|large|largest Dynamic Type size
+  relaunch [--reset]             cold start, waiting on Metro's "Bundled" line (--reset: first-launch state)
+  reset-first-launch             clear the hasLaunchedBefore flag (app is terminated first)
+  clear-pref KEY...              drop AsyncStorage keys, e.g. darkMode when the in-app toggle overrides the system
+  log [N] | syslog [MIN] [N]     JS console lines from the Metro log | native log for the app
+  type "text" | key return       keyboard input (Simulator comes to the front)
+  open-url URL                   deep link
+USAGE
+    [ "$cmd" = help ] || exit 1 ;;
+esac
