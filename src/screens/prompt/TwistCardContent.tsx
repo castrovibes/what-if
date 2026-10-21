@@ -17,7 +17,8 @@ const difficultyLabel = (difficulty: number) =>
 /**
  * The back of the top card: one twist at a time, in place of the prompt. The pips
  * show which twist this is; the arrows (or swiping the card) move between them.
- * `shift` slides the twist text out and the next one in.
+ * `shift` slides the twist text out and the next one in. The Twist label in the
+ * corner flips the card back, like the Twist button.
  */
 export const TwistCardContent = ({
   card,
@@ -28,6 +29,7 @@ export const TwistCardContent = ({
   shift,
   onPrev,
   onNext,
+  onFlipBack,
 }: {
   card: WorldBuildingCard;
   index: number;
@@ -37,6 +39,7 @@ export const TwistCardContent = ({
   shift: SharedValue<number>;
   onPrev: () => void;
   onNext: () => void;
+  onFlipBack: () => void;
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
@@ -56,10 +59,16 @@ export const TwistCardContent = ({
   return (
     <>
       <View style={cardStyles.cardHeader}>
-        <View style={cardStyles.sourceRow}>
+        <TouchableOpacity
+          onPress={onFlipBack}
+          style={cardStyles.sourceRow}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Show the prompt"
+        >
           <Feather name="shuffle" size={14} color={accent} />
           <Text style={[cardStyles.sourceText, { color: accent }]}>Twist</Text>
-        </View>
+        </TouchableOpacity>
         <Animated.View
           style={[
             cardStyles.categoryPill,

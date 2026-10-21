@@ -876,6 +876,7 @@ export const PromptScreen = () => {
                             shift={twistShift}
                             onPrev={() => changeTwist(-1)}
                             onNext={() => changeTwist(1)}
+                            onFlipBack={toggleTwists}
                           />
                         </Animated.View>
                       )}
