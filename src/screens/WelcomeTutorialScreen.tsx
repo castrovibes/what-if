@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  useWindowDimensions,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -76,10 +84,13 @@ const TipCard = ({
   index,
   progress,
   width,
+  arrowStyle,
 }: {
   index: number;
   progress: SharedValue<number>;
   width: number;
+  /** The intro arrow's nudge, so the cue on the card moves the same way. */
+  arrowStyle: StyleProp<ViewStyle>;
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
@@ -118,6 +129,11 @@ const TipCard = ({
         <Text style={[local.title, { color: colors.textPrimary }]}>{step.title}</Text>
         <Text style={[local.description, { color: colors.textSecondary }]}>{step.description}</Text>
       </View>
+      {/* Cue that the card moves on: swipe it, or tap the right side. In the layout
+          rather than floating, so long text at large sizes can't run under it. */}
+      <Animated.View style={[local.cardArrow, arrowStyle]}>
+        <Feather name="arrow-right" size={22} color={surface.accent} />
+      </Animated.View>
     </Animated.View>
   );
 };
@@ -334,7 +350,13 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
           >
             <Animated.View style={[StyleSheet.absoluteFill, deckStyle]} pointerEvents="none">
               {STEPS.map((step, i) => (
-                <TipCard key={step.title} index={i} progress={progress} width={width} />
+                <TipCard
+                  key={step.title}
+                  index={i}
+                  progress={progress}
+                  width={width}
+                  arrowStyle={arrowStyle}
+                />
               ))}
             </Animated.View>
             {/* The zones continue onto the card's outer quarters, as on the deck. Under
@@ -434,6 +456,9 @@ const local = StyleSheet.create({
     fontSize: Typography.title1,
     fontFamily: 'Geomini-Bold',
     lineHeight: Math.round(Typography.title1 * 1.25),
+  },
+  cardArrow: {
+    alignSelf: 'flex-end',
   },
   description: {
     marginTop: Spacing.md,
