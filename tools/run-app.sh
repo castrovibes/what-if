@@ -56,8 +56,9 @@ start() {
   local owner; owner=$(port_owner)
   [ -n "$owner" ] && die "port $PORT is held by pid $owner ($(ps -o comm= -p "$owner")); run 'tools/run-app.sh stop' or kill it"
   : > "$METRO_LOG"
-  # CI=1 keeps Expo CLI from waiting on interactive keys; the log carries every line.
-  ( env CI=1 EXPO_NO_TELEMETRY=1 $envspec nohup npx expo start --port "$PORT" $clear "${extra[@]}" >> "$METRO_LOG" 2>&1 & echo $! > "$PID_FILE" )
+  # No CI=1 here: it turns off Metro's file watching, so edits never reach the app.
+  # Without a TTY (stdin from /dev/null) Expo CLI doesn't wait on interactive keys.
+  ( env EXPO_NO_TELEMETRY=1 $envspec nohup npx expo start --port "$PORT" $clear "${extra[@]}" < /dev/null >> "$METRO_LOG" 2>&1 & echo $! > "$PID_FILE" )
   METRO_PID=$(cat "$PID_FILE")
   echo "run-app: starting Metro (pid $METRO_PID${envspec:+, $envspec}) -> $METRO_LOG"
   wait_for_metro 90 && echo "run-app: Metro ready on $STATUS_URL"
