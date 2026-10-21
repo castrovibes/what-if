@@ -71,7 +71,7 @@ import {
 import { DeckCard } from './DeckCard';
 import { PromptCardContent } from './PromptCardContent';
 import { TwistCardContent } from './TwistCardContent';
-import { TapFlash, useTapFlash } from './TapFlash';
+import { TapFlash, useTapFlash } from '../../ui/TapFlash';
 import { usePromptSpeech } from './usePromptSpeech';
 import { AgeMenu, AgeMenuBackdrop, AgePickCard } from './AgeMenu';
 import { PromptSheets } from './PromptSheets';

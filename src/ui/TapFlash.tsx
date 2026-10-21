@@ -9,12 +9,17 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../../providers/ThemeProvider';
-import { TAP_FLASH_DARK, TAP_FLASH_IN_MS, TAP_FLASH_LIGHT, TAP_FLASH_OUT_MS } from './deck';
+import { useTheme } from '../providers/ThemeProvider';
+
+const TAP_FLASH_IN_MS = 90;
+const TAP_FLASH_OUT_MS = 380;
+const TAP_FLASH_LIGHT = 'rgba(0, 0, 0, 0.04)'; // a slightly darker shade in light mode
+const TAP_FLASH_DARK = 'rgba(255, 255, 255, 0.06)'; // slightly lighter in dark mode
 
 /**
- * Tap feedback for the page-turn zones: a soft gradient that flashes in from the
- * tapped side of the screen, strongest at the edge and fading out toward the card.
+ * Tap feedback for the page-turn zones (the prompt deck and the Welcome guide): a soft
+ * gradient that flashes in from the tapped side of the screen, strongest at the edge
+ * and fading out toward the card.
  */
 export const useTapFlash = () => {
   const left = useSharedValue(0);

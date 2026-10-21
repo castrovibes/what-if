@@ -20,6 +20,8 @@ import { useSurface, PINK, CARD_RADIUS } from '../ui/surface';
 import { Screen, ScreenHeader, Button } from '../ui/components';
 import { useTabBarInset } from '../navigation/tabBarInset';
 import { useReduceMotion } from '../navigation/transitions';
+import { TapFlash, useTapFlash } from '../ui/TapFlash';
+import { haptic } from '../ui/haptics';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 
 const STEPS: { title: string; description: string }[] = [
@@ -174,6 +176,7 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
   };
   const swipeOffLast = () => {
     if (finishingRef.current) return;
+    haptic.light();
     progress.value = withTiming(
       LAST + 1,
       { duration: SWIPE_MS, easing: Easing.in(Easing.quad) },
@@ -185,6 +188,7 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
 
   const goTo = (target: number) => {
     const i = Math.max(0, Math.min(LAST, target));
+    if (i !== indexRef.current) haptic.light();
     indexRef.current = i;
     progress.value = withTiming(
       i,
@@ -231,6 +235,22 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
         runOnJS(release)(false, false);
       }
     });
+
+  // Page-turn taps, as on the prompt deck: left of center goes back, right of center
+  // goes forward (past the last tip, that finishes the guide like a swipe does). The
+  // tapped side flashes only when the page actually turns.
+  const tapFlash = useTapFlash();
+  const tapBack = () => {
+    if (indexRef.current === 0) return;
+    tapFlash.flash('left');
+    goTo(indexRef.current - 1);
+  };
+  const tapForward = () => {
+    if (finishingRef.current) return;
+    tapFlash.flash('right');
+    if (indexRef.current === LAST) swipeOffLast();
+    else goTo(indexRef.current + 1);
+  };
 
   const current = index > 0 ? STEPS[index - 1] : null;
   const onLast = index === LAST;
@@ -280,8 +300,23 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
 
   return (
     <Screen edges={['top', 'bottom']}>
+      {/* Drawn first, so the tap feedback sits behind the cards and controls. */}
+      <TapFlash side="left" value={tapFlash.left} />
+      <TapFlash side="right" value={tapFlash.right} />
+
       <ScreenHeader title="Getting started" onBack={() => navigation.goBack()} />
       <View style={local.body}>
+        {/* Page-turn zones, like an ebook, over the empty space around the deck. Hidden
+            from VoiceOver, which has the deck's adjustable actions instead. */}
+        <View
+          style={local.tapZones}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Pressable style={local.tapZone} onPress={tapBack} />
+          <Pressable style={local.tapZone} onPress={tapForward} />
+        </View>
+
         <GestureDetector gesture={pan}>
           <View
             style={local.deck}
@@ -302,6 +337,17 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
                 <TipCard key={step.title} index={i} progress={progress} width={width} />
               ))}
             </Animated.View>
+            {/* The zones continue onto the card's outer quarters, as on the deck. Under
+                the introduction, whose arrow stays tappable above them. */}
+            <View
+              style={local.cardEdgeZones}
+              pointerEvents="box-none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <Pressable style={local.cardEdgeZone} onPress={tapBack} />
+              <Pressable style={local.cardEdgeZone} onPress={tapForward} />
+            </View>
             <Animated.View
               style={[local.intro, introStyle]}
               pointerEvents={onIntro ? 'box-none' : 'none'}
@@ -327,7 +373,7 @@ export const WelcomeTutorialScreen = ({ onComplete }: { onComplete: () => void }
 
         <Animated.View
           style={[local.pips, pipsStyle]}
-          pointerEvents={onIntro ? 'none' : 'auto'}
+          pointerEvents={onIntro ? 'none' : 'box-none'}
           accessibilityElementsHidden={onIntro}
           importantForAccessibility={onIntro ? 'no-hide-descendants' : 'auto'}
         >
@@ -355,8 +401,24 @@ const local = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
   },
+  tapZones: {
+    // Spans the body edge to edge, including its side padding.
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+  },
+  tapZone: {
+    flex: 1,
+  },
   deck: {
     height: DECK_HEIGHT,
+  },
+  cardEdgeZones: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cardEdgeZone: {
+    width: '25%',
   },
   card: {
     ...StyleSheet.absoluteFillObject,
