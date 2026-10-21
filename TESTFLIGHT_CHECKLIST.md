@@ -198,3 +198,19 @@ Found while capturing every sign-up screen in the simulator (mock backend). Scre
   - [x] **You:** Run `npx firebase login --reauth`, then `npx firebase deploy --only hosting --project dev`. Done 2026-10-20; Apple's CDN serves the file.
   - [ ] **You + Claude:** Rebuild the app (the entitlement is native), then tap a real sign-in email on the phone. EAS adds the Associated Domains capability to the App ID on the next build.
   - [ ] **Claude (with the prod project):** Deploy the same hosting to prod and add its domain to the entitlements and `app.json`.
+
+## App lifecycle: don't lose work (2026-10-20)
+
+Today nothing listens for the app going to the background (no `AppState`), nothing guards leaving a screen with unsaved text, and the navigation state isn't kept. Only Personalization survives a shutdown, because it saves each keystroke. Do these one at a time, in this order.
+
+- [ ] **Claude:** A shared `useDraft(key, value)` hook. It saves while typing (debounced, about 0.5 s) and right away when the app goes to the background. Drafts stay on the device, never in the sync outbox. It needs a small `drafts` table (new migration) or AsyncStorage.
+- [ ] **Claude:** Keep Prompt Editor drafts (`PromptEditorScreen.tsx`): text, age group and situations. Reopening offers "Continue your draft?" with Resume or Discard. Save clears the draft. An edit to an existing prompt keeps its own draft, keyed by prompt ID.
+- [ ] **Claude:** Keep Prompt Builder drafts (`PromptBuilderScreen.tsx`): the chosen template and its filled slots.
+- [ ] **Claude:** Push the sync outbox right away when the app goes to the background, rather than waiting for the `scheduleFlush` timer, and run `syncNow()` (rate-limited) when it comes back to the foreground (`src/sync/syncService.ts`). Queued writes aren't lost today, but they wait until the next launch.
+- [ ] **Claude:** Keep a half-written reflection note and rating for each prompt (`ReflectionSheet.tsx`). Today a dismissed sheet or a killed app loses the note, and reopening the sheet clears it.
+- [ ] **You:** Decide what leaving a screen with unsaved text does once drafts auto-save. Options: a "Draft kept" toast; or a native "Discard this prompt?" Alert through `usePreventRemove` (CLAUDE.md allows native alerts for destructive confirms); or nothing.
+- [ ] **Claude:** Stop text-to-speech when the app goes to the background (`usePromptSpeech.ts`), if `expo-speech` keeps talking. Check on a device first.
+- [ ] **Claude:** Pause the reflection offer's 45 s timer while the app is in the background, so time away doesn't count as time on the prompt.
+- [ ] **You:** Decide whether the deck reopens where it left off (top prompt and filters for each age group) after iOS kills the app, and when that goes stale. Suggested: resume within a few hours; after that, start fresh.
+- [ ] **Claude:** Build deck resume as decided.
+- [ ] **Skip (recommended):** Restoring the last-open tab or stack on a cold start. It's low value and gets in the way of deep links.
