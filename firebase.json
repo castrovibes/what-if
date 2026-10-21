@@ -3,6 +3,16 @@
     "rules": "firebase/firestore.rules",
     "indexes": "firebase/firestore.indexes.json"
   },
+  "hosting": {
+    "public": "firebase/hosting",
+    "cleanUrls": true,
+    "headers": [
+      {
+        "source": "/.well-known/apple-app-site-association",
+        "headers": [{ "key": "Content-Type", "value": "application/json" }]
+      }
+    ]
+  },
   "emulators": {
     "singleProjectMode": true,
     "auth": { "port": 9099 },
