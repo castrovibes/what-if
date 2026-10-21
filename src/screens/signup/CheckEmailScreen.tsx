@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -108,13 +108,6 @@ export const CheckEmailScreen = () => {
         your spam folder too.
       </SignupText>
 
-      <View style={styles.waiting}>
-        <ActivityIndicator size="small" color={colors.iconInactive} />
-        <Text style={[styles.waitingText, { color: colors.textSecondary }]}>
-          Waiting for you to open the link…
-        </Text>
-      </View>
-
       {linkError && <Text style={styles.error}>{linkError}</Text>}
 
       <TouchableOpacity onPress={resend} disabled={resendIn > 0}>
@@ -138,16 +131,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
-  },
-  waiting: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  waitingText: {
-    fontSize: Typography.footnote,
-    fontFamily: 'Inter-Medium',
   },
   error: {
     color: '#dc2626',
