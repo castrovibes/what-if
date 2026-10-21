@@ -495,14 +495,27 @@ export const PromptScreen = () => {
     });
 
   // Tapping a page-turn zone flashes that side of the screen, but only when the tap
-  // actually turns the page (not "back" from the first prompt).
+  // actually turns the page (not "back" from the first prompt). While the card is
+  // flipped, the zones move between twists instead and the prompt deck stays put.
   const tapFlash = useTapFlash();
   const tapBack = () => {
+    if (showTwists) {
+      if (twistIndex === 0) return;
+      tapFlash.flash('left');
+      changeTwist(-1);
+      return;
+    }
     if (targetRef.current === 0) return;
     tapFlash.flash('left');
     handleBack();
   };
   const tapForward = () => {
+    if (showTwists) {
+      if (twistIndex >= twistCards.length - 1) return;
+      tapFlash.flash('right');
+      changeTwist(1);
+      return;
+    }
     if (prompts.length === 0) return;
     tapFlash.flash('right');
     handleSkip();
@@ -903,19 +916,16 @@ export const PromptScreen = () => {
             {/* The page-turn zones continue onto the card's outer edges, between the
                 header (flag) and footer (Listen, Tips) so those buttons stay clear. They
                 belong to the deck, not a card, so a quick second tap still lands while
-                the first card is flying off. */}
-            {/* Face up only: on the twist side the card's own arrows take over. */}
-            {!showTwists && (
-              <View
-                style={styles.cardEdgeZones}
-                pointerEvents="box-none"
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
-                <Pressable style={styles.cardEdgeZone} onPress={tapBack} />
-                <Pressable style={styles.cardEdgeZone} onPress={tapForward} />
-              </View>
-            )}
+                the first card is flying off. On the twist side they move between twists. */}
+            <View
+              style={styles.cardEdgeZones}
+              pointerEvents="box-none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <Pressable style={styles.cardEdgeZone} onPress={tapBack} />
+              <Pressable style={styles.cardEdgeZone} onPress={tapForward} />
+            </View>
           </View>
         </GestureDetector>
       </ScrollView>

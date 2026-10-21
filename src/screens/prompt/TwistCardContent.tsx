@@ -17,8 +17,8 @@ const difficultyLabel = (difficulty: number) =>
 /**
  * The back of the top card: one twist at a time, in place of the prompt. The pips
  * show which twist this is; the arrows (or swiping the card) move between them.
- * `shift` slides the twist text out and the next one in. The Twist label in the
- * corner flips the card back, like the Twist button.
+ * `shift` slides the twist text out and the next one in. Tapping the Twist label
+ * flips the card back to the prompt.
  */
 export const TwistCardContent = ({
   card,
@@ -61,8 +61,8 @@ export const TwistCardContent = ({
       <View style={cardStyles.cardHeader}>
         <TouchableOpacity
           onPress={onFlipBack}
+          hitSlop={12}
           style={cardStyles.sourceRow}
-          hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel="Show the prompt"
         >

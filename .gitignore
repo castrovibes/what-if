@@ -36,3 +36,6 @@ docs/
 # *.bak catches any stray copy made beside the source; move it into .backups/.
 .backups/
 *.bak
+
+# Compiled simulator driver (tools/sim/sim builds it on demand)
+tools/sim/.build/
