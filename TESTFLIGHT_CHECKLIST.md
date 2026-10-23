@@ -99,6 +99,7 @@ Do these **one at a time**: finish, check and commit each before starting the ne
      - [x] **4c. Claude:** **My Prompts** list in Create (`MyPromptsScreen.tsx`): tap to edit, ▶ to play in the deck, 🗑 to delete (hidden, not erased, so notes and favorites that point at it stay valid). Stored on the phone via `UserPromptRepo`.
      - [x] **4d. Claude:** Deck source dropdown on the card's source label (⌄): **What If Originals** / **My Prompts**. The age and situation filters apply to both. An empty My Prompts deck offers **Write a prompt** (for that age group) or **Show What If Originals**. The deck shows Originals by default and no longer mixes in your own.
      - [x] **4e. Claude:** Your prompts sync to your account like favorites: `users/{uid}/myPrompts/{promptId}` (model, rules with 2 new tests, 27 passing; outbox; adopted on first sign-in; pulled down on sign-in; cleared from the phone on sign-out; removed with the account). Deleting syncs as `deleted: true`. Verified against the emulators: upload, sign-out/sign-in round trip, and a live edit.
+     - [ ] **4f. Claude (2026-10-22):** **Notes**: a note editor (a dropdown of recently played prompts in the upper left, an optional title that defaults to the date and time, a body with placeholder text) and a **Notebook** with folders as tabs that you name yourself. Kept on the phone only in v1. Plan: `docs/NOTES_PLAN.md`.
 
 ## Phase 3 — External beta (Beta App Review)
 

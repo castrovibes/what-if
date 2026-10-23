@@ -57,6 +57,13 @@ export type CreateStackParamList = {
   /** Write a prompt (optionally for `ageGroup`), or edit one of yours with `promptId`. */
   PromptEditor: { promptId?: string; ageGroup?: string } | undefined;
   MyPrompts: undefined;
+  /** Notes, by folder tab; opens on `folderId` if given. */
+  Notebook: { folderId?: string } | undefined;
+  /**
+   * Write a note, or edit one with `noteId`. `promptId` preselects the prompt it's about;
+   * `folderId` is where a new note goes (General if omitted).
+   */
+  NoteEditor: { noteId?: string; promptId?: string; folderId?: string } | undefined;
 };
 
 export type PromptsStackParamList = {

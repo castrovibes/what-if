@@ -24,7 +24,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  useIsFocused,
+  RouteProp,
+  NavigationProp,
+} from '@react-navigation/native';
 import { useTheme } from '../../providers/ThemeProvider';
 import { findAgeGroup, AgeGroupId } from '../../data/ageGroups';
 import { DeckRequest, registerDeckHandler } from '../../navigation/deckLinks';
@@ -82,6 +88,10 @@ import { haptic } from '../../ui/haptics';
 import { HintBubble } from '../../ui/HintBubble';
 import { useOneTimeHint } from '../../hooks/useOneTimeHint';
 import { useTabBarInset } from '../../navigation/tabBarInset';
+import { PromptPlayRepo } from '../../db/repositories/promptPlays';
+
+/** How long a prompt stays on top before it counts as played. */
+const PLAY_AFTER_MS = 3000;
 
 // A horizontal drag becomes a swipe after this much movement; more vertical than
 // that and the scroll view keeps it. (Replaces the old responder's dx > dy * 1.5.)
@@ -380,6 +390,18 @@ export const PromptScreen = () => {
   useEffect(() => {
     shownAt.current = Date.now();
   }, [promptId, sessionStarted]);
+  // Recently played (the note editor's prompt menu): a prompt counts once it has been
+  // on top for a few seconds, so fast swiping past it doesn't. Only while the deck is
+  // in view: not behind another tab or the Welcome guide.
+  const deckFocused = useIsFocused();
+  useEffect(() => {
+    if (!promptId || !sessionStarted || !deckFocused) return;
+    const timer = setTimeout(
+      () => PromptPlayRepo.record(promptId).catch((e) => console.warn('Recording a play failed', e)),
+      PLAY_AFTER_MS
+    );
+    return () => clearTimeout(timer);
+  }, [promptId, sessionStarted, deckFocused]);
   const reflectedIds = useRef(new Set<string>());
   const pendingReflection = useRef<Prompt | null>(null);
   const [reflectFor, setReflectFor] = useState<Prompt | null>(null);
