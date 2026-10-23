@@ -12,13 +12,17 @@ import { haptic } from '../../ui/haptics';
 // Prompts a child has actually talked about: the deck offers a reflection when a
 // prompt leaves after being on top at least this long.
 export const REFLECT_AFTER_MS = 45_000;
+// How long the "How did that go?" toast stays before it goes on its own. A little
+// longer than other toasts with an action: it arrives while they're moving on.
+export const REFLECT_OFFER_MS = 6000;
 
 const FACES = ['😞', '😐', '🙂', '😊', '🤩'];
 
 /**
- * "How did that go?" after a prompt. The deck opens this when a prompt the user spent
- * real time on is swiped away (see PromptScreen). Two steps: offer, then a quick
- * rating and an optional note, saved as a reflection for the active context.
+ * A quick rating and an optional note about a prompt, saved as a reflection for the
+ * active context. When a prompt the user spent real time on is swiped away, the deck
+ * offers it with a "How did that go?" toast (see PromptScreen); its Reflect button
+ * opens this.
  */
 export const ReflectionSheet = ({
   prompt,
@@ -32,7 +36,6 @@ export const ReflectionSheet = ({
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
-  const [step, setStep] = useState<'offer' | 'reflect'>('offer');
   const [note, setNote] = useState('');
   const [rating, setRating] = useState<number | null>(null);
   // Keeps showing the prompt while the sheet slides away after it's set to null.
@@ -42,7 +45,6 @@ export const ReflectionSheet = ({
 
   useEffect(() => {
     if (visible) {
-      setStep('offer');
       setNote('');
       setRating(null);
     }
@@ -65,93 +67,65 @@ export const ReflectionSheet = ({
   };
 
   return (
-    <BottomSheet
-      visible={visible}
-      title={step === 'offer' ? 'How did that go?' : 'Reflect on the conversation'}
-      onClose={onClose}
-    >
-      {step === 'offer' ? (
-        <>
-          <Text style={[styles.text, { color: colors.textSecondary }]}>
-            Take a moment to capture what came up, or carry on to the next prompt.
-          </Text>
-          <View style={styles.buttons}>
-            <View style={styles.flex}>
-              <Button label="Not now" variant="secondary" onPress={onClose} />
-            </View>
-            <View style={styles.flex}>
-              <Button label="Reflect" onPress={() => setStep('reflect')} />
-            </View>
-          </View>
-        </>
-      ) : (
-        <>
-          {shown.current && (
-            <Text style={[styles.prompt, { color: colors.textPrimary }]} numberOfLines={3}>
-              {shown.current.text}
-            </Text>
-          )}
-          <View style={styles.faces} accessibilityRole="radiogroup">
-            {FACES.map((face, i) => {
-              const on = rating === i + 1;
-              return (
-                <TouchableOpacity
-                  key={face}
-                  onPress={() => {
-                    haptic.selection();
-                    setRating(i + 1);
-                  }}
-                  style={[
-                    styles.face,
-                    { borderColor: on ? surface.accent : surface.border },
-                    on && { backgroundColor: colors.tintPurple },
-                  ]}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={`${i + 1} of 5`}
-                >
-                  <Text style={styles.faceText}>{face}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <TextInput
-            style={[
-              styles.note,
-              {
-                color: colors.textPrimary,
-                backgroundColor: surface.screen,
-                borderColor: surface.border,
-              },
-            ]}
-            placeholder="What did they say? What surprised you?"
-            placeholderTextColor={colors.iconInactive}
-            value={note}
-            onChangeText={setNote}
-            multiline
-          />
-          <View style={styles.buttons}>
-            <View style={styles.flex}>
-              <Button label="Cancel" variant="secondary" onPress={onClose} />
-            </View>
-            <View style={styles.flex}>
-              <Button label="Save" onPress={save} disabled={!note.trim() && rating === null} />
-            </View>
-          </View>
-        </>
+    <BottomSheet visible={visible} title="Reflect on the conversation" onClose={onClose}>
+      {shown.current && (
+        <Text style={[styles.prompt, { color: colors.textPrimary }]} numberOfLines={3}>
+          {shown.current.text}
+        </Text>
       )}
+      <View style={styles.faces} accessibilityRole="radiogroup">
+        {FACES.map((face, i) => {
+          const on = rating === i + 1;
+          return (
+            <TouchableOpacity
+              key={face}
+              onPress={() => {
+                haptic.selection();
+                setRating(i + 1);
+              }}
+              style={[
+                styles.face,
+                { borderColor: on ? surface.accent : surface.border },
+                on && { backgroundColor: colors.tintPurple },
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={`${i + 1} of 5`}
+            >
+              <Text style={styles.faceText}>{face}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <TextInput
+        style={[
+          styles.note,
+          {
+            color: colors.textPrimary,
+            backgroundColor: surface.screen,
+            borderColor: surface.border,
+          },
+        ]}
+        placeholder="What did they say? What surprised you?"
+        placeholderTextColor={colors.iconInactive}
+        value={note}
+        onChangeText={setNote}
+        multiline
+      />
+      <View style={styles.buttons}>
+        <View style={styles.flex}>
+          <Button label="Cancel" variant="secondary" onPress={onClose} />
+        </View>
+        <View style={styles.flex}>
+          <Button label="Save" onPress={save} disabled={!note.trim() && rating === null} />
+        </View>
+      </View>
     </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  text: {
-    fontSize: Typography.subheadline,
-    fontFamily: 'Inter-Medium',
-    lineHeight: 21,
-    marginBottom: Spacing.md,
-  },
   prompt: {
     fontSize: Typography.callout,
     fontFamily: 'Geomini-SemiBold',

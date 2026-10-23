@@ -71,11 +71,11 @@ import {
 import { DeckCard } from './DeckCard';
 import { PromptCardContent } from './PromptCardContent';
 import { TwistCardContent } from './TwistCardContent';
-import { TapFlash, useTapFlash } from './TapFlash';
+import { TapFlash, useTapFlash } from '../../ui/TapFlash';
 import { usePromptSpeech } from './usePromptSpeech';
 import { AgeMenu, AgeMenuBackdrop, AgePickCard } from './AgeMenu';
 import { PromptSheets } from './PromptSheets';
-import { ReflectionSheet, REFLECT_AFTER_MS } from './ReflectionSheet';
+import { ReflectionSheet, REFLECT_AFTER_MS, REFLECT_OFFER_MS } from './ReflectionSheet';
 import { EndOfDeckCard } from './EndOfDeckCard';
 import { toast } from '../../ui/toast';
 import { haptic } from '../../ui/haptics';
@@ -395,8 +395,15 @@ export const PromptScreen = () => {
     animatingRef.current = false;
     setCurrentPromptIndex(index);
     if (pendingReflection.current) {
-      setReflectFor(pendingReflection.current);
+      // Offered as a toast, which goes on its own; the sheet opens only if they tap Reflect.
+      const p = pendingReflection.current;
       pendingReflection.current = null;
+      toast.show({
+        message: 'How did that go?',
+        icon: 'message-circle',
+        duration: REFLECT_OFFER_MS,
+        action: { label: 'Reflect', onPress: () => setReflectFor(p) },
+      });
     }
   };
 
