@@ -21,7 +21,7 @@ import { Typography, Spacing } from '../utils/deviceHelpers';
 
 // The first onboarding screen picks up where the launch screen leaves off: the same
 // "What If?" question-mark graphic, at the same size and place (see LoadingScreen and
-// ios/WhatCouldYouDo/SplashScreen.storyboard), on the same plain background. The
+// ios/WhatIf/SplashScreen.storyboard), on the same plain background. The
 // button then fades in slowly. The images are built by
 // tools/graphics/make_splash.py.
 const SPLASH = {

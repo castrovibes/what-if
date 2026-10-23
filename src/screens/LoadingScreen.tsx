@@ -5,7 +5,7 @@ import { useSurface } from '../ui/surface';
 import { hideSplash } from '../app/splash';
 
 // Same image, size and position as the native launch screen
-// (ios/WhatCouldYouDo/SplashScreen.storyboard), so the hand-off from it is seamless:
+// (ios/WhatIf/SplashScreen.storyboard), so the hand-off from it is seamless:
 // "What If?" in Rock Salt above the hand-drawn question mark. Both are built by
 // tools/graphics/make_splash.py.
 const SPLASH = {
