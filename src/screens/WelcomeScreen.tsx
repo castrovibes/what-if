@@ -30,8 +30,8 @@ const SPLASH = {
 };
 const SPLASH_WIDTH = 280;
 // The images' own aspect ratio, so this stays right if they're regenerated.
-const splashAsset = Image.resolveAssetSource(SPLASH.light);
-const SPLASH_HEIGHT = (SPLASH_WIDTH * splashAsset.height) / splashAsset.width;
+const splashAsset = Image.resolveAssetSource(SPLASH.light)!;
+const SPLASH_HEIGHT = (SPLASH_WIDTH * splashAsset.height!) / splashAsset.width!;
 
 // The launch screen has already held the eye; the button should be usable almost at
 // once, so the whole fade is under half a second.
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   center: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
   },

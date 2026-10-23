@@ -359,7 +359,7 @@ const local = StyleSheet.create({
     height: DECK_HEIGHT,
   },
   card: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: CARD_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.lg,
@@ -380,7 +380,7 @@ const local = StyleSheet.create({
     lineHeight: 23,
   },
   intro: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     paddingHorizontal: Spacing.md,
   },

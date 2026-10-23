@@ -14,8 +14,8 @@ const SPLASH = {
 };
 const SPLASH_WIDTH = 280;
 // The images' own aspect ratio, so this stays right if they're regenerated.
-const splashAsset = Image.resolveAssetSource(SPLASH.light);
-const SPLASH_HEIGHT = (SPLASH_WIDTH * splashAsset.height) / splashAsset.width;
+const splashAsset = Image.resolveAssetSource(SPLASH.light)!;
+const SPLASH_HEIGHT = (SPLASH_WIDTH * splashAsset.height!) / splashAsset.width!;
 
 /**
  * Shown while the app starts up (database, account, fonts). It only relies on

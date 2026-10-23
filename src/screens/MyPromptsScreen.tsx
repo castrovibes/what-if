@@ -100,7 +100,7 @@ export const MyPromptsScreen = () => {
         keyExtractor={p => p.id}
         renderItem={renderPrompt}
         ListEmptyComponent={
-          prompts === null ? null : (
+          prompts === null ? undefined : (
             <Card style={styles.empty}>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 You haven’t made any prompts yet.

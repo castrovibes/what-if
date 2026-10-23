@@ -108,7 +108,7 @@ export const SavedPromptsScreen = () => {
         keyExtractor={p => p.id}
         renderItem={renderPrompt}
         ListEmptyComponent={
-          prompts === null ? null : (
+          prompts === null ? undefined : (
             <Card style={styles.empty}>
               <Feather name="heart" size={28} color={PINK} />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>

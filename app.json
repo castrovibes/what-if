@@ -41,9 +41,10 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker",
+      "expo-status-bar"
     ],
-    "newArchEnabled": true,
     "extra": {
       "eas": {
         "projectId": "5b18bce3-d29c-49ff-9fff-2cd3bb7d3f2e"

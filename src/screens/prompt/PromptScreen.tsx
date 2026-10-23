@@ -95,8 +95,8 @@ const TITLE_ART = {
   dark: require('../../../assets/graphics/splash-dark.png'),
 };
 const TITLE_ART_WIDTH = 220;
-const titleArtAsset = Image.resolveAssetSource(TITLE_ART.light);
-const TITLE_ART_HEIGHT = (TITLE_ART_WIDTH * titleArtAsset.height) / titleArtAsset.width;
+const titleArtAsset = Image.resolveAssetSource(TITLE_ART.light)!;
+const TITLE_ART_HEIGHT = (TITLE_ART_WIDTH * titleArtAsset.height!) / titleArtAsset.width!;
 // First-time hints float just above the action row (its 76pt Twist button plus padding).
 const HINT_BOTTOM = 76 + Spacing.md * 2 + Spacing.sm;
 
@@ -1189,7 +1189,7 @@ const styles = StyleSheet.create({
   },
   tapZones: {
     // Spans the scroll content edge to edge, including its side padding.
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     flexDirection: 'row',
   },
   tapZone: {
@@ -1215,13 +1215,13 @@ const styles = StyleSheet.create({
   // A card in the deck. Clipping is on an inner layer (cardStyles.stackCardClip),
   // because clipping the card itself would also cut off its shadow.
   stackCard: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: CARD_CORNER_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
   },
   // One side of the top card. Both sides fill the card; the flip shows one at a time.
   cardFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     paddingHorizontal: CARD_PADDING_X,
     paddingVertical: CARD_PADDING_Y,
     justifyContent: 'space-between',

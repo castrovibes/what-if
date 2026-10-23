@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Sign-in links that open the app (cold start or while running).
   useEffect(() => {
-    const handle = (url: string | null) => {
+    const handle = (url: string | null | undefined) => {
       if (!url || !authService.isSignInLink(url)) return;
       completeSignInLink(url).catch(e => setLinkError(e.message ?? 'Sign-in failed.'));
     };
