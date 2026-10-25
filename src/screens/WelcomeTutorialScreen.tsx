@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  AnimatedStyle,
   Easing,
   SharedValue,
   interpolate,
@@ -90,7 +91,7 @@ const TipCard = ({
   progress: SharedValue<number>;
   width: number;
   /** The intro arrow's nudge, so the cue on the card moves the same way. */
-  arrowStyle: StyleProp<ViewStyle>;
+  arrowStyle: StyleProp<AnimatedStyle<ViewStyle>>;
 }) => {
   const { colors } = useTheme();
   const surface = useSurface();
@@ -425,7 +426,7 @@ const local = StyleSheet.create({
   },
   tapZones: {
     // Spans the body edge to edge, including its side padding.
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     flexDirection: 'row',
   },
   tapZone: {
@@ -435,7 +436,7 @@ const local = StyleSheet.create({
     height: DECK_HEIGHT,
   },
   cardEdgeZones: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
