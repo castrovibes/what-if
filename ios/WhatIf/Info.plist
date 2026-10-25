@@ -28,6 +28,13 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.whatcouldyoudo.app</string>
+				<string>com.googleusercontent.apps.766575065414-gj38pdalkuo7s38uvbn0dvvoq6ulf9lq</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.522009257826-35mkidjeff869h98vcq6ide1k6doifgn</string>
 			</array>
 		</dict>
 	</array>

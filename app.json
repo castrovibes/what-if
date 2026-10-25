@@ -10,7 +10,15 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.whatcouldyoudo.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.whatcouldyoudo.app",
+              "com.googleusercontent.apps.766575065414-gj38pdalkuo7s38uvbn0dvvoq6ulf9lq"
+            ]
+          }
+        ]
       },
       "associatedDomains": [
         "applinks:what-if-dev-70316.firebaseapp.com"
@@ -43,7 +51,13 @@
       ],
       "expo-font",
       "@react-native-community/datetimepicker",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.522009257826-35mkidjeff869h98vcq6ide1k6doifgn"
+        }
+      ]
     ],
     "extra": {
       "eas": {
