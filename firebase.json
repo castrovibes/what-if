@@ -1,4 +1,12 @@
 {
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "What Could You Do?",
+        "supportEmail": "scott@digitalninja.com"
+      }
+    }
+  },
   "firestore": {
     "rules": "firebase/firestore.rules",
     "indexes": "firebase/firestore.indexes.json"
