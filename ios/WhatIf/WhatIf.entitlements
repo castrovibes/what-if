@@ -5,6 +5,7 @@
     <key>com.apple.developer.associated-domains</key>
     <array>
       <string>applinks:what-if-dev-70316.firebaseapp.com</string>
+      <string>applinks:what-if-prod-70316.firebaseapp.com</string>
     </array>
   </dict>
 </plist>

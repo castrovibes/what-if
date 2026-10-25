@@ -21,7 +21,8 @@
         ]
       },
       "associatedDomains": [
-        "applinks:what-if-dev-70316.firebaseapp.com"
+        "applinks:what-if-dev-70316.firebaseapp.com",
+        "applinks:what-if-prod-70316.firebaseapp.com"
       ]
     },
     "android": {
