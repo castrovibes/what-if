@@ -27,6 +27,15 @@ const MAX_WAIT_MS = 1500;
 const MIN_WAIT_MS = 250;
 const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
+// The tab navigator, found by its routes rather than a fixed number of getParent() steps:
+// callers pass either a screen in a tab's stack or (after closing that screen) the tab
+// itself, and React Navigation 7 no longer passes an unhandled action down to children.
+const findTabs = (navigation: NavigationProp<ParamListBase>) => {
+  let nav: NavigationProp<ParamListBase> | undefined = navigation;
+  while (nav && !nav.getState()?.routeNames.includes('Prompts')) nav = nav.getParent();
+  return nav ?? navigation;
+};
+
 /**
  * Opens the Prompts tab with the deck showing `request` (a source and age group, with
  * `promptId` on top), from anywhere in the tab navigator. The deck is set up out of
@@ -34,7 +43,7 @@ const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms
  * screen. Resolves after the switch.
  */
 export const playInDeck = async (navigation: NavigationProp<ParamListBase>, request: DeckRequest) => {
-  const tabs = navigation.getParent() ?? navigation;
+  const tabs = findTabs(navigation);
   if (deckHandler) {
     await Promise.all([Promise.race([deckHandler(request), wait(MAX_WAIT_MS)]), wait(MIN_WAIT_MS)]);
     tabs.navigate('Prompts', { screen: 'PromptsMain' });
