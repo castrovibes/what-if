@@ -10,10 +10,19 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.whatcouldyoudo.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.whatcouldyoudo.app",
+              "com.googleusercontent.apps.766575065414-gj38pdalkuo7s38uvbn0dvvoq6ulf9lq"
+            ]
+          }
+        ]
       },
       "associatedDomains": [
-        "applinks:what-if-dev-70316.firebaseapp.com"
+        "applinks:what-if-dev-70316.firebaseapp.com",
+        "applinks:what-if-prod-70316.firebaseapp.com"
       ]
     },
     "android": {
@@ -41,9 +50,16 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker",
+      "expo-status-bar",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.522009257826-35mkidjeff869h98vcq6ide1k6doifgn"
+        }
+      ]
     ],
-    "newArchEnabled": true,
     "extra": {
       "eas": {
         "projectId": "5b18bce3-d29c-49ff-9fff-2cd3bb7d3f2e"

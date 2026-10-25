@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "WhatCouldYouDo.app"
-               BlueprintName = "WhatCouldYouDo"
-               ReferencedContainer = "container:WhatCouldYouDo.xcodeproj">
+               BuildableName = "WhatIf.app"
+               BlueprintName = "WhatIf"
+               ReferencedContainer = "container:WhatIf.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "WhatCouldYouDoTests.xctest"
-               BlueprintName = "WhatCouldYouDoTests"
-               ReferencedContainer = "container:WhatCouldYouDo.xcodeproj">
+               BuildableName = "WhatIfTests.xctest"
+               BlueprintName = "WhatIfTests"
+               ReferencedContainer = "container:WhatIf.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "WhatCouldYouDo.app"
-            BlueprintName = "WhatCouldYouDo"
-            ReferencedContainer = "container:WhatCouldYouDo.xcodeproj">
+            BuildableName = "WhatIf.app"
+            BlueprintName = "WhatIf"
+            ReferencedContainer = "container:WhatIf.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "WhatCouldYouDo.app"
-            BlueprintName = "WhatCouldYouDo"
-            ReferencedContainer = "container:WhatCouldYouDo.xcodeproj">
+            BuildableName = "WhatIf.app"
+            BlueprintName = "WhatIf"
+            ReferencedContainer = "container:WhatIf.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

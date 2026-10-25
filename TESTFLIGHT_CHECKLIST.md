@@ -99,6 +99,7 @@ Do these **one at a time**: finish, check and commit each before starting the ne
      - [x] **4c. Claude:** **My Prompts** list in Create (`MyPromptsScreen.tsx`): tap to edit, ▶ to play in the deck, 🗑 to delete (hidden, not erased, so notes and favorites that point at it stay valid). Stored on the phone via `UserPromptRepo`.
      - [x] **4d. Claude:** Deck source dropdown on the card's source label (⌄): **What If Originals** / **My Prompts**. The age and situation filters apply to both. An empty My Prompts deck offers **Write a prompt** (for that age group) or **Show What If Originals**. The deck shows Originals by default and no longer mixes in your own.
      - [x] **4e. Claude:** Your prompts sync to your account like favorites: `users/{uid}/myPrompts/{promptId}` (model, rules with 2 new tests, 27 passing; outbox; adopted on first sign-in; pulled down on sign-in; cleared from the phone on sign-out; removed with the account). Deleting syncs as `deleted: true`. Verified against the emulators: upload, sign-out/sign-in round trip, and a live edit.
+     - [ ] **4f. Claude (2026-10-22):** **Notes**: a note editor (a dropdown of recently played prompts in the upper left, an optional title that defaults to the date and time, a body with placeholder text) and a **Notebook** with folders as tabs that you name yourself. Kept on the phone only in v1. Plan: `docs/NOTES_PLAN.md`.
 
 ## Phase 3 — External beta (Beta App Review)
 
@@ -115,7 +116,8 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 - [x] **You:** Choose the backend. Decided: **Firebase** (Auth + Firestore), syncing accounts and user data (contexts, favorites, reflections, series progress). Prompt content stays bundled in the app.
 - [x] **Claude:** Build the data model (`src/backend/model.ts`), Firestore security rules with 18 tests (`npm run test:rules`), and a local emulator setup (`npm run emulators`).
 - [x] **You:** Create the **dev** Firebase project (`what-if-dev-70316`, Spark plan) with Email link sign-in and Firestore. **Claude** deployed the rules and indexes and put its config in `.env` (git-ignored). Sign-up verified end to end against it on 2026-10-17 (test account `whatifdevtest1`). Back to the emulators: set `EXPO_PUBLIC_USE_FIREBASE_EMULATOR=true`.
-- [ ] **You:** Create the **prod** Firebase project the same way (Web app + iOS app with bundle ID `com.whatcouldyoudo.app`, Email link sign-in, Firestore in production mode, region `nam5`) and share its web config. **Claude** will deploy the rules and set the keys as EAS environment variables.
+- [x] **You + Claude (2026-10-25):** **Prod** Firebase project `what-if-prod-70316` (alias `prod` in `.firebaserc`): Web app and iOS app (`com.whatcouldyoudo.app`), Email link sign-in (no passwords), Google sign-in (`auth` block in `firebase.json`, `firebase deploy --only auth --project prod`), Firestore in production mode in `nam5` with our rules and indexes deployed. Its web config is set as EAS **production** environment variables; local `.env` stays on dev. Google OAuth clients: web `522009257826-880mqkma48e1qht91d3102h3j5fhb17k`, iOS `522009257826-35mkidjeff869h98vcq6ide1k6doifgn` (`.apps.googleusercontent.com`).
+- [ ] **Claude + You:** Point magic links at prod in production builds. Done: `applinks:what-if-prod-70316.firebaseapp.com` in `app.json` and the entitlements (beside dev's); prod builds already send links to `https://what-if-prod-70316.firebaseapp.com/finishSignIn` (the `config.ts` default), an authorized domain. Hosting deployed to prod on 2026-10-25 (`apple-app-site-association` and `/finishSignIn` both serve). Left: **You** open a sign-in email from a TestFlight build to check it opens the app.
 - [ ] **You:** Upgrade to the **Blaze** plan (pay-as-you-go) before outside testers sign in, and set a budget alert (e.g. $10) in Google Cloud Billing. Spark sends only **5 sign-in emails a day** per project; Blaze allows 25,000 with the same free allowances.
 - [ ] **You:** Decide whether personalization (the child's name, town and interests) may ever sync. Today it is deliberately device-only.
 - [x] **Claude:** Connect the app to Firebase (JS SDK, emulators in development) and replace the mock `AuthService` with Firebase Auth. Sign-in creates `users/{uid}`; the profile step claims a unique username. Verified end to end against the emulators.
@@ -123,7 +125,8 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 - [ ] **You:** Set up a link domain for magic links (Firebase Hosting) and iOS Associated Domains, so tapping the email link opens the app.
 - [x] **Claude:** Sync user data (contexts, favorites, reflections, series progress) between the on-device SQLite database and Firestore. It uses an offline-safe outbox, uploads pre-sign-in data on a device's first sync, pulls the cloud copy on sign-in, and clears the device on sign-out.
 - [x] **Claude:** Sync preferences: dark mode and active context go to `users/{uid}.preferences`; the preferred age range syncs with its context. On sign-in the account's saved preferences win; if it has none, this device's choices are saved to it.
-- [ ] **You:** Set up Sign in with Apple (a capability in the Apple Developer account) and the Google OAuth client IDs. **Claude** will add `expo-apple-authentication` and Google sign-in.
+- [x] **Claude (2026-10-25):** Google sign-in: `@react-native-google-signin/google-signin` → Firebase credential (`signInWithGoogle` in `firebaseAuthService.ts`). Client IDs come from `EXPO_PUBLIC_GOOGLE_*_CLIENT_ID` (dev in `.env`, prod in EAS); both projects' iOS URL schemes are in `app.json`. Builds for the simulator; **You:** try a real Google sign-in on a phone.
+- [ ] **You:** Set up Sign in with Apple (a capability in the Apple Developer account). **Claude** will add `expo-apple-authentication`.
 - [ ] **Claude:** Create accounts and sessions on the server, link Apple, Google and email logins to one account, and have the server decide new vs. returning users.
 - ~~**Claude:** Check username availability on the server (unique names, profanity filter).~~ Dropped: sign-up collects a display name, not a unique username (design critique, 2026-10-17).
 - [ ] **You:** Create the subscription products in App Store Connect and Google Play, and set real prices. They are "$X.XX/month" today.
@@ -198,3 +201,19 @@ Found while capturing every sign-up screen in the simulator (mock backend). Scre
   - [x] **You:** Run `npx firebase login --reauth`, then `npx firebase deploy --only hosting --project dev`. Done 2026-10-20; Apple's CDN serves the file.
   - [ ] **You + Claude:** Rebuild the app (the entitlement is native), then tap a real sign-in email on the phone. EAS adds the Associated Domains capability to the App ID on the next build.
   - [ ] **Claude (with the prod project):** Deploy the same hosting to prod and add its domain to the entitlements and `app.json`.
+
+## App lifecycle: don't lose work (2026-10-20)
+
+Today nothing listens for the app going to the background (no `AppState`), nothing guards leaving a screen with unsaved text, and the navigation state isn't kept. Only Personalization survives a shutdown, because it saves each keystroke. Do these one at a time, in this order.
+
+- [ ] **Claude:** A shared `useDraft(key, value)` hook. It saves while typing (debounced, about 0.5 s) and right away when the app goes to the background. Drafts stay on the device, never in the sync outbox. It needs a small `drafts` table (new migration) or AsyncStorage.
+- [ ] **Claude:** Keep Prompt Editor drafts (`PromptEditorScreen.tsx`): text, age group and situations. Reopening offers "Continue your draft?" with Resume or Discard. Save clears the draft. An edit to an existing prompt keeps its own draft, keyed by prompt ID.
+- [ ] **Claude:** Keep Prompt Builder drafts (`PromptBuilderScreen.tsx`): the chosen template and its filled slots.
+- [ ] **Claude:** Push the sync outbox right away when the app goes to the background, rather than waiting for the `scheduleFlush` timer, and run `syncNow()` (rate-limited) when it comes back to the foreground (`src/sync/syncService.ts`). Queued writes aren't lost today, but they wait until the next launch.
+- [ ] **Claude:** Keep a half-written reflection note and rating for each prompt (`ReflectionSheet.tsx`). Today a dismissed sheet or a killed app loses the note, and reopening the sheet clears it.
+- [ ] **You:** Decide what leaving a screen with unsaved text does once drafts auto-save. Options: a "Draft kept" toast; or a native "Discard this prompt?" Alert through `usePreventRemove` (CLAUDE.md allows native alerts for destructive confirms); or nothing.
+- [ ] **Claude:** Stop text-to-speech when the app goes to the background (`usePromptSpeech.ts`), if `expo-speech` keeps talking. Check on a device first.
+- [ ] **Claude:** Pause the reflection offer's 45 s timer while the app is in the background, so time away doesn't count as time on the prompt.
+- [ ] **You:** Decide whether the deck reopens where it left off (top prompt and filters for each age group) after iOS kills the app, and when that goes stale. Suggested: resume within a few hours; after that, start fresh.
+- [ ] **Claude:** Build deck resume as decided.
+- [ ] **Skip (recommended):** Restoring the last-open tab or stack on a cold start. It's low value and gets in the way of deep links.

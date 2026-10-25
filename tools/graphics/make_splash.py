@@ -11,8 +11,8 @@ Usage (from the repo root; needs Pillow):
 
 Writes:
     assets/graphics/splash-light.png, splash-dark.png          (3x, for the app)
-    ios/WhatCouldYouDo/Images.xcassets/SplashScreen.imageset/  (1x/2x/3x, light + dark)
-    ios/WhatCouldYouDo/SplashScreen.storyboard                 (the image's size, updated)
+    ios/WhatIf/Images.xcassets/SplashScreenLogo.imageset/     (1x/2x/3x, light + dark)
+    ios/WhatIf/SplashScreen.storyboard                         (the image's size, updated)
 """
 import json
 import math
@@ -25,8 +25,8 @@ ROOT = Path(__file__).resolve().parents[2]
 INK = ROOT / 'assets/graphics/question-mark-ink.png'  # made by render_question_mark.js
 FONT = ROOT / 'assets/fonts/Geomini-ExtraBold.ttf'
 OUT_APP = ROOT / 'assets/graphics'
-OUT_IOS = ROOT / 'ios/WhatCouldYouDo/Images.xcassets/SplashScreen.imageset'
-STORYBOARD = ROOT / 'ios/WhatCouldYouDo/SplashScreen.storyboard'
+OUT_IOS = ROOT / 'ios/WhatIf/Images.xcassets/SplashScreenLogo.imageset'
+STORYBOARD = ROOT / 'ios/WhatIf/SplashScreen.storyboard'
 
 WIDTH_PT = 280          # the splash image's width on screen, in points
 SCALE = 3
@@ -110,6 +110,9 @@ def preview(out, factors):
 
 def main():
     OUT_IOS.mkdir(parents=True, exist_ok=True)
+    # Prebuild fills the image set with its own copies (image.png…); replace them.
+    for old in OUT_IOS.glob('*.png'):
+        old.unlink()
     images = []
     for mode, color in COLORS.items():
         img = build(color)
@@ -132,7 +135,7 @@ def main():
     sb = STORYBOARD.read_text()
     sb = re.sub(r'(<rect key="frame" x="[\d.]+" y=")[\d.]+(" width="280" height=")[\d.]+(")',
                 lambda m: f'{m[1]}{(852 - h) / 2:.2f}{m[2]}{h}{m[3]}', sb, count=1)
-    sb = re.sub(r'(<image name="SplashScreen" width="280" height=")[\d.]+(")',
+    sb = re.sub(r'(<image name="SplashScreenLogo" width="280" height=")[\d.]+(")',
                 lambda m: f'{m[1]}{h}{m[2]}', sb)
     STORYBOARD.write_text(sb)
     print('storyboard image size 280 x', h)

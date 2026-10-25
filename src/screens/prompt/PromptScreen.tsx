@@ -24,7 +24,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  useIsFocused,
+  RouteProp,
+  NavigationProp,
+} from '@react-navigation/native';
 import { useTheme } from '../../providers/ThemeProvider';
 import { findAgeGroup, AgeGroupId } from '../../data/ageGroups';
 import { DeckRequest, registerDeckHandler } from '../../navigation/deckLinks';
@@ -82,6 +88,10 @@ import { haptic } from '../../ui/haptics';
 import { HintBubble } from '../../ui/HintBubble';
 import { useOneTimeHint } from '../../hooks/useOneTimeHint';
 import { useTabBarInset } from '../../navigation/tabBarInset';
+import { PromptPlayRepo } from '../../db/repositories/promptPlays';
+
+/** How long a prompt stays on top before it counts as played. */
+const PLAY_AFTER_MS = 3000;
 
 // A horizontal drag becomes a swipe after this much movement; more vertical than
 // that and the scroll view keeps it. (Replaces the old responder's dx > dy * 1.5.)
@@ -95,8 +105,8 @@ const TITLE_ART = {
   dark: require('../../../assets/graphics/splash-dark.png'),
 };
 const TITLE_ART_WIDTH = 220;
-const titleArtAsset = Image.resolveAssetSource(TITLE_ART.light);
-const TITLE_ART_HEIGHT = (TITLE_ART_WIDTH * titleArtAsset.height) / titleArtAsset.width;
+const titleArtAsset = Image.resolveAssetSource(TITLE_ART.light)!;
+const TITLE_ART_HEIGHT = (TITLE_ART_WIDTH * titleArtAsset.height!) / titleArtAsset.width!;
 // First-time hints float just above the action row (its 76pt Twist button plus padding).
 const HINT_BOTTOM = 76 + Spacing.md * 2 + Spacing.sm;
 
@@ -380,6 +390,18 @@ export const PromptScreen = () => {
   useEffect(() => {
     shownAt.current = Date.now();
   }, [promptId, sessionStarted]);
+  // Recently played (the note editor's prompt menu): a prompt counts once it has been
+  // on top for a few seconds, so fast swiping past it doesn't. Only while the deck is
+  // in view: not behind another tab or the Welcome guide.
+  const deckFocused = useIsFocused();
+  useEffect(() => {
+    if (!promptId || !sessionStarted || !deckFocused) return;
+    const timer = setTimeout(
+      () => PromptPlayRepo.record(promptId).catch((e) => console.warn('Recording a play failed', e)),
+      PLAY_AFTER_MS
+    );
+    return () => clearTimeout(timer);
+  }, [promptId, sessionStarted, deckFocused]);
   const reflectedIds = useRef(new Set<string>());
   const pendingReflection = useRef<Prompt | null>(null);
   const [reflectFor, setReflectFor] = useState<Prompt | null>(null);
@@ -1189,7 +1211,7 @@ const styles = StyleSheet.create({
   },
   tapZones: {
     // Spans the scroll content edge to edge, including its side padding.
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     flexDirection: 'row',
   },
   tapZone: {
@@ -1215,13 +1237,13 @@ const styles = StyleSheet.create({
   // A card in the deck. Clipping is on an inner layer (cardStyles.stackCardClip),
   // because clipping the card itself would also cut off its shadow.
   stackCard: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: CARD_CORNER_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
   },
   // One side of the top card. Both sides fill the card; the flip shows one at a time.
   cardFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     paddingHorizontal: CARD_PADDING_X,
     paddingVertical: CARD_PADDING_Y,
     justifyContent: 'space-between',

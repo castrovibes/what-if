@@ -6,7 +6,6 @@ import { useTheme } from '../providers/ThemeProvider';
 import { Typography, Spacing } from '../utils/deviceHelpers';
 import { Screen, ScreenHeader, ScreenScroll, Card } from '../ui/components';
 import { useSurface } from '../ui/surface';
-import { comingSoon } from '../ui/comingSoon';
 import { CreateStackParamList } from '../navigation/types';
 import { UserPromptRepo } from '../db/repositories/userPrompts';
 
@@ -93,9 +92,8 @@ export const CreateScreen = () => {
         <ToolCard
           icon="book-open"
           title="Notes"
-          description="Jot down how a conversation went."
-          onPress={() => comingSoon('Notes')}
-          soon
+          description="Jot down how a conversation went, in folders you name."
+          onPress={() => navigation.navigate('Notebook')}
         />
       </ScreenScroll>
     </Screen>

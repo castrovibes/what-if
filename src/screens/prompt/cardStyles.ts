@@ -7,7 +7,7 @@ export const cardStyles = StyleSheet.create({
   // A card in the deck behind the top one. The clipping is on an inner layer
   // (stackCardClip), because clipping the card itself would also cut off its shadow.
   stackCardClip: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: CARD_CORNER_RADIUS,
     overflow: 'hidden',
     paddingHorizontal: CARD_PADDING_X,
@@ -52,7 +52,7 @@ export const cardStyles = StyleSheet.create({
   },
   // One side of the top card. Both sides fill the card; the flip shows one at a time.
   cardFace: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     paddingHorizontal: CARD_PADDING_X,
     paddingVertical: CARD_PADDING_Y,
     justifyContent: 'space-between',

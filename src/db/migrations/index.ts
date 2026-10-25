@@ -12,6 +12,7 @@ import { migration_0010_sync } from './0010_sync';
 import { migration_0011_strip_placeholder_markers } from './0011_strip_placeholder_markers';
 import { migration_0012_twists_and_situations } from './0012_twists_and_situations';
 import { migration_0013_more_placeholder_prompts } from './0013_more_placeholder_prompts';
+import { migration_0014_notes } from './0014_notes';
 
 export type Migration = {
   name: string;
@@ -32,4 +33,5 @@ export const migrations: Migration[] = [
   migration_0011_strip_placeholder_markers,
   migration_0012_twists_and_situations,
   migration_0013_more_placeholder_prompts,
+  migration_0014_notes,
 ];

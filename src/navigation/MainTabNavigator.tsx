@@ -17,6 +17,8 @@ import { CreateScreen } from '../screens/CreateScreen';
 import { PromptBuilderScreen } from '../screens/PromptBuilderScreen';
 import { PromptEditorScreen } from '../screens/PromptEditorScreen';
 import { MyPromptsScreen } from '../screens/MyPromptsScreen';
+import { NotebookScreen } from '../screens/notes/NotebookScreen';
+import { NoteEditorScreen } from '../screens/notes/NoteEditorScreen';
 import { YouScreen } from '../screens/you/YouScreen';
 import { SavedPromptsScreen } from '../screens/you/SavedPromptsScreen';
 import { PersonalizationScreen } from '../screens/PersonalizationScreen';
@@ -61,6 +63,8 @@ const CreateStackNavigator = () => {
       <CreateStack.Screen name="PromptBuilder" component={PromptBuilderScreen} />
       <CreateStack.Screen name="PromptEditor" component={PromptEditorScreen} />
       <CreateStack.Screen name="MyPrompts" component={MyPromptsScreen} />
+      <CreateStack.Screen name="Notebook" component={NotebookScreen} />
+      <CreateStack.Screen name="NoteEditor" component={NoteEditorScreen} />
     </CreateStack.Navigator>
   );
 };

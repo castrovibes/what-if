@@ -135,20 +135,20 @@ There are 228 unique subcategories spanning topics from `sharing` and `empathy` 
 ## App Architecture & Features
 
 ### Current App (React Native + Expo)
-The app is a React Native app built with Expo (SDK 54, React Native 0.81, React 19,
+The app is a React Native app built with Expo (SDK 58, React Native 0.88, React 19.3,
 Hermes, New Architecture). It has replaced the earlier React web wireframe; nothing
 from that prototype is in this repo.
 
 **Stack, as installed:**
 | Layer | Technology |
 |-------|-----------|
-| Framework | Expo SDK 54 managed workflow, with `ios/` committed (run `npx expo prebuild --clean` after changing plugins in `app.json`); Android is generated on demand |
-| Navigation | React Navigation 6 (`@react-navigation/stack` + `bottom-tabs`); not Expo Router |
+| Framework | Expo SDK 58 managed workflow, with `ios/` committed (run `npx expo prebuild --clean` after changing plugins in `app.json`); Android is generated on demand |
+| Navigation | React Navigation 7 (`@react-navigation/stack` + `bottom-tabs`); not Expo Router |
 | State | React Context only (`ThemeProvider`, `DbProvider`, `ActiveContextProvider`, `AuthProvider`), plus module-level services under `src/sync/`. No Redux/Zustand |
 | Local data | `expo-sqlite` is the source of truth (`src/db/`: migrations + repositories); `AsyncStorage` holds small preferences |
 | Backend | Firebase JS SDK (Auth email links, Firestore) via `src/backend/`; local emulators in development, `EXPO_PUBLIC_AUTH_BACKEND=mock` to run without Firebase |
 | Sync | Outbox-based: local writes queue in `sync_outbox` and push when signed in (`src/sync/syncService.ts`) |
-| Animation | Reanimated 4 (needs the New Architecture, which `app.json` turns on explicitly) |
+| Animation | Reanimated 4 (needs the New Architecture, the only one since SDK 55) |
 | UI kit | Our own, in `src/ui/` (no React Native Paper / NativeBase) |
 | TTS | `expo-speech` |
 | Builds | EAS (`eas.json`); see `TESTFLIGHT_CHECKLIST.md` |

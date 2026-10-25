@@ -1,6 +1,7 @@
 {
   "projects": {
     "default": "demo-what-if",
-    "dev": "what-if-dev-70316"
+    "dev": "what-if-dev-70316",
+    "prod": "what-if-prod-70316"
   }
 }

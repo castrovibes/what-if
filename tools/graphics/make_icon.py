@@ -7,7 +7,7 @@ Usage (from the repo root; needs Pillow):
 
 Writes:
     assets/images/icon.png                    1024x1024, opaque (Expo / iOS icon)
-    ios/WhatCouldYouDo/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png
+    ios/WhatIf/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png
     assets/images/adaptive-icon.png           Android adaptive-icon foreground (transparent;
                                               the background color is in app.json)
 Prints the background color, for app.json's android.adaptiveIcon.backgroundColor.
@@ -44,7 +44,7 @@ def place(canvas, height):
 
 icon = place(Image.new('RGBA', (SIZE, SIZE), FILL + (255,)), round(SIZE * MARK_HEIGHT)).convert('RGB')
 icon.save(ROOT / 'assets/images/icon.png', optimize=True)
-icon.save(ROOT / 'ios/WhatCouldYouDo/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png',
+icon.save(ROOT / 'ios/WhatIf/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png',
           optimize=True)
 
 # Android masks the adaptive icon to various shapes; keep the drawing in the central

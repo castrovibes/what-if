@@ -47,7 +47,11 @@ export type Plan = {
 };
 
 export interface AuthService {
-  /** Throws `NotAvailableError` until the provider is set up. */
+  /**
+   * Both throw `NotAvailableError` until the provider is set up, `SignInCancelledError`
+   * when the user backs out, and `AccountExistsError` when the email already has an
+   * account that signs in another way.
+   */
   signInWithApple(): Promise<SignInResult>;
   signInWithGoogle(): Promise<SignInResult>;
   /** Emails a sign-in ("magic") link and remembers the address on this device. */
@@ -101,6 +105,23 @@ export class ReauthRequiredError extends Error {
   constructor() {
     super('For your security, please sign in again, then delete your account.');
     this.name = 'ReauthRequiredError';
+  }
+}
+
+/** The user closed the provider's sign-in sheet; nothing to report. */
+export class SignInCancelledError extends Error {
+  constructor() {
+    super('Sign-in was cancelled.');
+    this.name = 'SignInCancelledError';
+  }
+}
+
+export class AccountExistsError extends Error {
+  constructor(
+    message = 'That email already has an account. Sign in with email, the way you did before.',
+  ) {
+    super(message);
+    this.name = 'AccountExistsError';
   }
 }
 

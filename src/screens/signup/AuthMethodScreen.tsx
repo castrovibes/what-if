@@ -17,7 +17,12 @@ import { useSurface, PINK, INPUT_RADIUS } from '../../ui/surface';
 import { Screen } from '../../ui/components';
 import { useAuth } from '../../providers/AuthProvider';
 import { toast } from '../../ui/toast';
-import { NotAvailableError, SignInResult } from '../../auth/types';
+import {
+  AccountExistsError,
+  NotAvailableError,
+  SignInCancelledError,
+  SignInResult,
+} from '../../auth/types';
 import { authBackend } from '../../backend/config';
 import { SignupStackParamList } from '../../navigation/types';
 import { Typography, Spacing } from '../../utils/deviceHelpers';
@@ -70,7 +75,10 @@ export const AuthMethodScreen = () => {
         await (method === 'apple' ? auth.signInWithApple() : auth.signInWithGoogle()),
       );
     } catch (e) {
+      if (e instanceof SignInCancelledError) return;
       if (e instanceof NotAvailableError) toast.show({ message: e.message, icon: 'clock', duration: 4000 });
+      else if (e instanceof AccountExistsError)
+        toast.show({ message: e.message, icon: 'mail', duration: 5000 });
       else toast.show({ message: 'Sign in failed. Please try again.', icon: 'alert-circle' });
     } finally {
       setBusy(null);

@@ -21,7 +21,7 @@ import { Typography, Spacing } from '../utils/deviceHelpers';
 
 // The first onboarding screen picks up where the launch screen leaves off: the same
 // "What If?" question-mark graphic, at the same size and place (see LoadingScreen and
-// ios/WhatCouldYouDo/SplashScreen.storyboard), on the same plain background. The
+// ios/WhatIf/SplashScreen.storyboard), on the same plain background. The
 // button then fades in slowly. The images are built by
 // tools/graphics/make_splash.py.
 const SPLASH = {
@@ -30,8 +30,8 @@ const SPLASH = {
 };
 const SPLASH_WIDTH = 280;
 // The images' own aspect ratio, so this stays right if they're regenerated.
-const splashAsset = Image.resolveAssetSource(SPLASH.light);
-const SPLASH_HEIGHT = (SPLASH_WIDTH * splashAsset.height) / splashAsset.width;
+const splashAsset = Image.resolveAssetSource(SPLASH.light)!;
+const SPLASH_HEIGHT = (SPLASH_WIDTH * splashAsset.height!) / splashAsset.width!;
 
 // The launch screen has already held the eye; the button should be usable almost at
 // once, so the whole fade is under half a second.
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   center: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
   },

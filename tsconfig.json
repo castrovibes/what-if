@@ -27,6 +27,9 @@
     // Useful when using third-party libraries with type issues
     "skipLibCheck": true,
 
+    // TypeScript 6 no longer loads every installed @types package; name the test globals.
+    "types": ["jest"],
+
     // Firebase Auth's React Native build exports getReactNativePersistence, but the
     // package's typings don't declare it (checked against firebase 13: the base
     // config's "react-native" export condition isn't enough); point TypeScript at

@@ -587,6 +587,8 @@ export const ui = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.sm,
     paddingVertical: 14,
+    // Room at the sides when the button sizes to its label (in a centered empty state).
+    paddingHorizontal: Spacing.lg,
     borderRadius: INPUT_RADIUS,
     borderWidth: 1.5,
   },

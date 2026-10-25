@@ -15,6 +15,8 @@ const raw = {
   projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
   emailLinkUrl: process.env.EXPO_PUBLIC_EMAIL_LINK_URL,
+  googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
 };
 
 const clean = (v: string | undefined) => (v && v.trim() !== '' ? v.trim() : undefined);
@@ -47,6 +49,16 @@ export const firebaseConfig = {
 
 export const emailLinkUrl =
   clean(raw.emailLinkUrl) ?? `https://${firebaseConfig.authDomain}/finishSignIn`;
+
+/**
+ * Google OAuth clients of the Firebase project (each project has its own). Google
+ * issues the ID token for the web client, which Firebase Auth accepts. The iOS
+ * client's reversed ID is the URL scheme registered in app.json.
+ */
+export const googleClientIds = {
+  web: clean(raw.googleWebClientId),
+  ios: clean(raw.googleIosClientId),
+};
 
 /**
  * Host running the emulators. The iOS simulator reaches the Mac at localhost; a

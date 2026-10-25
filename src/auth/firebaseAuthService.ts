@@ -1,14 +1,22 @@
 /**
- * AuthService backed by Firebase Auth (email sign-in links) and Firestore (the
+ * AuthService backed by Firebase Auth (email sign-in links, Google) and Firestore (the
  * users/{uid} account document). Data model and rules: src/backend/model.ts and
  * firebase/firestore.rules.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+import {
+  GoogleAuthProvider,
   User,
   deleteUser,
   isSignInWithEmailLink,
   sendSignInLinkToEmail,
+  signInWithCredential,
   signInWithEmailLink,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
@@ -24,15 +32,24 @@ import {
 } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { getFirebase } from '../backend/firebase';
-import { EMULATOR_PORTS, emailLinkUrl, emulatorHost, firebaseConfig, useEmulator } from '../backend/config';
+import {
+  EMULATOR_PORTS,
+  emailLinkUrl,
+  emulatorHost,
+  firebaseConfig,
+  googleClientIds,
+  useEmulator,
+} from '../backend/config';
 import { SCHEMA_VERSION, USERNAME_PATTERN, USER_COLLECTIONS, UserDoc, paths } from '../backend/model';
 import {
   Account,
+  AccountExistsError,
   AuthProvider,
   AuthService,
   InvalidLinkError,
   NotAvailableError,
   ReauthRequiredError,
+  SignInCancelledError,
   SignInResult,
   UsernameStatus,
 } from './types';
@@ -96,15 +113,66 @@ const isLinkError = (e: unknown) =>
   e instanceof FirebaseError &&
   ['auth/invalid-action-code', 'auth/expired-action-code', 'auth/invalid-email'].includes(e.code);
 
+let googleConfigured = false;
+
+/** Configures the native Google module once; false when the project has no Google clients. */
+const configureGoogle = () => {
+  if (!googleClientIds.web) return false;
+  if (!googleConfigured) {
+    GoogleSignin.configure({ webClientId: googleClientIds.web, iosClientId: googleClientIds.ios });
+    googleConfigured = true;
+  }
+  return true;
+};
+
+// Forget the Google account on this phone too, so the next sign-in offers the picker.
+const signOutOfGoogle = async () => {
+  if (!configureGoogle()) return;
+  try {
+    await GoogleSignin.signOut();
+  } catch {
+    // Not signed in with Google; nothing to forget.
+  }
+};
+
 export const firebaseAuthService: AuthService = {
   // TODO: needs the Apple Developer "Sign in with Apple" capability + expo-apple-authentication.
   async signInWithApple() {
     throw new NotAvailableError('Sign in with Apple is coming soon. Please continue with email for now.');
   },
 
-  // TODO: needs Google OAuth client IDs + a native Google sign-in module.
   async signInWithGoogle() {
-    throw new NotAvailableError('Sign in with Google is coming soon. Please continue with email for now.');
+    if (!configureGoogle()) {
+      throw new NotAvailableError('Sign in with Google is coming soon. Please continue with email for now.');
+    }
+    let idToken: string | null;
+    try {
+      await GoogleSignin.hasPlayServices(); // Android only; resolves at once on iOS.
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) throw new SignInCancelledError();
+      idToken = response.data.idToken;
+    } catch (e) {
+      if (isErrorWithCode(e) && e.code === statusCodes.SIGN_IN_CANCELLED) {
+        throw new SignInCancelledError();
+      }
+      throw e;
+    }
+    if (!idToken) throw new Error('Google sign-in returned no ID token.');
+
+    try {
+      const { user } = await signInWithCredential(
+        getFirebase().auth,
+        GoogleAuthProvider.credential(idToken),
+      );
+      return await ensureUserDoc(user);
+    } catch (e) {
+      // Google only takes over an existing email account for addresses Google owns (Gmail).
+      if (e instanceof FirebaseError && e.code === 'auth/account-exists-with-different-credential') {
+        await signOutOfGoogle();
+        throw new AccountExistsError();
+      }
+      throw e;
+    }
   },
 
   async sendSignInLink(email) {
@@ -191,6 +259,7 @@ export const firebaseAuthService: AuthService = {
 
   async signOut() {
     await firebaseSignOut(getFirebase().auth);
+    await signOutOfGoogle();
   },
 
   async deleteAccount() {
@@ -229,5 +298,6 @@ export const firebaseAuthService: AuthService = {
       throw e;
     }
     await AsyncStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
+    await signOutOfGoogle();
   },
 };
