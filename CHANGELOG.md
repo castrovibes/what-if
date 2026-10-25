@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The app was rebuilt in React Native for the TestFlight beta. Highlights:
 
 ### Added
-- Swipeable prompt deck with twists, Tips, Listen (text-to-speech), favorites and reporting; an end-of-deck card and a "How did that go?" reflection sheet
+- Swipeable prompt deck with twists, Tips, Listen (text-to-speech), favorites and reporting; an end-of-deck card and a "How did that go?" toast that opens a reflection sheet
 - Explore tab with themed modules, Series, Community (labeled samples) and Articles
 - Create tab: the prompt editor, the Prompt Builder and My Prompts, all playable in the deck
 - You tab: account, Saved Prompts, personalization, preferences, community content filter, FAQ and I'm Concerned

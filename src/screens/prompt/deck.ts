@@ -40,12 +40,6 @@ export const FLICK_VELOCITY = 500;
 // Card edge tap zones stop this far from the top and bottom, clear of the header and
 // footer buttons.
 export const CARD_EDGE_ZONE_INSET = 64;
-// Page-turn tap feedback: a soft gradient that flashes in from the tapped side of the
-// screen, strongest at the edge and fading out toward the card.
-export const TAP_FLASH_IN_MS = 90;
-export const TAP_FLASH_OUT_MS = 380;
-export const TAP_FLASH_LIGHT = 'rgba(0, 0, 0, 0.04)'; // a slightly darker shade in light mode
-export const TAP_FLASH_DARK = 'rgba(255, 255, 255, 0.06)'; // slightly lighter in dark mode
 
 // Resting offsets of the deck's slots, top card first. During a skip the top card
 // flies off and each card below moves up one slot. The steps shrink with depth
