@@ -138,6 +138,7 @@ The app talks to `AuthService` / `BillingService` (`src/auth/types.ts`). A real 
 
 ## Nice to have
 
+- [ ] **Claude:** If the app adopts the React Compiler, turn its lint rules back on (`react-hooks/refs`, `set-state-in-effect`, `immutability`, `purity`; off in `eslint.config.js` since 2026-10-25, when eslint-config-expo 58 added them) and fix what they flag, mostly `Animated.Value`s read from refs during render.
 - [ ] **Claude:** Open an Explore section as its own full screen: tapping a section's title (or a "See all" link) shows that section's cards, still swipeable horizontally or as a full list. Pairs with the article reader once real articles exist.
 
 ## Done
